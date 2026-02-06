@@ -30,9 +30,12 @@ httpx = "^0.28.1"
 alibabacloud-tea-util = "^0.3.13"
 python-dotenv = "^1.0.0"
 pydantic = "^2.0"
-playwright = ">=1.5.0"
 loguru = "^0.7.0"
 aliyun-log-python-sdk = "^0.8.0"
+
+[tool.poetry.group.playwright.dependencies]
+optional = true
+playwright = ">=1.5.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"

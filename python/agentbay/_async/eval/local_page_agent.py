@@ -7,9 +7,18 @@ import uuid
 from typing import Any, Dict
 
 from mcp import ClientSession, StdioServerParameters, stdio_client
-from playwright.async_api import async_playwright
+
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    async_playwright = None  # type: ignore[misc, assignment]
 
 from agentbay import get_logger
+
+_PLAYWRIGHT_REQUIRED_MSG = (
+    "Playwright is required for local browser. "
+    "Install it with: pip install wuying-agentbay-sdk[playwright] or poetry install --with playwright"
+)
 from agentbay import AsyncBrowser as Browser
 from agentbay import AsyncSession as Session
 from agentbay.api.base_service import OperationResult
@@ -229,6 +238,8 @@ class LocalBrowser(Browser):
                     success = False
                     _logger.info("Start launching local browser")
                     try:
+                        if async_playwright is None:
+                            raise RuntimeError(_PLAYWRIGHT_REQUIRED_MSG)
                         async with async_playwright() as p:
                             # Define CDP port
                             # Recreate /tmp/chrome_cdp_ports.json with the required content

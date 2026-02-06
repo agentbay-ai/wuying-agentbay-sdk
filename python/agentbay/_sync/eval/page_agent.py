@@ -7,8 +7,19 @@ import concurrent.futures
 import os
 from typing import Any, Dict, List, Literal, Optional, Type, TypeVar, Union
 
-from playwright.sync_api import Page, sync_playwright, Playwright
+try:
+    from playwright.sync_api import Page, sync_playwright, Playwright
+except ImportError:
+    Page = None  # type: ignore[misc, assignment]
+    sync_playwright = None  # type: ignore[misc, assignment]
+    Playwright = None  # type: ignore[misc, assignment]
+
 from pydantic import BaseModel
+
+_PLAYWRIGHT_REQUIRED_MSG = (
+    "Playwright is required for browser agent. "
+    "Install it with: pip install wuying-agentbay-sdk[playwright] or poetry install --with playwright"
+)
 
 from agentbay import AgentBay
 from agentbay import get_logger
@@ -79,6 +90,8 @@ class PageAgent:
                     endpoint_url = self.session.browser.get_endpoint_url()
                     _logger.info(f"endpoint_url = {endpoint_url}")
 
+                    if sync_playwright is None:
+                        raise RuntimeError(_PLAYWRIGHT_REQUIRED_MSG)
                     self.playwright = sync_playwright().start()
                     self.browser = self.playwright.chromium.connect_over_cdp(
                         endpoint_url

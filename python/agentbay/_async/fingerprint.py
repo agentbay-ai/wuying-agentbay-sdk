@@ -3,9 +3,16 @@ from typing import Any, Dict, List, Optional, Union
 from .._common.logger import get_logger
 from .._common.models.fingerprint import FingerprintFormat
 
-from playwright.async_api import async_playwright
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    async_playwright = None  # type: ignore[misc, assignment]
 
 # Global _logger for this module
+_PLAYWRIGHT_REQUIRED_MSG = (
+    "Playwright is required for this feature. "
+    "Install it with: pip install wuying-agentbay-sdk[playwright] or poetry install --with playwright"
+)
 _logger = get_logger("fingerprint")
 
 
@@ -43,6 +50,8 @@ class AsyncBrowserFingerprintGenerator:
                 print(fingerprint.headers.get("user-agent"))
         """
         try:
+            if async_playwright is None:
+                raise RuntimeError(_PLAYWRIGHT_REQUIRED_MSG)
             _logger.info("Starting fingerprint generation")
 
             async with async_playwright() as p:
