@@ -54,7 +54,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.13.2</junit.version>
-        <jackson.version>2.15.2</jackson.version>
+        <jackson.version>2.18.6</jackson.version>
         <!-- SDK release flag: set to true when publishing to Maven Central -->
         <!-- Usage: mvn deploy -Dagentbay.is.release.build=true -->
         <agentbay.is.release.build>false</agentbay.is.release.build>
