@@ -13,6 +13,10 @@
 ### Golang
 - Go 1.24.4+
 
+### Java
+- Java 8+
+- Maven 3.6.3+ or Gradle 6+
+
 ## 🚀 Quick Installation
 
 ### Python
@@ -66,6 +70,39 @@ GOPROXY=direct go get github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay
 
 # Verify installation
 go list -m github.com/aliyun/wuying-agentbay-sdk/golang && echo "✅ Installation successful"
+```
+
+### Java
+
+> **Note:** Please check [Maven Central](https://central.sonatype.com/artifact/com.aliyun/agentbay-sdk) for the latest version number and replace `LATEST_VERSION` below.
+
+**Maven:**
+
+Add the dependency to your `pom.xml`:
+```xml
+<dependency>
+    <groupId>com.aliyun</groupId>
+    <artifactId>agentbay-sdk</artifactId>
+    <version>LATEST_VERSION</version>
+</dependency>
+```
+
+**Gradle:**
+
+Add the dependency to your `build.gradle`:
+```gradle
+implementation 'com.aliyun:agentbay-sdk:LATEST_VERSION'
+```
+
+Verify installation:
+```bash
+# Maven
+mvn dependency:tree -Dincludes=com.aliyun:agentbay-sdk
+# You should see: com.aliyun:agentbay-sdk:jar:x.x.x:compile
+
+# Gradle
+gradle dependencies --configuration compileClasspath | grep agentbay-sdk
+# You should see: com.aliyun:agentbay-sdk:x.x.x
 ```
 
 ## 🔑 API Key Setup
@@ -157,6 +194,44 @@ async function test() {
 }
 
 test();
+```
+
+### Java Test
+```java
+import com.aliyun.agentbay.*;
+
+public class AgentBayTest {
+    public static void main(String[] args) {
+        // Get API key from environment
+        String apiKey = System.getenv("AGENTBAY_API_KEY");
+        if (apiKey == null || apiKey.isEmpty()) {
+            System.out.println("⚠️  Please set AGENTBAY_API_KEY environment variable");
+            return;
+        }
+
+        try {
+            // Initialize SDK
+            AgentBay agentBay = new AgentBay(apiKey);
+            System.out.println("✅ SDK initialized successfully");
+
+            // Create a session (requires valid API key and network)
+            CreateSessionParams params = new CreateSessionParams();
+            SessionResult result = agentBay.create(params);
+            if (result.isSuccess()) {
+                Session session = result.getSession();
+                System.out.println("✅ Session created: " + session.getSessionId());
+
+                // Clean up
+                session.delete();
+                System.out.println("✅ Test completed successfully");
+            } else {
+                System.out.println("⚠️  Session creation failed");
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error: " + e.getMessage());
+        }
+    }
+}
 ```
 
 ### Golang Test
@@ -299,6 +374,32 @@ go mod init your-project-name
 go clean -modcache
 go mod tidy
 go get github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay
+```
+
+### Java Issues
+
+**Dependency resolution failures:**
+```bash
+# Verify the dependency is resolved correctly
+mvn dependency:tree -Dincludes=com.aliyun:agentbay-sdk
+# You should see: com.aliyun:agentbay-sdk:jar:x.x.x:compile
+# If not, check your pom.xml dependency configuration and ensure Maven Central is accessible
+# If behind a proxy, configure Maven settings.xml with proxy settings
+```
+
+**`ClassNotFoundException` or `NoClassDefFoundError`:**
+```bash
+# Verify the dependency is correctly added
+mvn dependency:tree | grep agentbay
+# Rebuild the project
+mvn clean install
+```
+
+**Version conflicts:**
+```bash
+# Check for dependency conflicts
+mvn dependency:tree -Dverbose
+# Use Maven's dependencyManagement to pin versions if needed
 ```
 
 ### Network and API Issues

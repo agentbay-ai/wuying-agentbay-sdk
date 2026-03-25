@@ -4,18 +4,20 @@
 
 ## 📦 Installation
 
+> **Note:** Please check [Maven Central](https://central.sonatype.com/artifact/com.aliyun/agentbay-sdk) for the latest version number and replace `LATEST_VERSION` below.
+
 ### Maven
 ```xml
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.15.0</version>
+    <version>LATEST_VERSION</version>
 </dependency>
 ```
 
 ### Gradle
 ```gradle
-implementation 'com.aliyun:agentbay-sdk:0.15.0'
+implementation 'com.aliyun:agentbay-sdk:LATEST_VERSION'
 ```
 
 ## 🚀 Prerequisites
