@@ -1,6 +1,6 @@
 wuying-agentbay-sdk==0.16.0
 langchain==1.2.10
 langchain-community==0.4.1
-langchain-core==1.2.11
+langchain-core==1.2.22
 dashscope==1.25.12
 deepagents==0.4.0
