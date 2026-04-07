@@ -8,6 +8,8 @@ This test verifies that browser context (cookies, localStorage, etc.) can be per
 across sessions using the same ContextId.
 """
 
+# ci-stable
+
 import os
 import time
 

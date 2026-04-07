@@ -5,6 +5,7 @@
 
 This test calls the real backend without mocks, and compares async/sync SDK behaviors.
 """
+# ci-stable
 
 import os
 

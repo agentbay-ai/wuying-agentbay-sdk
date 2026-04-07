@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 Integration test for context pagination functionality.
 Based on golang/tests/pkg/integration/context_pagination_integration_test.go
 """

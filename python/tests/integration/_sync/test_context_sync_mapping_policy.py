@@ -9,7 +9,8 @@ This test simulates: Windows session -> persist data -> Linux session -> access 
 
 import os
 import time
-import unittest
+
+import pytest
 
 from agentbay import AgentBay
 from agentbay import (
@@ -22,233 +23,217 @@ from agentbay import (
     UploadPolicy,
 )
 from agentbay import CreateSessionParams
-import pytest
 
 
-class TestContextSyncWithMappingPolicyIntegration(unittest.TestCase):
-    """Test cross-platform context synchronization with MappingPolicy."""
+@pytest.fixture
+def api_key():
+    """Get API key, skip if not available."""
+    key = os.getenv("AGENTBAY_API_KEY")
+    if not key or os.getenv("CI"):
+        pytest.skip("Skipping integration test: No API key available or running in CI")
+    return key
 
-    def setUp(self):
-        """Set up test fixtures."""
-        # Skip in CI environment or if API key is not available
-        self.api_key = os.getenv("AGENTBAY_API_KEY")
-        if not self.api_key or os.getenv("CI"):
-            self.skipTest(
-                "Skipping integration test: No API key available or running in CI"
-            )
 
-        # Initialize the AgentBay client
-        self.ab = AgentBay(self.api_key)
+@pytest.mark.sync
+def test_context_sync_with_mapping_policy(api_key):
+    """Test that context sync works with MappingPolicy for cross-platform persistence."""
+    ab = AgentBay(api_key)
 
-    @pytest.mark.sync
-    def test_context_sync_with_mapping_policy(self):
-        """Test that context sync works with MappingPolicy for cross-platform persistence."""
-        # 1. Create a unique context name
-        context_name = f"test-mapping-policy-{int(time.time())}"
-        context_result = self.ab.context.get(name=context_name, create=True)
-        self.assertIsNotNone(context_result.context)
+    # 1. Create a unique context name
+    context_name = f"test-mapping-policy-{int(time.time())}"
+    context_result = ab.context.get(name=context_name, create=True)
+    assert context_result.context is not None
 
-        context = context_result.context
-        print(f"Created context: {context.name} (ID: {context.id})")
+    context = context_result.context
+    print(f"Created context: {context.name} (ID: {context.id})")
+
+    try:
+        # Define paths
+        windows_path = "c:\\Users\\Administrator\\Downloads"
+        linux_path = "/home/wuying/下载"
+        test_file_name = "cross-platform-test.txt"
+        test_content = "This file was created in Windows session and should be accessible in Linux session"
+
+        print("========== Phase 1: Windows Session - Create and Persist Data ==========")
+
+        # Create sync policy for Windows session (no mapping policy needed for first session)
+        windows_sync_policy = SyncPolicy(
+            upload_policy=UploadPolicy(),
+            download_policy=DownloadPolicy(),
+            delete_policy=DeletePolicy(),
+            extract_policy=ExtractPolicy(),
+        )
+
+        # Create Windows session with context sync
+        windows_context_sync = ContextSync.new(
+            context.id, windows_path, windows_sync_policy
+        )
+        windows_session_params = CreateSessionParams(
+            image_id="windows_latest",
+            context_syncs=[windows_context_sync],
+            labels={"test": "mapping-policy-windows"},
+        )
+
+        # Create Windows session
+        windows_session_result = ab.create(windows_session_params)
+        if("no authorized app" in windows_session_result.error_message):
+            pytest.skip("No authorized app")
+        assert windows_session_result.success
+        assert windows_session_result.session is not None
+
+        windows_session = windows_session_result.session
+        print(f"Created Windows session: {windows_session.session_id}")
+
+        # Wait for Windows session to be ready
+        print("Waiting for Windows session to be ready...")
+        time.sleep(15)
+
+        # Create directory in Windows session
+        print(f"Creating directory in Windows: {windows_path}")
+        windows_dir_result = windows_session.file_system.create_directory(
+            windows_path
+        )
+        assert windows_dir_result.request_id is not None
+
+        # Create test file in Windows session
+        test_file_path = f"{windows_path}\\{test_file_name}"
+        print(f"Creating test file in Windows: {test_file_path}")
+        create_file_cmd = f'echo {test_content} > "{test_file_path}"'
+        windows_cmd_result = windows_session.command.execute_command(
+            create_file_cmd
+        )
+        assert windows_cmd_result is not None
+        print(f"Windows file creation result: {windows_cmd_result}")
+
+        # Verify file exists in Windows session
+        verify_file_cmd = f'type "{test_file_path}"'
+        verify_result = windows_session.command.execute_command(verify_file_cmd)
+        assert verify_result is not None
+        print(f"Windows file content: {verify_result.output}")
+        assert test_content in verify_result.output, \
+            "File should contain test content in Windows"
+
+        # Sync Windows session to upload data
+        print("Syncing Windows session to upload data...")
+        windows_sync_result = windows_session.context.sync()
+        assert windows_sync_result.success
+        print(
+            f"Windows context sync successful (RequestID: {windows_sync_result.request_id})"
+        )
+
+        # Wait for upload to complete
+        print("Waiting for upload to complete...")
+        time.sleep(10)
+
+        # Delete Windows session
+        print("Deleting Windows session...")
+        windows_delete_result = ab.delete(windows_session)
+        print(
+            f"Windows session deleted: {windows_session.session_id} (RequestID: {windows_delete_result.request_id})"
+        )
+
+        print("========== Phase 2: Linux Session - Access Data via MappingPolicy ==========")
+
+        # Create mapping policy with Windows path
+        mapping_policy = MappingPolicy(path=windows_path)
+
+        # Create sync policy with mapping policy for Linux session
+        linux_sync_policy = SyncPolicy(
+            upload_policy=UploadPolicy(),
+            download_policy=DownloadPolicy(),
+            delete_policy=DeletePolicy(),
+            extract_policy=ExtractPolicy(),
+            mapping_policy=mapping_policy,
+        )
+
+        # Create Linux session with context sync and mapping policy
+        linux_context_sync = ContextSync.new(
+            context.id, linux_path, linux_sync_policy
+        )
+        linux_session_params = CreateSessionParams(
+            image_id="linux_latest",
+            context_syncs=[linux_context_sync],
+            labels={"test": "mapping-policy-linux"},
+        )
+
+        # Create Linux session
+        linux_session_result = ab.create(linux_session_params)
+        assert linux_session_result.session is not None
+
+        linux_session = linux_session_result.session
+        print(
+            f"Created Linux session: {linux_session.session_id} with mapping from {windows_path} to {linux_path}"
+        )
 
         try:
-            # Define paths
-            windows_path = "c:\\Users\\Administrator\\Downloads"
-            linux_path = "/home/wuying/下载"
-            test_file_name = "cross-platform-test.txt"
-            test_content = "This file was created in Windows session and should be accessible in Linux session"
-
-            print("========== Phase 1: Windows Session - Create and Persist Data ==========")
-
-            # Create sync policy for Windows session (no mapping policy needed for first session)
-            windows_sync_policy = SyncPolicy(
-                upload_policy=UploadPolicy(),
-                download_policy=DownloadPolicy(),
-                delete_policy=DeletePolicy(),
-                extract_policy=ExtractPolicy(),
+            # Wait for Linux session to be ready and data to be downloaded
+            print(
+                "Waiting for Linux session to be ready and data to be downloaded..."
             )
-
-            # Create Windows session with context sync
-            windows_context_sync = ContextSync.new(
-                context.id, windows_path, windows_sync_policy
-            )
-            windows_session_params = CreateSessionParams(
-                image_id="windows_latest",
-                context_syncs=[windows_context_sync],
-                labels={"test": "mapping-policy-windows"},
-            )
-
-            # Create Windows session
-            windows_session_result = self.ab.create(windows_session_params)
-            self.assertIsNotNone(windows_session_result.session)
-
-            windows_session = windows_session_result.session
-            print(f"Created Windows session: {windows_session.session_id}")
-
-            # Wait for Windows session to be ready
-            print("Waiting for Windows session to be ready...")
             time.sleep(15)
 
-            # Create directory in Windows session
-            print(f"Creating directory in Windows: {windows_path}")
-            windows_dir_result = windows_session.file_system.create_directory(
-                windows_path
-            )
-            self.assertIsNotNone(windows_dir_result.request_id)
+            # Verify file exists in Linux session at the mapped path
+            linux_test_file_path = f"{linux_path}/{test_file_name}"
+            print(f"Verifying file exists in Linux at: {linux_test_file_path}")
 
-            # Create test file in Windows session
-            test_file_path = f"{windows_path}\\{test_file_name}"
-            print(f"Creating test file in Windows: {test_file_path}")
-            create_file_cmd = f'echo {test_content} > "{test_file_path}"'
-            windows_cmd_result = windows_session.command.execute_command(
-                create_file_cmd
-            )
-            self.assertIsNotNone(windows_cmd_result)
-            print(f"Windows file creation result: {windows_cmd_result}")
+            # Check if file exists
+            check_file_cmd = f'test -f "{linux_test_file_path}" && echo "FILE_EXISTS" || echo "FILE_NOT_FOUND"'
+            check_result = linux_session.command.execute_command(check_file_cmd)
+            assert check_result is not None
+            print(f"Linux file check result: {check_result.output}")
 
-            # Verify file exists in Windows session
-            verify_file_cmd = f'type "{test_file_path}"'
-            verify_result = windows_session.command.execute_command(verify_file_cmd)
-            self.assertIsNotNone(verify_result)
-            print(f"Windows file content: {verify_result.output}")
-            self.assertIn(
-                test_content,
-                verify_result.output,
-                "File should contain test content in Windows",
-            )
+            # Verify file exists
+            assert "FILE_EXISTS" in check_result.output, \
+                "File should exist in Linux session at mapped path"
 
-            # Sync Windows session to upload data
-            print("Syncing Windows session to upload data...")
-            windows_sync_result = windows_session.context.sync()
-            self.assertTrue(windows_sync_result.success)
+            # Read file content in Linux session
+            read_file_cmd = f'cat "{linux_test_file_path}"'
+            read_result = linux_session.command.execute_command(read_file_cmd)
+            assert read_result is not None
+            print(f"Linux file content: {read_result.output}")
+
+            # Verify file content matches
+            assert (
+                test_content in read_result.output
+                or test_content.strip() in read_result.output
+            ), "File content in Linux should match the content created in Windows"
+
+            # Verify context info
+            context_info = linux_session.context.info()
+            assert context_info.request_id is not None
+
+            if context_info.context_status_data:
+                print("Context status data in Linux session:")
+                for i, data in enumerate(context_info.context_status_data):
+                    print(f"Context Status Data [{i}]:")
+                    print(f"  ContextId: {data.context_id}")
+                    print(f"  Path: {data.path}")
+                    print(f"  Status: {data.status}")
+                    print(f"  TaskType: {data.task_type}")
+
+                # Verify the context data
+                for data in context_info.context_status_data:
+                    if data.context_id == context.id:
+                        assert data.path == linux_path, \
+                            "Path should match the Linux path"
+
             print(
-                f"Windows context sync successful (RequestID: {windows_sync_result.request_id})"
+                "========== Cross-platform mapping policy test completed successfully =========="
             )
-
-            # Wait for upload to complete
-            print("Waiting for upload to complete...")
-            time.sleep(10)
-
-            # Delete Windows session
-            print("Deleting Windows session...")
-            windows_delete_result = self.ab.delete(windows_session)
             print(
-                f"Windows session deleted: {windows_session.session_id} (RequestID: {windows_delete_result.request_id})"
+                "✓ Data created in Windows session was successfully accessed in Linux session via MappingPolicy"
             )
-
-            print("========== Phase 2: Linux Session - Access Data via MappingPolicy ==========")
-
-            # Create mapping policy with Windows path
-            mapping_policy = MappingPolicy(path=windows_path)
-
-            # Create sync policy with mapping policy for Linux session
-            linux_sync_policy = SyncPolicy(
-                upload_policy=UploadPolicy(),
-                download_policy=DownloadPolicy(),
-                delete_policy=DeletePolicy(),
-                extract_policy=ExtractPolicy(),
-                mapping_policy=mapping_policy,
-            )
-
-            # Create Linux session with context sync and mapping policy
-            linux_context_sync = ContextSync.new(
-                context.id, linux_path, linux_sync_policy
-            )
-            linux_session_params = CreateSessionParams(
-                image_id="linux_latest",
-                context_syncs=[linux_context_sync],
-                labels={"test": "mapping-policy-linux"},
-            )
-
-            # Create Linux session
-            linux_session_result = self.ab.create(linux_session_params)
-            self.assertIsNotNone(linux_session_result.session)
-
-            linux_session = linux_session_result.session
-            print(
-                f"Created Linux session: {linux_session.session_id} with mapping from {windows_path} to {linux_path}"
-            )
-
-            try:
-                # Wait for Linux session to be ready and data to be downloaded
-                print(
-                    "Waiting for Linux session to be ready and data to be downloaded..."
-                )
-                time.sleep(15)
-
-                # Verify file exists in Linux session at the mapped path
-                linux_test_file_path = f"{linux_path}/{test_file_name}"
-                print(f"Verifying file exists in Linux at: {linux_test_file_path}")
-
-                # Check if file exists
-                check_file_cmd = f'test -f "{linux_test_file_path}" && echo "FILE_EXISTS" || echo "FILE_NOT_FOUND"'
-                check_result = linux_session.command.execute_command(check_file_cmd)
-                self.assertIsNotNone(check_result)
-                print(f"Linux file check result: {check_result.output}")
-
-                # Verify file exists
-                self.assertIn(
-                    "FILE_EXISTS",
-                    check_result.output,
-                    "File should exist in Linux session at mapped path",
-                )
-
-                # Read file content in Linux session
-                read_file_cmd = f'cat "{linux_test_file_path}"'
-                read_result = linux_session.command.execute_command(read_file_cmd)
-                self.assertIsNotNone(read_result)
-                print(f"Linux file content: {read_result.output}")
-
-                # Verify file content matches
-                self.assertTrue(
-                    test_content in read_result.output
-                    or test_content.strip() in read_result.output,
-                    "File content in Linux should match the content created in Windows",
-                )
-
-                # Verify context info
-                context_info = linux_session.context.info()
-                self.assertIsNotNone(context_info.request_id)
-
-                if context_info.context_status_data:
-                    print("Context status data in Linux session:")
-                    for i, data in enumerate(context_info.context_status_data):
-                        print(f"Context Status Data [{i}]:")
-                        print(f"  ContextId: {data.context_id}")
-                        print(f"  Path: {data.path}")
-                        print(f"  Status: {data.status}")
-                        print(f"  TaskType: {data.task_type}")
-
-                    # Verify the context data
-                    for data in context_info.context_status_data:
-                        if data.context_id == context.id:
-                            self.assertEqual(
-                                data.path,
-                                linux_path,
-                                "Path should match the Linux path",
-                            )
-
-                print(
-                    "========== Cross-platform mapping policy test completed successfully =========="
-                )
-                print(
-                    "✓ Data created in Windows session was successfully accessed in Linux session via MappingPolicy"
-                )
-
-            finally:
-                # Ensure Linux session is deleted
-                delete_result = self.ab.delete(linux_session)
-                print(
-                    f"Linux session deleted: {linux_session.session_id} (RequestID: {delete_result.request_id})"
-                )
 
         finally:
-            # Ensure context is deleted
-            delete_context_result = self.ab.context.delete(context)
+            # Ensure Linux session is deleted
+            delete_result = ab.delete(linux_session)
             print(
-                f"Context deleted: {context.id} (RequestID: {delete_context_result.request_id})"
+                f"Linux session deleted: {linux_session.session_id} (RequestID: {delete_result.request_id})"
             )
 
-
-if __name__ == "__main__":
-    unittest.main()
+    finally:
+        # Ensure context is deleted
+        delete_context_result = ab.context.delete(context)
+        print(
+            f"Context deleted: {context.id} (RequestID: {delete_context_result.request_id})"
+        )

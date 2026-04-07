@@ -73,6 +73,7 @@ def test_context_get_nonexistent(agent_bay):
     # Try to get non-existent context
     # NOTE: API may auto-create context even with create=False, so we just verify it doesn't error
     get_result = agent_bay.context.get(name=context_name, create=False)
+    assert not get_result.success 
     # If context was auto-created, clean it up
     if get_result.success and get_result.context:
         agent_bay.context.delete(get_result.context)

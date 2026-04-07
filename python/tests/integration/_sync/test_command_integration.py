@@ -3,6 +3,8 @@
 
 """Integration tests for Command functionality."""
 
+# ci-stable
+
 import os
 import time
 

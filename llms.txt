@@ -54,34 +54,48 @@ FILE: README.md
 
 <p align="center">
   <b>The Cloud Sandbox Built for AI Agents</b>
-  <br>
-  <a href="docs/guides/browser-use/README.md">Browser</a> ·
-  <a href="docs/guides/computer-use/README.md">Desktop</a> ·
-  <a href="docs/guides/mobile-use/README.md">Mobile</a> ·
-  <a href="docs/guides/codespace/README.md">Code</a> ·
-  <a href="docs/guides/common-features/advanced/skills.md">Skills</a>
 </p>
+
+AgentBay provides **on-demand cloud sandboxes** for AI agents — isolated environments with browser, desktop, mobile, and code execution capabilities. Create a sandbox in seconds, let your agent do its work, and tear it down when done. No infrastructure to manage.
+
+With SDKs for **Python**, **TypeScript**, **Golang**, and **Java**, AgentBay gives your agents a full cloud environment through a simple API: execute commands, browse the web, automate desktop apps, test mobile UIs, or run code — all in secure, disposable sandboxes.
 
 ---
 
-## 🔥 OpenClaw Quick Deployment
+## 🎯 What You Can Do
 
-Deploy [OpenClaw](https://github.com/anthropics/openClaw) on an AgentBay cloud desktop in minutes. Available in [Python](cookbook/openclaw/python/) and [Java](cookbook/openclaw/java/).
+<table>
+<tr>
+<td width="50%" align="center" valign="top">
+  <img src="./assets/Browser Use@2x.png" width="460px" alt="Browser Use"/>
+  <h3>🌐 Browser Use</h3>
+  <p>Automate web operations including content scraping, testing, and workflows. Cross-browser compatible with natural language control and remote access.</p>
+  <p><a href="docs/guides/browser-use/README.md">Learn more →</a></p>
+</td>
+<td width="50%" align="center" valign="top">
+  <img src="./assets/Computer Use@2x.png" width="460px" alt="Computer Use"/>
+  <h3>🖥️ Computer Use</h3>
+  <p>Cloud desktop environment for enterprise application automation. Standardized interfaces enable legacy software automation with intelligent resource scheduling.</p>
+  <p><a href="docs/guides/computer-use/README.md">Learn more →</a></p>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center" valign="top">
+  <img src="./assets/Mobile Use@2x.png" width="460px" alt="Mobile Use"/>
+  <h3>📱 Mobile Use</h3>
+  <p>Cloud-based mobile environment for intelligent app automation. Precise UI recognition and control with parallel task processing for testing scenarios.</p>
+  <p><a href="docs/guides/mobile-use/README.md">Learn more →</a></p>
+</td>
+<td width="50%" align="center" valign="top">
+  <img src="./assets/Code Space@2x.png" width="460px" alt="Code Space"/>
+  <h3>💻 Code Space</h3>
+  <p>Professional cloud development environment supporting multi-language code generation, compilation, and debugging. Secure, intelligent automated programming experience.</p>
+  <p><a href="docs/guides/codespace/README.md">Learn more →</a></p>
+</td>
+</tr>
+</table>
 
-## ✨ Skills — Equip Your Agents (Beta)
-
-Load reusable capability modules into sandbox sessions — pre-configured tools and workflows, no manual setup needed. Available in all four SDKs. [Learn more →](docs/guides/common-features/advanced/skills.md)
-
-## 📦 Installation
-
-| Language | Install Command | Documentation |
-|----------|----------------|---------------|
-| Python | `pip install wuying-agentbay-sdk` | [Python Docs](python/README.md) |
-| TypeScript | `npm install wuying-agentbay-sdk` | [TypeScript Docs](typescript/README.md) |
-| Golang | `go get github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay` | [Golang Docs](golang/README.md) |
-| Java | Maven/Gradle (see docs) | [Java Docs](java/README.md) |
-
-## 🚀 Prerequisites
+## ✅ Prerequisites
 
 Before using the SDK, you need to:
 
@@ -97,81 +111,40 @@ Before using the SDK, you need to:
      setx AGENTBAY_API_KEY your_api_key_here
      ```
 
+## 📦 Installation
+
+| Language | Install Command | Documentation |
+|----------|----------------|---------------|
+| Python | `pip install wuying-agentbay-sdk` | [Python Docs](python/README.md) |
+| TypeScript | `npm install wuying-agentbay-sdk` | [TypeScript Docs](typescript/README.md) |
+| Golang | `go get github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay` | [Golang Docs](golang/README.md) |
+| Java | See Maven snippet below | [Java Docs](java/README.md) |
+
+<details>
+<summary>Java Maven dependency</summary>
+
+```xml
+<dependency>
+    <groupId>com.aliyun</groupId>
+    <artifactId>agentbay-sdk</artifactId>
+    <version>0.18.0</version>
+</dependency>
+```
+
+</details>
+
 ## 🚀 Quick Start
 
 ### Python
+
 ```python
 from agentbay import AgentBay, CreateSessionParams
 
-# Create session and execute code
 agent_bay = AgentBay()
-session = agent_bay.create(CreateSessionParams(image_id="code_latest")).session
-result = session.code.run_code("print('Hello AgentBay')", "python")
-if result.success:
-    print(result.result)  # Hello AgentBay
 
-# Clean up
-agent_bay.delete(session)
-```
+# Create a cloud sandbox (options: "code_latest", "browser_latest", "desktop_latest")
 
-### TypeScript
-```typescript
-import { AgentBay } from 'wuying-agentbay-sdk';
-
-// Create session and execute code
-const agentBay = new AgentBay();
-const session = (await agentBay.create({ imageId: "code_latest" })).session;
-const result = await session.code.runCode("print('Hello AgentBay')", "python");
-if (result.success) {
-    console.log(result.result);  // Hello AgentBay
-}
-
-// Clean up
-await agentBay.delete(session);
-```
-
-### Golang
-```go
-import "github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay"
-
-// Create session and execute code
-client, _ := agentbay.NewAgentBay("", nil)
-result, _ := client.Create(agentbay.NewCreateSessionParams().WithImageId("code_latest"))
-session := result.Session
-
-res, _ := session.Code.RunCode("print('Hello AgentBay')", "python")
-fmt.Println(res.Output)  // Hello AgentBay
-
-// Clean up
-client.Delete(session, false)
-```
-
-### Java
-```java
-import com.aliyun.agentbay.*;
-
-// Create session and execute code
-AgentBay agentBay = new AgentBay();
-CreateSessionParams params = new CreateSessionParams().setImageId("code_latest");
-Session session = agentBay.create(params).getSession();
-
-CodeExecutionResult result = session.getCode().runCode("print('Hello AgentBay')", "python");
-if (result.isSuccess()) {
-    System.out.println(result.getResult());  // Hello AgentBay
-}
-
-// Clean up
-agentBay.delete(session, false);
-```
-
-
-
-## 🎯 Use Cases
-
-<table>
-<tr>
-
-... [truncated, 5,445 chars remaining] ...
+... [truncated, 4,073 chars remaining] ...
 
 ================================================
 FILE: docs/README.md
@@ -204,16 +177,24 @@ FILE: docs/README.md
 #### Advanced
 - [Custom Images](guides/common-features/advanced/custom-images.md) - Create tailored environments with specific configurations
 - [Session Link Access](guides/common-features/advanced/session-link-access.md) - Session connectivity and URL generation
+- [Session Metrics](guides/common-features/advanced/session-metrics.md) - Retrieve runtime metrics via MCP
+- [Network (Beta)](guides/common-features/advanced/network.md) - Share an isolated network across sessions
 - [Agent Modules](guides/common-features/advanced/agent-modules.md) - AI-powered task automation
 - [OSS Integration](guides/common-features/advanced/oss-integration.md) - Object Storage Service integration
+- [Skills (Beta)](guides/common-features/advanced/skills.md) - Load reusable skill modules into sessions
+- [Git Operations](guides/common-features/advanced/git-operations.md) - Git repository operations in cloud sessions
 
 #### Configuration
 - [SDK Configuration](guides/common-features/configuration/sdk-configuration.md) - Configuration options and settings
+- [Logging](guides/common-features/configuration/logging.md) - Logging configuration and best practices
 
 #### Use Cases
 - [Use Cases Overview](guides/common-features/use-cases/README.md) - Common use case scenarios and implementations
 - [Session Info Use Cases](guides/common-features/use-cases/session-info-use-cases.md) - Session information and connectivity patterns
 - [Session Link Use Cases](guides/common-features/use-cases/session-link-use-cases.md) - Connect external tools to cloud sessions
+- [Context Sync Use Case](guides/common-features/use-cases/context-sync-use-case.md) - Data persistence across sessions
+- [Cross-Platform Persistence](guides/common-features/use-cases/cross-platform-persistence.md) - Cross-OS data persistence with MappingPolicy
+- [Computer Linux All-in-One](guides/common-features/use-cases/computer-linux-all-in-one-sandbox-use-cases.md) - Combined UI and scripting in a single session
 
 ### Environment-Specific Features
 
@@ -233,35 +214,17 @@ Complete browser automation for web scraping, testing, and form filling.
 - [CAPTCHA Handling](guides/browser-use/core-features/captcha.md) - Automated CAPTCHA solving
 - [Extension Support](guides/browser-use/core-features/extension.md) - Browser extension management
 - [Browser Fingerprint](guides/browser-use/core-features/browser-fingerprint.md) - Simulate browser fingerprint
+- [Browser Screenshot](guides/browser-use/core-features/browser-screenshot.md) - Screenshot capture and analysis
+- [Browser Command Args](guides/browser-use/core-features/browser-command-args.md) - Custom browser launch arguments
 - [Call for User](guides/browser-use/core-features/call-for-user.md) - User interaction requests
 - [Browser Operator](guides/browser-use/advance-features/browser-operator.md) - AI-driven page operations
+- [Browser Hybrid Usage](guides/browser-use/advance-features/browser-hybrid-usage.md) - Combine Operator, Agent, and Playwright
 
 #### [Computer Use](guides/computer-use/README.md)
 Windows desktop automation for application control and window management.
 
-- [Computer Application Management](guides/computer-use/computer-application-management.md) - Application control and management
-- [Computer UI Automation](guides/computer-use/computer-ui-automation.md) - Desktop UI interaction and automation
-- [Window Management](guides/computer-use/window-management.md) - Window operations and focus management
-- [Browser Capabilities by Image Type](guides/computer-use/browser-capabilities-by-image-type.md) - Understanding browser support across different images
 
-**Key Capabilities:**
-- Application Management (start, stop, list applications)
-- Window Operations (maximize, minimize, resize, close)
-- Focus Management
-- Desktop Automation Workflows
-
-#### [Mobile Use](guides/mobile-use/README.md)
-Mobile UI automation for app testing and gesture-based interactions.
-
-- [Mobile Application Management](guides/mobile-use/mobile-application-management.md) - Mobile app control and management
-- [Mobile UI Automation](guides/mobile-use/mobile-ui-automation.md) - Mobile UI interaction and automation
-- [ADB Connection](guides/mobile-use/adb-connection.md) - ADB connection and debugging capabilities
-- [Mobile Session Configuration](guides/mobile-use/mobile-session-configuration.md) - Advanced mobile session configuration options
-
-**Key Capabilities:**
-- UI Element Detection
-
-... [truncated, 3,162 chars remaining] ...
+... [truncated, 4,674 chars remaining] ...
 
 ================================================
 FILE: docs/guides/README.md
@@ -339,6 +302,8 @@ FILE: docs/guides/browser-use/README.md
 
 Welcome to the AgentBay AIBrowser Guides! This provides complete functionality introduction and best practices for experienced developers.
 
+These guides primarily use **Python** in code examples; the same concepts and APIs apply across all AgentBay SDK languages unless noted otherwise.
+
 > **💡 Async API Support**: This guide uses synchronous API examples. For async patterns, refer to the `_async` directory in the examples folder.
 
 ## 🎯 Quick Navigation
@@ -346,6 +311,8 @@ Welcome to the AgentBay AIBrowser Guides! This provides complete functionality i
 - [Example](code-example.md) - Index for examples demonstrating core & advance features
 - [Core Features](core-features.md) - Essential browser features and typical workflows
 - [Advance Features](advance-features.md) - Advanced configuration and capabilities
+- [Browser Extensions](browser-extensions.md) - Upload, sync, and test extensions with browser sessions
+- [Browser Replay](browser-replay.md) - Record and replay browser sessions for debugging and compliance
 - [Integrations](integrations.md) - Seamlessly weave with community tools and frameworks, extending your automation reach
 
 ## 🚀 What is AgentBay AIBrowser?
@@ -442,20 +409,8 @@ import (
 func main() {
 	apiKey := os.Getenv("AGENTBAY_API_KEY")
 	if apiKey == "" {
-		log.Fatal("AGENTBAY_API_KEY environment variable not set")
-	}
 
-	// Authenticate with API key
-	agentBay := agentbay.NewAgentBay(apiKey)
-
-	// Create a session (use an image with browser preinstalled)
-	params := &agentbay.CreateSessionParams{
-		ImageId: "browser_latest",
-	}
-	sessionResult, err := agentBay.Create(params)
-	if err != nil {
-
-... [truncated, 14,468 chars remaining] ...
+... [truncated, 14,806 chars remaining] ...
 
 ================================================
 FILE: docs/guides/codespace/README.md
@@ -464,7 +419,9 @@ FILE: docs/guides/codespace/README.md
 
 CodeSpace is AgentBay's development environment for code execution and scripting.
 
-> **💡 Async API Support**: This guide uses synchronous API. For async patterns, see:
+These guides use Python for code examples — the concepts and API patterns apply to all supported languages (Python, TypeScript, Golang, Java).
+
+> **💡 Async API Support**: This guide uses synchronous API. For async patterns, see [AsyncCode API Reference](../../../python/docs/api/async/async-code.md).
 
 ## Documentation
 
@@ -534,13 +491,16 @@ FILE: docs/guides/computer-use/README.md
 
 Computer Use is AgentBay's desktop automation environment for Windows and Linux systems.
 
-> **💡 Async API Support**: This guide uses synchronous API. For async patterns, see:
+These guides use Python for code examples — the concepts and API patterns apply to all supported languages (Python, TypeScript, Golang, Java).
+
+> **💡 Async API Support**: This guide uses synchronous API. For async patterns, see [Async Agent API](../../../python/docs/api/async/async-agent.md).
 
 ## Documentation
 
 - [Application Management](computer-application-management.md) - Desktop application lifecycle management
 - [Window Management](window-management.md) - Window control and positioning
 - [UI Automation](computer-ui-automation.md) - Mouse and keyboard automation
+- [Browser Capabilities by Image Type](browser-capabilities-by-image-type.md) - Browser vs desktop image feature matrix
 
 ## Getting Help
 
@@ -555,12 +515,15 @@ FILE: docs/guides/mobile-use/README.md
 
 Mobile Use is AgentBay's mobile device automation environment for Android devices.
 
-> **💡 Async API Support**: This guide uses synchronous API. For async patterns, see:
+These guides use Python for code examples — the concepts and API patterns apply to all supported languages (Python, TypeScript, Golang, Java).
+
+> **💡 Async API Support**: This guide uses synchronous API. For async patterns, see [Async Agent API](../../../python/docs/api/async/async-agent.md).
 
 ## Documentation
 
 - [Application Management](mobile-application-management.md) - Mobile app lifecycle management
 - [UI Automation](mobile-ui-automation.md) - Touch gestures and UI interaction
+- [Mobile Session Configuration](mobile-session-configuration.md) - Advanced mobile session options (resolution, app rules, navigation bar)
 - [Mobile Device Simulation](mobile-simulate.md) - Simulate different mobile devices with specific characteristics
 - [ADB Connection](adb-connection.md) - Connect and control devices via Android Debug Bridge
 
@@ -577,13 +540,15 @@ FILE: docs/quickstart/README.md
 
 Welcome to AgentBay SDK! This guide provides a step-by-step learning path for users new to cloud development.
 
+> **Multi-language support:** This quickstart uses **Python** for code examples. The concepts are identical across all supported languages — only the syntax differs. For language-specific guides, see: [Python](../../python/README.md) | [TypeScript](../../typescript/README.md) | [Golang](../../golang/README.md) | [Java](../../java/README.md)
+
 ## 🎯 Learning Objectives
 
 After completing this quick start guide, you will be able to:
 - Understand AgentBay's core concepts
-- Create your first cloud session (both sync and async)
+- Install the SDK in your preferred language
+- Create your first cloud session
 - Perform basic file and command operations in the cloud
-- Choose between synchronous and asynchronous APIs
 - Learn how to save and reuse your work
 
 ## 📚 Learning Path (Estimated 30 minutes)
@@ -601,72 +566,25 @@ After completing this quick start guide, you will be able to:
 
 ### Step 3: First Program (10 minutes)
 - [Create Your First Session](first-session.md)
-- Quick verification (30 seconds) - Sync & Async
-- Cloud data processing example - Sync & Async
-- Understanding the differences
+- Quick verification (30 seconds)
+- Cloud data processing example
 
-### Step 4: Choosing Your API Style (5 minutes)
-- When to use synchronous API
-- When to use asynchronous API
-- Performance considerations
+### Step 4: Explore Your Language (5 minutes)
+- Dive into your language-specific SDK docs
+- [Python](../../python/README.md) | [TypeScript](../../typescript/README.md) | [Golang](../../golang/README.md) | [Java](../../java/README.md)
 
-## 🔄 Synchronous vs Asynchronous APIs
+## 🔄 Sync vs Async APIs (Python)
 
-AgentBay provides both synchronous and asynchronous APIs. Here's a quick comparison to help you choose:
+> **Note:** This section applies to the **Python SDK** only. TypeScript uses async/await by default, and Golang/Java use synchronous APIs.
 
-### Synchronous API (Recommended for Beginners)
-
-**Best for:**
-- Learning AgentBay
-- Scripts and automation
-- CLI tools
-- Simple, sequential tasks
-
-**Example:**
-```python
-from agentbay import AgentBay
-
-agent_bay = AgentBay()
-session = agent_bay.create().session
-result = session.command.execute_command("echo 'Hello'")
-print(result.output)
-agent_bay.delete(session)
-```
-
-### Asynchronous API
-
-**Best for:**
-- Web applications (FastAPI, Django async views)
-- High-concurrency scenarios
-- Real-time systems
-- Processing multiple tasks simultaneously
-
-**Example:**
-```python
-import asyncio
-from agentbay import AsyncAgentBay
-
-async def main():
-    agent_bay = AsyncAgentBay()
-    session = (await agent_bay.create()).session
-    result = await session.command.execute_command("echo 'Hello'")
-    print(result.output)
-    await agent_bay.delete(session)
-
-asyncio.run(main())
-```
-
-### Quick Decision Guide
+The Python SDK provides both synchronous (`AgentBay`) and asynchronous (`AsyncAgentBay`) APIs:
 
 | Your Situation | Recommended API |
 |----------------|-----------------|
-| Just learning AgentBay | **Sync** |
-| Building a script or CLI tool | **Sync** |
-| Building a web application | **Async** |
-| Need to handle 100+ concurrent operations | **Async** |
-| Simple automation tasks | **Sync** |
-| Real-time data processing | **Async** |
+| Learning, scripts, CLI tools | **Sync** (`AgentBay`) |
+| Web apps, high concurrency | **Async** (`AsyncAgentBay`) |
 
+**Start with the synchronous API** — it's simpler and all quickstart examples use it. See the [Python SDK docs](../../python/README.md) for async examples.
 
 ## 🚀 Next Steps After Completion
 
@@ -692,19 +610,17 @@ asyncio.run(main())
 
 ## 💡 Tips
 
-- **Start with Sync API** - It's simpler and easier to understand for beginners
-- **Each step includes complete code examples** - Both sync and async versions where applicable
-- **Don't worry if you don't understand everything at first** - Learning takes time
-- **The community is here to help!** - Don't hesitate to ask questions
-- **Try the examples yourself** - Hands-on practice is the best way to learn
+- **Concepts are language-agnostic** — the quickstart uses Python, but the same workflow applies to all SDKs
+- **Each step includes runnable code examples** — try them yourself for the best learning experience
+- **Don't worry if you don't understand everything at first** — learning takes time
+- **The community is here to help!** — don't hesitate to ask questions
 
 ## 📊 Learning Progress Checklist
 
 - [ ] Completed environment setup
 - [ ] Understood basic concepts
-- [ ] Created first session (sync)
-- [ ] Tried async version (optional for beginners)
-- [ ] Understand when to use sync vs async
+- [ ] Created first session
+- [ ] Ran commands and file operations in the cloud
 - [ ] Ready to explore advanced features
 
 **Congratulations!** Once you've completed these steps, you're ready to build amazing applications with AgentBay! 🎉
@@ -866,9 +782,11 @@ require (
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.7
 	github.com/alibabacloud-go/tea v1.3.8
 	github.com/golang/mock v1.6.0
+	github.com/invopop/jsonschema v0.13.0
 	github.com/joho/godotenv v1.5.1
 	github.com/playwright-community/playwright-go v0.5200.1
 	github.com/stretchr/testify v1.8.4
+	golang.org/x/net v0.38.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -878,13 +796,12 @@ require (
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.7 // indirect
 	github.com/aliyun/credentials-go v1.4.5 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
-	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set/v2 v2.7.0 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.5 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
-	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -894,7 +811,6 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
-	golang.org/x/net v0.38.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
@@ -1065,21 +981,21 @@ FILE: python/README.md
 ================================================
 # AgentBay SDK for Python
 
-> Execute commands, operate files, and run code in cloud environments
+> Cloud sandboxes for AI agents — execute commands, operate files, browse the web, automate desktops, test mobile apps, and run code in isolated cloud environments.
 
-## 📦 Installation
-
-```bash
-pip install wuying-agentbay-sdk
-```
-
-## 🚀 Prerequisites
+## ✅ Prerequisites
 
 Before using the SDK, you need to:
 
 1. Register an Alibaba Cloud account: [https://aliyun.com](https://aliyun.com)
 2. Get API credentials: [AgentBay Console](https://agentbay.console.aliyun.com/service-management)
 3. Set environment variable: `export AGENTBAY_API_KEY=your_api_key`
+
+## 📦 Installation
+
+```bash
+pip install wuying-agentbay-sdk
+```
 
 ## 🚀 Quick Start
 
@@ -1223,10 +1139,8 @@ Real-time streaming for mobile agent tasks via WebSocket — receive reasoning s
 
 ```python
 result = session.agent.mobile.execute_task_and_wait(
-    task="Open Settings and check device name",
-    timeout=180,
 
-... [truncated, 6,325 chars remaining] ...
+... [truncated, 6,390 chars remaining] ...
 
 ================================================
 FILE: python/pyproject.toml
@@ -1278,7 +1192,7 @@ pytest-asyncio = "^0.25.0"
 pytest-xdist = "^3.6.1"
 unasync = "^0.6.0"
 setuptools = ">=75,<79"
-black = "^24.0.0"
+black = ">=24,<27"
 flake8 = "^7.0.0"
 mypy = "^1.8.0"
 isort = "^5.10.0"

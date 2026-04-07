@@ -130,6 +130,10 @@ Defines the upload policy for context synchronization
     auto_upload: Enables automatic upload
     upload_strategy: Defines the upload strategy
     upload_mode: Defines the upload mode (UploadMode.FILE or UploadMode.ARCHIVE)
+    archive_exclude_paths: Paths excluded from Archive packaging, stored as individual
+  files (FILE mode). Only applicable when upload_mode=ARCHIVE. Each entry is a
+  relative path prefix (no wildcards). Matching files support Presigned URL
+  direct access.
 
 #### auto_upload: `bool`
 
@@ -147,6 +151,12 @@ upload_strategy = UploadStrategy.UPLOAD_BEFORE_RESOURCE_RELEASE
 
 ```python
 upload_mode = UploadMode.FILE
+```
+
+#### archive_exclude_paths: `List[str]`
+
+```python
+archive_exclude_paths = field(default_factory=list)
 ```
 
 ### default

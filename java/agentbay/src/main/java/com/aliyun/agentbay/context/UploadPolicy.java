@@ -1,6 +1,7 @@
 package com.aliyun.agentbay.context;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -11,12 +12,14 @@ import java.util.Map;
  *     uploadStrategy: Defines the upload strategy
  *     uploadMode: Defines the upload mode (UploadMode.FILE or UploadMode.ARCHIVE)
  *     period: Upload period in seconds (default: 30)
+ *     archiveExcludePaths: When uploadMode is ARCHIVE, paths to upload as individual files
  */
 public class UploadPolicy {
     private boolean autoUpload = true;
     private UploadStrategy uploadStrategy = UploadStrategy.UPLOAD_BEFORE_RESOURCE_RELEASE;
     private UploadMode uploadMode = UploadMode.FILE;
     private Integer period = 30;
+    private List<String> archiveExcludePaths;
 
     public UploadPolicy() {
     }
@@ -71,12 +74,23 @@ public class UploadPolicy {
         this.uploadMode = uploadMode;
     }
 
+    public List<String> getArchiveExcludePaths() {
+        return archiveExcludePaths;
+    }
+
+    public void setArchiveExcludePaths(List<String> archiveExcludePaths) {
+        this.archiveExcludePaths = archiveExcludePaths;
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("autoUpload", autoUpload);
         map.put("uploadStrategy", uploadStrategy != null ? uploadStrategy.getValue() : null);
         map.put("uploadMode", uploadMode != null ? uploadMode.getValue() : null);
         map.put("period", period);
+        if (archiveExcludePaths != null && !archiveExcludePaths.isEmpty()) {
+            map.put("archiveExcludePaths", archiveExcludePaths);
+        }
         return map;
     }
 }

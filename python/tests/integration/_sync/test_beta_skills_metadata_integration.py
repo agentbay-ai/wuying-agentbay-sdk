@@ -5,6 +5,7 @@
 
 This test calls the real backend without mocks.
 """
+# ci-stable
 
 import os
 

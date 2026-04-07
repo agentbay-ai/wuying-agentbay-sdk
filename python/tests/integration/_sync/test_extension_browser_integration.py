@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 Integration test for browser extension functionality using ExtensionsService public API.
 
 This test suite validates:

@@ -29,6 +29,8 @@ def session(agent_bay):
     print("\nCreating session for computer window testing...")
     session_param = CreateSessionParams(image_id="windows_latest")
     result = agent_bay.create(session_param)
+    if ("no authorized app" in result.error_message):
+        pytest.skip("No authorized app")
     assert result.success, f"Failed to create session: {result.error_message}"
     session = result.session
     print(f"Session created with ID: {session.session_id}")
@@ -328,6 +330,8 @@ def test_focus_mode(session):
 def test_screenshot(session):
     """Test screenshot functionality."""
     print("\nTest: Screenshot...")
+    if(session.get_link_url()):
+        pytest.skip("This cloud environment does not support `screenshot()`")
 
     # Take a screenshot
     result = session.computer.screenshot()
