@@ -57,6 +57,7 @@ from ._common.models.response import (
     SessionListResult,
     DeleteResult,
     BoolResult,
+    EnvResult,
     McpToolResult,
     AdbUrlResult,
     McpToolsResult,
@@ -148,6 +149,7 @@ from ._sync.context import (
     ContextService,
 )
 from ._sync.beta_network import SyncBetaNetworkService as BetaNetwork
+from ._sync.env import Env
 from ._sync.code import Code, CodeExecutionResult
 from ._common.models.code import (
     EnhancedCodeExecutionResult,
@@ -173,6 +175,7 @@ from ._async.context_manager import AsyncContextManager
 from ._async.context import AsyncContextService
 from ._async.extension import AsyncExtensionsService
 from ._async.code import AsyncCode
+from ._async.env import AsyncEnv
 from ._async.mobile_simulate import AsyncMobileSimulateService
 from ._async.beta_network import AsyncBetaNetworkService as AsyncBetaNetwork
 
@@ -208,6 +211,7 @@ __all__ = [
     "OSSDownloadResult",
     "ContextManager",
     "AsyncContextManager",
+    "Env",
     "Code",
     "AsyncCode",
     "BetaNetwork",
@@ -291,6 +295,7 @@ __all__ = [
     "SessionListResult",
     "DeleteResult",
     "BoolResult",
+    "EnvResult",
     "McpToolResult",
     "SessionMetrics",
     "SessionMetricsResult",
@@ -326,6 +331,7 @@ __all__ = [
     "ProcessListResult",
     "AppOperationResult",
     "UIElementListResult",
+    "AsyncEnv",
     "AsyncMobileSimulateService",
     "MobileSimulateService",
     "MobileSimulateUploadResult",

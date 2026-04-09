@@ -77,6 +77,9 @@ class TestSessionExtraConfigsIntegration:
         print("Step 2: Creating mobile session with extra configurations...")
         create_result = self.__class__.agent_bay.create(params)
 
+        if(not create_result.success and "no authorized app" in create_result.error_message):
+            pytest.skip(f"The user has no authorized app instance: {create_result.error_message}")
+
         # Verify SessionResult structure
         assert create_result.success, f"Session creation failed: {create_result.error_message}"
         assert create_result.request_id is not None

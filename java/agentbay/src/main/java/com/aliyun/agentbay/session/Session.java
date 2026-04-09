@@ -13,6 +13,7 @@ import com.aliyun.agentbay.model.*;
 import com.aliyun.agentbay.oss.OSS;
 import com.aliyun.agentbay.code.Code;
 import com.aliyun.agentbay.command.Command;
+import com.aliyun.agentbay.env.Env;
 import com.aliyun.agentbay.mcp.McpTool;
 import com.aliyun.agentbay.mcp.McpToolsResult;
 import com.aliyun.agentbay._internal.WsClient;
@@ -42,6 +43,7 @@ public class Session {
     private Computer computer;
     public Mobile mobile;
     private Git git;
+    private Env env;
     private String fileTransferContextId;
     private String resourceUrl;
     private String token;
@@ -75,6 +77,7 @@ public class Session {
         this.computer = new Computer(this);
         this.mobile = new Mobile(this);
         this.git = new Git(this);
+        this.env = new Env(this);
         this.imageId = "";
         this.wsUrl = "";
     }
@@ -924,6 +927,14 @@ public class Session {
         return mobile;
     }
 
+    /**
+     * Get the environment variable service for this session
+     *
+     * @return Env instance
+     */
+    public Env getEnv() {
+        return env;
+    }
 
     /**
      * Get the file transfer context ID for this session

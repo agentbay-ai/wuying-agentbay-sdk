@@ -27,6 +27,8 @@ def session(agent_bay):
     print("\nCreating session for mobile screen testing...")
     session_param = CreateSessionParams(image_id="mobile_latest")
     result = agent_bay.create(session_param)
+    if not result.success and "no authorized app" in result.error_message:
+        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
     assert result.success, f"Failed to create session: {result.error_message}"
     session = result.session
     print(f"Session created with ID: {session.session_id}")

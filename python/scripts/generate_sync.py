@@ -237,6 +237,7 @@ def generate_sync():
         "AsyncAgent": "Agent",
         "AsyncBrowserOperator": "BrowserOperator",
         "AsyncBrowserFingerprintGenerator": "BrowserFingerprintGenerator",
+        "AsyncEnv": "Env",
         "AsyncBaseService": "BaseService",
         "AsyncMobileSimulateService": "MobileSimulateService",
         "AsyncExtensionsService": "ExtensionsService",

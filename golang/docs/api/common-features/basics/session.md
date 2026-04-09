@@ -54,6 +54,8 @@ type Session struct {
 	// Agent for task execution
 	Agent	*agent.Agent
 
+	Env	*env.Env
+
 	// Context management
 	Context	*ContextManager
 }
@@ -65,6 +67,14 @@ Session represents a session in the AgentBay cloud environment.
 MobileUseAgent), we do not provide services for overseas users registered with **alibabacloud.com**.
 
 ### Methods
+
+### AppendMcpTool
+
+```go
+func (s *Session) AppendMcpTool(name, server string)
+```
+
+AppendMcpTool adds an MCP tool entry to the session's tool list.
 
 ### BetaPause
 

@@ -53,6 +53,7 @@ from .code import Code
 from .command import Command
 from .computer import Computer
 from .context_manager import ContextManager
+from .env import Env
 from .filesystem import FileSystem
 from .mobile import Mobile
 from .oss import Oss
@@ -158,6 +159,8 @@ class Session:
         self.browser = Browser(self)
 
         self.agent = Agent(self)
+
+        self.env = Env(self)
 
         # Initialize Git module
         from .git.git import SyncGit

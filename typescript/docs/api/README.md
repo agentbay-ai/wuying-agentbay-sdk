@@ -24,6 +24,7 @@ These documents are generated automatically using TypeDoc. Run `npm run docs:gen
   - context-manager.md
   - context-sync.md
   - context.md
+  - env.md
   - filesystem.md
   - logging.md
   - session-params.md

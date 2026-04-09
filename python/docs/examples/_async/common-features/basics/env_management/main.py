@@ -1,0 +1,65 @@
+"""
+Example: session-scoped environment variables via the Env module.
+
+Demonstrates set, get (all and filtered), overwrite, and shell visibility.
+Requires an image with env MCP tools (see CreateSessionParams.image_id).
+"""
+
+import asyncio
+import os
+
+from agentbay import AsyncAgentBay, CreateSessionParams
+
+
+async def main():
+    api_key = os.environ.get("AGENTBAY_API_KEY")
+    agent_bay = AsyncAgentBay(api_key=api_key)
+    session = None
+    try:
+        params = CreateSessionParams(image_id="imgc-0ab5takivb1ke11hu")
+        result = await agent_bay.create(params)
+        if not result.success or not result.session:
+            raise RuntimeError(f"Failed to create session: {result.error_message}")
+        session = result.session
+        print(f"Session created: {session.session_id}")
+
+        # Set global sandbox env vars (visible to shell, code interpreter, etc.)
+        set_result = await session.env.set({"KEY": "value"})
+        if not set_result.success:
+            raise RuntimeError(f"env.set failed: {set_result.error_message}")
+        print("env.set({'KEY': 'value'}) -> success")
+
+        # Get all variables returned by the sandbox env service
+        all_result = await session.env.get()
+        if not all_result.success:
+            raise RuntimeError(f"env.get() failed: {all_result.error_message}")
+        print(f"env.get() -> KEY={all_result.envs.get('KEY', '<missing>')}")
+
+        # Get specific keys only
+        keys_result = await session.env.get(keys=["KEY"])
+        if not keys_result.success:
+            raise RuntimeError(f"env.get(keys=...) failed: {keys_result.error_message}")
+        print(f"env.get(keys=['KEY']) -> {keys_result.envs}")
+
+        # Overwrite an existing variable
+        await session.env.set({"KEY": "updated"})
+        after_overwrite = await session.env.get(keys=["KEY"])
+        if not after_overwrite.success:
+            raise RuntimeError(f"env.get after overwrite failed: {after_overwrite.error_message}")
+        print(f"After overwrite, KEY={after_overwrite.envs.get('KEY')}")
+
+        # Verify the variable is visible in a new shell command
+        cmd_result = await session.command.execute_command("echo $KEY")
+        if not cmd_result.success:
+            raise RuntimeError(f"execute_command failed: {cmd_result.error_message}")
+        stdout = (cmd_result.stdout or "").strip()
+        print(f"echo $KEY -> stdout: {stdout!r}")
+        if "updated" not in stdout:
+            raise RuntimeError(f"Expected 'updated' in shell output, got: {stdout!r}")
+    finally:
+        if session is not None:
+            await agent_bay.delete(session)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

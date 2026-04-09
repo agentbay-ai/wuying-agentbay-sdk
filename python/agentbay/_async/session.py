@@ -51,6 +51,7 @@ from .code import AsyncCode
 from .command import AsyncCommand
 from .computer import AsyncComputer
 from .context_manager import AsyncContextManager
+from .env import AsyncEnv
 from .filesystem import AsyncFileSystem
 from .mobile import AsyncMobile
 from .oss import AsyncOss
@@ -156,6 +157,8 @@ class AsyncSession:
         self.browser = AsyncBrowser(self)
 
         self.agent = AsyncAgent(self)
+
+        self.env = AsyncEnv(self)
 
         # Initialize Git module
         from .git.git import AsyncGit

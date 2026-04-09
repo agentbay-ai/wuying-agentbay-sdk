@@ -331,6 +331,13 @@ var mappings = []docMapping{
 		IncludeAllTypes: true,
 		IncludeAllFuncs: true,
 	},
+	{
+		Target:          "common-features/basics/env.md",
+		Title:           "Env",
+		PackagePath:     "pkg/agentbay/env",
+		IncludeAllTypes: true,
+		IncludeAllFuncs: true,
+	},
 }
 
 var packageCache = map[string]*packageDoc{}
