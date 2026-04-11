@@ -12,7 +12,7 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay"
 )
 
-const imageID = "imgc-0ab5takivb1ke11hu"
+const imageID = "AIO_ubuntu2404"
 
 func main() {
 	apiKey := os.Getenv("AGENTBAY_API_KEY")

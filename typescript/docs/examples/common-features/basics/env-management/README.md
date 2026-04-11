@@ -19,7 +19,7 @@ npx ts-node docs/examples/common-features/basics/env-management/main.ts
 
 ## Expected output (illustrative)
 
-- Session is created with `imageId` `imgc-0ab5takivb1ke11hu`.
+- Session is created with `imageId` `AIO_ubuntu2404`.
 - Logs for set, get-all, get-by-keys, overwrite, and `echo $DEMO_APP` showing `agentbay`.
 - Session is deleted at the end.
 

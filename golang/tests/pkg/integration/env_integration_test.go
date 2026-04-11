@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay"
 )
 
-const envTestImage = "imgc-0ab5takivb1ke11hu"
+const envTestImage = "AIO_ubuntu2404"
 
 func TestEnvSetAndGet(t *testing.T) {
 	apiKey := os.Getenv("AGENTBAY_API_KEY")

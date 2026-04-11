@@ -11,7 +11,7 @@ import pytest
 from agentbay import AgentBay, CreateSessionParams
 
 
-ENV_TEST_IMAGE = "imgc-0ab5takivb1ke11hu"
+ENV_TEST_IMAGE = "AIO_ubuntu2404"
 
 
 @pytest.fixture

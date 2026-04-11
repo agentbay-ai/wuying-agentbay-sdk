@@ -19,7 +19,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EnvIntegrationTest {
-    private static final String ENV_TEST_IMAGE = "imgc-0ab5takivb1ke11hu";
+    private static final String ENV_TEST_IMAGE = "AIO_ubuntu2404";
     private AgentBay agentBay;
     private Session session;
 

@@ -80,6 +80,7 @@ vendor/
 *.mod
 *.sum
 golang/.cache/
+golang/.gomodcache/
 # Golang compiled binaries
 start_app
 */start_app

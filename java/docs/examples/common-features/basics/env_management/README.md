@@ -23,7 +23,7 @@ javac -cp "target/classes:$(cat target/classpath.txt)" \
 java -cp "target/example-classes:target/classes:$(cat target/classpath.txt)" EnvManagementExample
 ```
 
-The session uses `imageId` `imgc-0ab5takivb1ke11hu`.
+The session uses `imageId` `AIO_ubuntu2404`.
 
 ## Expected output (illustrative)
 

@@ -8,7 +8,7 @@ import pytest_asyncio
 from agentbay import AsyncAgentBay, CreateSessionParams
 
 
-ENV_TEST_IMAGE = "imgc-0ab5takivb1ke11hu"
+ENV_TEST_IMAGE = "AIO_ubuntu2404"
 
 
 @pytest_asyncio.fixture

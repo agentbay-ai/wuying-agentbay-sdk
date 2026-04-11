@@ -3,7 +3,7 @@ import { AgentBay, Session } from "../../src";
 import { getTestApiKey } from "../utils/test-helpers";
 import { log } from "../../src/utils/logger";
 
-const ENV_TEST_IMAGE = "imgc-0ab5takivb1ke11hu";
+const ENV_TEST_IMAGE = "AIO_ubuntu2404";
 
 describe("Env", () => {
   jest.setTimeout(60000);

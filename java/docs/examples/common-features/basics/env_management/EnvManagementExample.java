@@ -20,7 +20,7 @@ import java.util.Map;
  */
 public class EnvManagementExample {
 
-    private static final String IMAGE_ID = "imgc-0ab5takivb1ke11hu";
+    private static final String IMAGE_ID = "AIO_ubuntu2404";
 
     public static void main(String[] args) {
         AgentBay agentBay;
