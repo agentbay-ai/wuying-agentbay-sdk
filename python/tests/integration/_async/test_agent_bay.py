@@ -388,6 +388,210 @@ class TestRecyclePolicy(unittest.IsolatedAsyncioTestCase):
         print("Combined invalid configuration test completed successfully")
 
 
+class TestWhiteListPattern(unittest.IsolatedAsyncioTestCase):
+    """Test cases for WhiteList is_path_regex and is_exclude_regex fields."""
+
+    async def asyncSetUp(self):
+        """Set up test fixtures."""
+        api_key = get_test_api_key()
+        self.agent_bay = AsyncAgentBay(api_key=api_key)
+        self.session = None
+        self.context = None
+
+    async def asyncTearDown(self):
+        """Tear down test fixtures."""
+        if self.session:
+            try:
+                print("Cleaning up session with pattern-based BWList...")
+                delete_result = await self.agent_bay.delete(self.session, sync_context=True)
+                print(
+                    f"Delete Session RequestId: {delete_result.request_id or 'undefined'}"
+                )
+            except Exception as e:
+                print(f"Warning: Error deleting session: {e}")
+        if self.context:
+            context_id_result = await self.agent_bay.context.delete(self.context)
+            self.assertTrue(context_id_result.success)
+            if context_id_result.success:
+                print(f"Deleted context {self.context.id}")
+
+    async def _collect_all_files(self, context_id: str, folder_path: str) -> list:
+        """Recursively collect only FILE entries under folder_path.
+
+        folder_path is a local-style Windows path (e.g. C:\\Users\\Administrator\\testdata\\project-alpha).
+        list_files accepts this path and returns entries whose file_path is an OSS-style path.
+        For FOLDER entries: extract the last segment from entry.file_path and
+          build the next local path = folder_path + "\\" + last_segment, then recurse.
+        For FILE entries: extract the last segment (file name) and store it.
+        Returns a flat list of file name strings collected under folder_path.
+        """
+        result = await self.agent_bay.context.list_files(
+            context_id=context_id,
+            parent_folder_path=folder_path,
+            page_size=200,
+        )
+        if not result.success or not result.entries:
+            return []
+        file_paths = []
+        for entry in result.entries:
+            ftype = (entry.file_type or "").upper()
+            # Extract the last segment from the OSS path
+            last_segment = entry.file_path.rstrip("/").rsplit("/", 1)[-1]
+            if ftype in ("FOLDER", "DIR", "DIRECTORY"):
+                # Build local sub-path and recurse
+                sub_path = folder_path.rstrip("\\") + "\\" + last_segment
+                file_paths.extend(
+                    await self._collect_all_files(context_id, sub_path)
+                )
+            else:
+                # FILE: store the file name
+                file_paths.append(last_segment)
+        return file_paths
+
+    @pytest.mark.asyncio
+    async def test_create_session_with_pattern_bwlist(self):
+        """Test ContextSync BWList with is_path_regex=True and is_exclude_regex=True.
+
+        Single-session strategy:
+          1. Create session WITH BWList configured (upload filter).
+          2. Write test files onto the session's local FS.
+          3. delete(sync_context=True) triggers upload; BWList filters which files go to OSS.
+          4. Poll context.list_files("") to find the OSS root FOLDER.
+          5. Recursively collect all FILE entries from OSS root.
+          6. Assert expected files present, excluded files absent.
+
+        File structure:
+            testdata/project-alpha/main.py
+            testdata/project-alpha/README.txt
+            testdata/project-beta/config.json
+            testdata/project-beta/cache/temp.log  <- excluded by exclude_paths regex
+
+        BWList (upload filter):
+            path=r"project-.*"  (is_path_regex=True)
+            exclude_paths=[r"cache.*"]  (is_exclude_regex=True)
+
+        Expected in OSS:
+            PRESENT:  project-alpha/main.py, project-alpha/README.txt, project-beta/config.json
+            ABSENT:   project-beta/cache/temp.log
+        """
+        import asyncio as _asyncio
+        import time as _time
+
+        print("Testing BWList is_path_regex + is_exclude_regex via single-session strategy...")
+
+        base = "C:\\Users\\Administrator\\testdata"
+
+        # ── Create context ────────────────────────────────────────────────────────────
+        context_name = f"bwlist-ctx-{int(_time.time())}"
+        context_result = await self.agent_bay.context.get(context_name, create=True)
+        if not context_result.success or not context_result.context:
+            self.skipTest(
+                f"Skipping: Failed to get/create context: {getattr(context_result, 'error_message', '')}"
+            )
+        self.context = context_result.context
+        self.context_id = self.context.id
+        print(f"Context ID: {self.context_id}")
+
+        # ── Create session WITH BWList ─────────────────────────────────────────────
+        sync_policy = SyncPolicy(
+            upload_policy=UploadPolicy.default(),
+            download_policy=DownloadPolicy.default(),
+            delete_policy=DeletePolicy.default(),
+            extract_policy=ExtractPolicy.default(),
+            recycle_policy=RecyclePolicy.default(),
+            bw_list=BWList(white_lists=[
+                WhiteList(
+                    path=r"project-.*",
+                    is_path_regex=True,
+                    exclude_paths=[r"cache.*"],
+                    is_exclude_regex=True,
+                )
+            ]),
+        )
+        context_sync = ContextSync(context_id=self.context_id, path=base, policy=sync_policy)
+        params = CreateSessionParams(
+            image_id="imgc-0ae8jv3fd5yuss7ky",
+            labels={"test": "patternBWList"},
+            context_syncs=[context_sync],
+        )
+        create_result = await self.agent_bay.create(params)
+        self.assertTrue(create_result.success, f"Session creation failed: {create_result.error_message}")
+        self.session = create_result.session
+        print(f"Session ID: {self.session.session_id}")
+
+        # ── Write test files onto local FS ────────────────────────────────────────────
+        fs = self.session.file_system
+        for d in [base, f"{base}\\project-alpha", f"{base}\\project-beta", f"{base}\\project-beta\\cache"]:
+            r = await fs.create_directory(d)
+            print(f"  mkdir {d}: {'OK' if r.success else r.error_message}")
+
+        test_files = [
+            (f"{base}\\project-alpha\\main.py",       "# main entry point\nprint('hello')\n"),
+            (f"{base}\\project-alpha\\README.txt",     "Project Alpha README\n"),
+            (f"{base}\\project-beta\\config.json",     '{"env": "test"}\n'),
+            (f"{base}\\project-beta\\cache\\temp.log", "temporary log\n"),
+        ]
+        for fpath, content in test_files:
+            r = await fs.write_file(fpath, content)
+            print(f"  write {fpath}: {'OK' if r.success else r.error_message}")
+
+        # ── delete(sync_context=True) – triggers upload with BWList filter ────────────
+        print("  Deleting session with sync_context=True (BWList upload filter applied)...")
+        del_result = await self.agent_bay.delete(self.session, sync_context=True)
+        self.assertTrue(del_result.success, f"Session delete failed: {del_result.error_message}")
+        self.session = None
+        print("  Session deleted. Filtered upload triggered.")
+
+        # ── list_files(base) – one call, traverse entries directly ──────────────────
+        # For FOLDER entries: extract the last path segment (sub-dir name),
+        #   build absolute local path = base + "\\", + sub-dir name, then recurse.
+        # For FILE entries: store file_path directly.
+        print("\n=== Verifying OSS content via context.list_files ===")
+        probe = await self.agent_bay.context.list_files(
+            context_id=self.context_id, parent_folder_path=base, page_size=200
+        )
+        entry_count = len(probe.entries) if probe.entries else 0
+        print(f"  list_files({base!r}) -> success={probe.success}, entries={entry_count}")
+
+        all_files: list = []
+        if probe.entries:
+            for e in probe.entries:
+                ftype = (e.file_type or "").upper()
+                # Extract the last segment from OSS path as sub-dir/file name
+                last_segment = e.file_path.rstrip("/").rsplit("/", 1)[-1]
+                print(f"    [{ftype}] {e.file_path!r}  -> last_segment={last_segment!r}")
+                if ftype in ("FOLDER", "DIR", "DIRECTORY"):
+                    # Build local-style absolute path and recurse
+                    sub_path = base.rstrip("\\") + "\\" + last_segment
+                    print(f"      Recursing into {sub_path!r}...")
+                    sub_files = await self._collect_all_files(self.context_id, sub_path)
+                    all_files.extend(sub_files)
+                else:
+                    # FILE: store directly
+                    all_files.append(e.file_path)
+        else:
+            print("  WARNING: No entries found in OSS.")
+
+        print(f"  Collected {len(all_files)} file(s) total")
+        print(f"\n  === All files in OSS ({len(all_files)} total) ===")
+        self.assertEqual(len(all_files), 3)
+        for p in all_files:
+            print(f"    {p}")
+
+        # ── Assertions ──────────────────────────────────────────────────────────────
+        for name in ["main.py", "README.txt", "config.json"]:
+            found = any(name in p for p in all_files)
+            print(f"  {'FOUND' if found else 'NOT FOUND'}: {name}")
+            self.assertTrue(found, f"Expected '{name}' in OSS after BWList upload filter, not found in: {all_files}")
+        print("\u2705 Expected files present in OSS")
+
+        for name in ["temp.log"]:
+            found = any(name in p for p in all_files)
+            print(f"  {'FOUND (should be absent!)' if found else 'correctly absent'}: {name}")
+            self.assertFalse(found, f"Expected '{name}' ABSENT (excluded by BWList), but found in: {all_files}")
+        print("\u2705 Excluded files correctly absent from OSS")
+        print("BWList with is_path_regex + is_exclude_regex verified successfully")
+
 class TestBrowserContext(unittest.IsolatedAsyncioTestCase):
     """Test cases for BrowserContext functionality."""
 
@@ -563,6 +767,7 @@ class TestSessionPauseResume(unittest.IsolatedAsyncioTestCase):
         print("✓ Session resumed successfully")
         
         print("\n=== Pause/Resume test completed successfully ===")
+        
 
 if __name__ == "__main__":
     unittest.main()

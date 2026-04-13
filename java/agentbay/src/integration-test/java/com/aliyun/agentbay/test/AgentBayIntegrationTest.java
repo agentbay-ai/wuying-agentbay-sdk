@@ -11,9 +11,30 @@ import com.aliyun.agentbay.model.FileContentResult;
 import com.aliyun.agentbay.model.SessionResult;
 import com.aliyun.agentbay.session.CreateSessionParams;
 import com.aliyun.agentbay.session.Session;
+import com.aliyun.agentbay.context.BWList;
+import com.aliyun.agentbay.context.Context;
+import com.aliyun.agentbay.context.ContextFileListResult;
+import com.aliyun.agentbay.context.ContextResult;
+import com.aliyun.agentbay.context.ContextSync;
+import com.aliyun.agentbay.context.DeletePolicy;
+import com.aliyun.agentbay.context.DownloadPolicy;
+import com.aliyun.agentbay.context.ExtractPolicy;
+import com.aliyun.agentbay.context.FileInfo;
+import com.aliyun.agentbay.context.RecyclePolicy;
+import com.aliyun.agentbay.context.SyncPolicy;
+import com.aliyun.agentbay.context.UploadPolicy;
+import com.aliyun.agentbay.context.WhiteList;
+import com.aliyun.agentbay.model.BoolResult;
 import org.junit.*;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -248,6 +269,212 @@ public class AgentBayIntegrationTest {
             } else {
                 System.out.println("Note: FileSystem interface is null, skipping file test");
             }
+        }
+    }
+
+    /**
+     * Test cases for WhiteList is_path_regex and is_exclude_regex fields.
+     * Equivalent to TestWhiteListPattern in Python SDK test_agent_bay.py.
+     */
+    public static class TestWhiteListPattern {
+        private AgentBay agentBay;
+        private Session session;
+        private Context bwlistContext;
+
+        @Before
+        public void setUp() throws AgentBayException {
+            String apiKey = getTestApiKey();
+            agentBay = new AgentBay(apiKey);
+            session = null;
+            bwlistContext = null;
+        }
+
+        @After
+        public void tearDown() {
+            if (session != null) {
+                try {
+                    System.out.println("Cleaning up session with pattern-based BWList...");
+                    DeleteResult deleteResult = agentBay.delete(session, true);
+                    System.out.println("Delete Session RequestId: " + deleteResult.getRequestId());
+                } catch (Exception e) {
+                    System.out.println("Warning: Error deleting session: " + e.getMessage());
+                }
+            }
+            if (bwlistContext != null) {
+                try {
+                    com.aliyun.agentbay.model.OperationResult ctxDel = agentBay.getContext().delete(bwlistContext);
+                    System.out.println("Deleted context " + bwlistContext.getContextId() + ": " + ctxDel.isSuccess());
+                } catch (Exception e) {
+                    System.out.println("Warning: Error deleting context: " + e.getMessage());
+                }
+            }
+        }
+        
+        private List<String> collectAllFiles(String contextId, String folderPath) {
+            // Recursively collect FILE entry names under folderPath.
+            // folderPath is a Windows local path; list_files returns OSS-style paths.
+            // For FOLDER entries: extract last segment, build sub-path, recurse.
+            // For FILE entries: extract last segment (file name) and store it.
+            ContextFileListResult result = agentBay.getContext().listFiles(contextId, folderPath, 1, 200);
+            if (!result.isSuccess() || result.getEntries() == null || result.getEntries().isEmpty()) {
+                return new java.util.ArrayList<>();
+            }
+            List<String> fileNames = new java.util.ArrayList<>();
+            for (FileInfo entry : result.getEntries()) {
+                String ftype = entry.getFileType() != null ? entry.getFileType().toUpperCase() : "";
+                // Extract the last segment from the OSS path
+                String filePath = entry.getFilePath();
+                String lastSegment = filePath.replaceAll("/$", "");
+                int slashIdx = lastSegment.lastIndexOf('/');
+                if (slashIdx >= 0) lastSegment = lastSegment.substring(slashIdx + 1);
+                if (ftype.equals("FOLDER") || ftype.equals("DIR") || ftype.equals("DIRECTORY")) {
+                    // Build Windows local sub-path and recurse
+                    String subPath = folderPath.replaceAll("\\\\$", "") + "\\" + lastSegment;
+                    fileNames.addAll(collectAllFiles(contextId, subPath));
+                } else {
+                    fileNames.add(lastSegment);
+                }
+            }
+            return fileNames;
+        }
+
+        @Test
+        public void testCreateSessionWithPatternBwlist() throws AgentBayException, InterruptedException {
+            System.out.println("Testing BWList is_path_regex + is_exclude_regex via single-session strategy...");
+
+            String base = "C:\\Users\\Administrator\\testdata";
+
+            // Create context
+            String contextName = "bwlist-ctx-" + System.currentTimeMillis();
+            ContextResult contextResult = agentBay.getContext().get(contextName, true);
+            assertTrue("Failed to get/create context: " + contextResult.getErrorMessage(),
+                    contextResult.isSuccess() && contextResult.getContext() != null);
+            bwlistContext = contextResult.getContext();
+            String contextId = bwlistContext.getId();
+            System.out.println("Context ID: " + contextId);
+
+            // Create session WITH BWList
+            // path="project-.*" (isPathRegex=true): match sub-dirs starting with "project-"
+            // excludePaths=["cache.*"] (isExcludeRegex=true): exclude sub-dirs matching "cache.*"
+            WhiteList whiteList = new WhiteList(
+                    "project-.*",                          // regex matching project-alpha, project-beta
+                    Collections.singletonList("cache.*"),  // exclude sub-dirs matching cache.*
+                    true,                                  // isPathRegex=true
+                    true                                   // isExcludeRegex=true
+            );
+            BWList bwList = new BWList(Collections.singletonList(whiteList));
+            SyncPolicy syncPolicy = new SyncPolicy(
+                    UploadPolicy.defaultPolicy(),
+                    DownloadPolicy.defaultPolicy(),
+                    DeletePolicy.defaultPolicy(),
+                    ExtractPolicy.defaultPolicy(),
+                    RecyclePolicy.defaultPolicy(),
+                    bwList
+            );
+
+            ContextSync contextSync = new ContextSync(contextId, base, syncPolicy);
+            System.out.println("SyncPolicy bwList: " + bwList.toMap());
+
+            Map<String, String> labels = new HashMap<>();
+            labels.put("test", "patternBWList");
+            CreateSessionParams params = new CreateSessionParams();
+            params.setImageId("imgc-0ae8jv3fd5yuss7ky");
+            params.setLabels(labels);
+            params.setContextSyncs(Collections.singletonList(contextSync));
+
+            SessionResult createResult = agentBay.create(params);
+            assertTrue("Session creation failed: " + createResult.getErrorMessage(), createResult.isSuccess());
+            assertNotNull(createResult.getSession());
+            session = createResult.getSession();
+            System.out.println("Session ID: " + session.getSessionId());
+
+            // Write test files onto local FS
+            com.aliyun.agentbay.filesystem.FileSystem fs = session.getFileSystem();
+            String[] dirs = {
+                base,
+                base + "\\project-alpha",
+                base + "\\project-beta",
+                base + "\\project-beta\\cache"
+            };
+            for (String dir : dirs) {
+                try {
+                    BoolResult r = fs.createDirectory(dir);
+                    System.out.println("  mkdir " + dir + ": " + (r.isSuccess() ? "OK" : r.getErrorMessage()));
+                } catch (Exception e) {
+                    System.out.println("  mkdir " + dir + " failed: " + e.getMessage());
+                }
+            }
+            String[][] testFiles = {
+                {base + "\\project-alpha\\main.py",       "# main entry point\nprint('hello')\n"},
+                {base + "\\project-alpha\\README.txt",    "Project Alpha README\n"},
+                {base + "\\project-beta\\config.json",    "{\"env\": \"test\"}\n"},
+                {base + "\\project-beta\\cache\\temp.log", "temporary log\n"},
+            };
+            for (String[] fileEntry : testFiles) {
+                try {
+                    BoolResult r = fs.writeFile(fileEntry[0], fileEntry[1]);
+                    System.out.println("  write " + fileEntry[0] + ": " + (r.isSuccess() ? "OK" : r.getErrorMessage()));
+                } catch (Exception e) {
+                    System.out.println("  write " + fileEntry[0] + " failed: " + e.getMessage());
+                }
+            }
+
+            // delete(sync_context=true) triggers upload with BWList filter
+            System.out.println("  Deleting session with sync_context=true (BWList upload filter applied)...");
+            DeleteResult deleteResult = agentBay.delete(session, true);
+            assertTrue("Session delete failed: " + deleteResult.getErrorMessage(), deleteResult.isSuccess());
+            session = null; // Already deleted, avoid double deletion in tearDown
+            System.out.println("  Session deleted. Filtered upload triggered.");
+
+            // list_files(base) – one call, traverse entries directly
+            System.out.println("\n=== Verifying OSS content via context.listFiles ===");
+            ContextFileListResult probe = agentBay.getContext().listFiles(contextId, base, 1, 200);
+            int entryCount = probe.getEntries() != null ? probe.getEntries().size() : 0;
+            System.out.println("  listFiles(" + base + ") -> success=" + probe.isSuccess() + ", entries=" + entryCount);
+
+            List<String> allFiles = new java.util.ArrayList<>();
+            if (probe.getEntries() != null && !probe.getEntries().isEmpty()) {
+                for (FileInfo e : probe.getEntries()) {
+                    String ftype = e.getFileType() != null ? e.getFileType().toUpperCase() : "";
+                    String fp = e.getFilePath().replaceAll("/$", "");
+                    int idx = fp.lastIndexOf('/');
+                    String lastSeg = idx >= 0 ? fp.substring(idx + 1) : fp;
+                    System.out.println("    [" + ftype + "] " + e.getFilePath() + "  -> lastSegment=" + lastSeg);
+                    if (ftype.equals("FOLDER") || ftype.equals("DIR") || ftype.equals("DIRECTORY")) {
+                        String subPath = base.replaceAll("\\\\$", "") + "\\" + lastSeg;
+                        System.out.println("      Recursing into " + subPath + "...");
+                        allFiles.addAll(collectAllFiles(contextId, subPath));
+                    } else {
+                        allFiles.add(e.getFilePath());
+                    }
+                }
+            } else {
+                System.out.println("  WARNING: No entries found in OSS.");
+            }
+
+            System.out.println("  Collected " + allFiles.size() + " file(s) total");
+            System.out.println("\n  === All files in OSS (" + allFiles.size() + " total) ===");
+            assertEquals("Expected exactly 3 files in OSS", 3, allFiles.size());
+            for (String p : allFiles) {
+                System.out.println("    " + p);
+            }
+
+            // Files that SHOULD be present
+            for (String name : Arrays.asList("main.py", "README.txt", "config.json")) {
+                boolean found = allFiles.stream().anyMatch(p -> p.contains(name));
+                System.out.println("  " + (found ? "FOUND" : "NOT FOUND") + ": " + name);
+                assertTrue("Expected '" + name + "' in OSS after BWList upload filter, not found in: " + allFiles, found);
+            }
+            System.out.println("\u2705 Expected files present in OSS");
+
+            // Files that SHOULD be absent (excluded by cache.* regex)
+            for (String name : Collections.singletonList("temp.log")) {
+                boolean found = allFiles.stream().anyMatch(p -> p.contains(name));
+                System.out.println("  " + (found ? "FOUND (should be absent!)" : "correctly absent") + ": " + name);
+                assertFalse("Expected '" + name + "' ABSENT (excluded by BWList), but found in: " + allFiles, found);
+            }
+            System.out.println("\u2705 Excluded files correctly absent from OSS");
+            System.out.println("BWList with isPathRegex + isExcludeRegex verified successfully");
         }
     }
 

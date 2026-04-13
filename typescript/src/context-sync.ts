@@ -95,9 +95,17 @@ export class ExtractPolicyClass implements ExtractPolicy {
 }
 
 // WhiteList defines the white list configuration
+// When isPathRegex is false (default), path must be an exact absolute directory path
+// and wildcard characters are not allowed.
+// When isPathRegex is true, path is treated as a regex pattern (e.g. "/home/wuying/.*").
+// When isExcludeRegex is false (default), excludePaths entries must be exact paths
+// and wildcard characters are not allowed.
+// When isExcludeRegex is true, excludePaths entries are treated as regex patterns.
 export interface WhiteList {
   path: string;
   excludePaths?: string[];
+  isPathRegex?: boolean;
+  isExcludeRegex?: boolean;
 }
 
 export class WhiteListValidator {
@@ -106,19 +114,21 @@ export class WhiteListValidator {
   }
 
   static validate(whitelist: WhiteList): void {
-    if (this.containsWildcard(whitelist.path)) {
+    // Only validate wildcard when isPathRegex is false (default)
+    if (!whitelist.isPathRegex && this.containsWildcard(whitelist.path)) {
       throw new Error(
-        `Wildcard patterns are not supported in path. Got: ${whitelist.path}. ` +
-          "Please use exact directory paths instead."
+        `Wildcard patterns are not supported in path when isPathRegex=false. Got: ${whitelist.path}. ` +
+          "Please use exact directory paths or set isPathRegex=true for regex matching."
       );
     }
 
-    if (whitelist.excludePaths) {
+    // Only validate wildcards in excludePaths when isExcludeRegex is false (default)
+    if (!whitelist.isExcludeRegex && whitelist.excludePaths) {
       for (const excludePath of whitelist.excludePaths) {
         if (this.containsWildcard(excludePath)) {
           throw new Error(
-            `Wildcard patterns are not supported in exclude_paths. Got: ${excludePath}. ` +
-              "Please use exact directory paths instead."
+            `Wildcard patterns are not supported in excludePaths when isExcludeRegex=false. Got: ${excludePath}. ` +
+              "Please use exact directory paths or set isExcludeRegex=true for regex matching."
           );
         }
       }

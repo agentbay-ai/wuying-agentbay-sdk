@@ -199,11 +199,23 @@ func (rp *RecyclePolicy) Validate() error {
 }
 
 // WhiteList defines the white list configuration
+//
+// When IsPathRegex is false (default), Path must be an exact absolute directory path
+// and wildcard characters (* ? [ ]) are not allowed.
+// When IsPathRegex is true, Path is treated as a regex pattern (e.g. "/home/wuying/.*").
+//
+// When IsExcludeRegex is false (default), ExcludePaths entries must be exact paths
+// and wildcard characters are not allowed.
+// When IsExcludeRegex is true, ExcludePaths entries are treated as regex patterns.
 type WhiteList struct {
 	// Path is the path to include in the white list
 	Path string `json:"path"`
 	// ExcludePaths are the paths to exclude from the white list
 	ExcludePaths []string `json:"excludePaths,omitempty"`
+	// IsPathRegex indicates whether Path is a regex pattern (default: false)
+	IsPathRegex bool `json:"isPathRegex"`
+	// IsExcludeRegex indicates whether ExcludePaths entries are regex patterns (default: false)
+	IsExcludeRegex bool `json:"isExcludeRegex"`
 }
 
 var wildcardPattern = regexp.MustCompile(`[*?\[\]]`)
@@ -212,20 +224,27 @@ func containsWildcard(path string) bool {
 	return wildcardPattern.MatchString(path)
 }
 
+// Validate validates the WhiteList configuration.
+// When IsPathRegex is false, Path must not contain wildcard characters.
+// When IsExcludeRegex is false, each ExcludePaths entry must not contain wildcard characters.
 func (wl *WhiteList) Validate() error {
-	if containsWildcard(wl.Path) {
+	if !wl.IsPathRegex && containsWildcard(wl.Path) {
 		return fmt.Errorf(
-			"wildcard patterns are not supported in path. Got: %s. Please use exact directory paths instead",
+			"wildcard patterns are not supported in path when IsPathRegex=false. Got: %s. "+
+				"Please use exact directory paths or set IsPathRegex=true for regex matching",
 			wl.Path,
 		)
 	}
 
-	for _, excludePath := range wl.ExcludePaths {
-		if containsWildcard(excludePath) {
-			return fmt.Errorf(
-				"wildcard patterns are not supported in exclude_paths. Got: %s. Please use exact directory paths instead",
-				excludePath,
-			)
+	if !wl.IsExcludeRegex {
+		for _, excludePath := range wl.ExcludePaths {
+			if containsWildcard(excludePath) {
+				return fmt.Errorf(
+					"wildcard patterns are not supported in excludePaths when IsExcludeRegex=false. Got: %s. "+
+						"Please use exact directory paths or set IsExcludeRegex=true for regex matching",
+					excludePath,
+				)
+			}
 		}
 	}
 

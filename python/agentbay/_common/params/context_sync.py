@@ -258,26 +258,40 @@ class WhiteList:
     Defines the white list configuration
 
     Attributes:
-        path: Path to include in the white list
-        exclude_paths: Paths to exclude from the white list
+        path: Path to include in the white list.
+            When is_path_regex is False (default), this must be an exact absolute directory path
+            and wildcard characters are not allowed.
+            When is_path_regex is True, this is treated as a regex pattern (e.g. "/home/wuying/.*").
+        exclude_paths: Paths to exclude from the white list.
+            When is_exclude_regex is False (default), these must be exact absolute directory paths
+            and wildcard characters are not allowed.
+            When is_exclude_regex is True, these are treated as regex patterns.
+        is_path_regex: If True, path is interpreted as a regex pattern.
+            If False (default), path is an absolute directory path.
+        is_exclude_regex: If True, exclude_paths entries are interpreted as regex patterns.
+            If False (default), exclude_paths entries are absolute directory paths.
     """
 
     path: str = ""
     exclude_paths: List[str] = field(default_factory=list)
+    is_path_regex: bool = False
+    is_exclude_regex: bool = False
 
     def __post_init__(self):
-        """Validate that paths don't contain wildcard patterns"""
-        if self._contains_wildcard(self.path):
+        """Validate that non-regex paths don't contain wildcard patterns"""
+        if not self.is_path_regex and self._contains_wildcard(self.path):
             raise ValueError(
-                f"Wildcard patterns are not supported in path. Got: {self.path}. "
-                "Please use exact directory paths instead."
+                f"Wildcard patterns are not supported in path when is_path_regex=False. Got: {self.path}. "
+                "Please use exact directory paths or set is_path_regex=True for regex matching."
             )
-        for exclude_path in self.exclude_paths:
-            if self._contains_wildcard(exclude_path):
-                raise ValueError(
-                    f"Wildcard patterns are not supported in exclude_paths. Got: {exclude_path}. "
-                    "Please use exact directory paths instead."
-                )
+        if not self.is_exclude_regex:
+            for exclude_path in self.exclude_paths:
+                if self._contains_wildcard(exclude_path):
+                    raise ValueError(
+                        f"Wildcard patterns are not supported in exclude_paths when is_exclude_regex=False. "
+                        f"Got: {exclude_path}. "
+                        "Please use exact directory paths or set is_exclude_regex=True for regex matching."
+                    )
 
     @staticmethod
     def _contains_wildcard(path: str) -> bool:
@@ -289,10 +303,18 @@ class WhiteList:
         return self.__class__(
             path=self.path,
             exclude_paths=copy.deepcopy(self.exclude_paths, memo),
+            is_path_regex=self.is_path_regex,
+            is_exclude_regex=self.is_exclude_regex,
         )
 
     def __dict__(self):
-        return {"path": self.path, "excludePaths": self.exclude_paths}
+        result = {
+            "path": self.path,
+            "excludePaths": self.exclude_paths,
+            "isPathRegex": self.is_path_regex,
+            "isExcludeRegex": self.is_exclude_regex,
+        }
+        return result
 
 
 @dataclass

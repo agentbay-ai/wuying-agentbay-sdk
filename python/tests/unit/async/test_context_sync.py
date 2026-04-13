@@ -80,6 +80,8 @@ class TestAsyncSyncPolicy(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(sync_policy.bw_list.white_lists), 1)
         self.assertEqual(sync_policy.bw_list.white_lists[0].path, "")
         self.assertEqual(sync_policy.bw_list.white_lists[0].exclude_paths, [])
+        self.assertEqual(sync_policy.bw_list.white_lists[0].is_path_regex, False)
+        self.assertEqual(sync_policy.bw_list.white_lists[0].is_exclude_regex, False)
 
     @pytest.mark.asyncio
 
@@ -109,6 +111,75 @@ class TestAsyncSyncPolicy(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(sync_policy.bw_list.white_lists), 1)
         self.assertEqual(sync_policy.bw_list.white_lists[0].path, "/test")
         self.assertEqual(sync_policy.bw_list.white_lists[0].exclude_paths, ["/exclude"])
+
+    @pytest.mark.asyncio
+    async def test_whitelist_regex_path_and_exclude(self):
+        """Test WhiteList with is_path_regex=True and is_exclude_regex=True (combined regex mode)."""
+        # ── Construction: both regex flags enabled ────────────────────────────
+        white_list = WhiteList(
+            path=r"project-.*",
+            is_path_regex=True,
+            exclude_paths=[r"cache.*", "下载.*"],
+            is_exclude_regex=True,
+        )
+        self.assertEqual(white_list.path, r"project-.*")
+        self.assertTrue(white_list.is_path_regex)
+        self.assertEqual(white_list.exclude_paths, [r"cache.*", "下载.*"])
+        self.assertTrue(white_list.is_exclude_regex)
+
+        # ── Serialization ────────────────────────────────────────────────────
+        result = white_list.__dict__()
+        self.assertEqual(result["path"], r"project-.*")
+        self.assertTrue(result["isPathRegex"])
+        self.assertEqual(result["excludePaths"], [r"cache.*", "下载.*"])
+        self.assertTrue(result["isExcludeRegex"])
+
+        # ── Wildcard in regex path is allowed ─────────────────────────────────
+        wl_with_wildcard_path = WhiteList(path=r"/home/wuying/.*", is_path_regex=True)
+        self.assertEqual(wl_with_wildcard_path.path, r"/home/wuying/.*")
+
+        # ── Wildcard in regex exclude_paths is allowed ────────────────────────
+        wl_with_wildcard_exclude = WhiteList(
+            path="/home/wuying",
+            exclude_paths=[r"record.*"],
+            is_exclude_regex=True,
+        )
+        self.assertEqual(wl_with_wildcard_exclude.exclude_paths, [r"record.*"])
+
+        # ── Wildcard in path raises when is_path_regex=False ──────────────────
+        with self.assertRaises(ValueError) as ctx:
+            WhiteList(path="/home/wuying/*", is_path_regex=False)
+        self.assertIn("is_path_regex=False", str(ctx.exception))
+
+        # ── Wildcard in exclude_paths raises when is_exclude_regex=False ──────
+        with self.assertRaises(ValueError) as ctx:
+            WhiteList(path="/home/wuying", exclude_paths=["/invalid/*"], is_exclude_regex=False)
+        self.assertIn("is_exclude_regex=False", str(ctx.exception))
+
+        # ── Integration in SyncPolicy ─────────────────────────────────────────
+        sync_policy = SyncPolicy(
+            bw_list=BWList(white_lists=[
+                WhiteList(
+                    path=r"project-.*",
+                    is_path_regex=True,
+                    exclude_paths=[r"cache.*"],
+                    is_exclude_regex=True,
+                )
+            ])
+        )
+        wl = sync_policy.bw_list.white_lists[0]
+        self.assertEqual(wl.path, r"project-.*")
+        self.assertTrue(wl.is_path_regex)
+        self.assertEqual(wl.exclude_paths, [r"cache.*"])
+        self.assertTrue(wl.is_exclude_regex)
+
+        policy_dict = sync_policy.__dict__()
+        wl_dict = policy_dict["bwList"]["whiteLists"][0]
+        self.assertEqual(wl_dict["path"], r"project-.*")
+        self.assertTrue(wl_dict["isPathRegex"])
+        self.assertEqual(wl_dict["excludePaths"], [r"cache.*"])
+        self.assertTrue(wl_dict["isExcludeRegex"])
+
 
     @pytest.mark.asyncio
 

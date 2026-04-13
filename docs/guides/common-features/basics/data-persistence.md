@@ -1077,10 +1077,9 @@ policy = SyncPolicy(
     bw_list=BWList(
         white_lists=[
             WhiteList(
-                path="/src",  # No wildcards like *.json or /src/*
-                exclude_paths=["/node_modules"]  # Exact path, not patterns like *.log
+                path="/src",
+                exclude_paths=["/node_modules"]
             ),
-            WhiteList(path="/config")
         ]
     )
 )
@@ -1103,7 +1102,65 @@ context_sync = ContextSync.new(context.id, "/home/wuying", policy)
 - `path` in WhiteList is **relative to the context mount point**
 - `exclude_paths` are **relative to the whitelist path**
 - Example: If mounted at `/home/wuying`, then `path="/src"` refers to `/home/wuying/src`
-- Wildcard patterns (e.g., `*.json`, `/data/*`) are not supported
+- By default, wildcard patterns (e.g., `*.json`, `/data/*`) are **not** supported
+
+#### Regex Support in WhiteList (is_path_regex / is_exclude_regex)
+
+`WhiteList` supports two optional boolean flags that switch `path` and `exclude_paths` from exact-match mode to **regex pattern** mode:
+
+| Field | Default | Behaviour when `False` | Behaviour when `True` |
+|-------|---------|------------------------|-----------------------|
+| `is_path_regex` | `False` | `path` must be an exact directory path; wildcards raise an error | `path` is interpreted as a regex pattern (e.g. `/home/wuying/.*`) |
+| `is_exclude_regex` | `False` | each entry in `exclude_paths` must be an exact path; wildcards raise an error | each entry in `exclude_paths` is interpreted as a regex pattern |
+
+**Example – combining regex path with regex exclude patterns:**
+
+```python
+from agentbay import BWList, WhiteList, SyncPolicy, UploadPolicy, DownloadPolicy
+from agentbay import RecyclePolicy, ExtractPolicy, DeletePolicy
+
+sync_policy = SyncPolicy(
+    upload_policy=UploadPolicy.default(),
+    download_policy=DownloadPolicy.default(),
+    delete_policy=DeletePolicy.default(),
+    extract_policy=ExtractPolicy.default(),
+    recycle_policy=RecyclePolicy.default(),
+    bw_list=BWList(white_lists=[
+        WhiteList(
+            path=r"project-.*",      # matches any sub-dir starting with "project-" (e.g. project-alpha, project-beta)
+            is_path_regex=True,       # path is a regex pattern
+            exclude_paths=[
+                r"record.*",          # exclude sub-dirs matching "record.*" under each matched project dir
+                r"downloads.*",          # exclude sub-dirs matching "downloads.*" under each matched project dir
+            ],
+            is_exclude_regex=True,    # treat exclude_paths entries as regex patterns
+        )
+    ]),
+)
+
+# Mount the parent directory so the whitelist path resolves correctly:
+# is_path_regex=True + path=r"project-.*" → only sub-dirs matching "project-.*" are included
+# is_exclude_regex=True + exclude_paths=["record.*","下载.*"] → sub-dirs matching
+#   these patterns under each matched project dir are excluded
+context_sync = ContextSync.new(context.id, "/home/wuying", sync_policy)
+```
+
+> **Note:** `exclude_paths` entries are matched **relative to each white-listed directory**, not as absolute paths.  
+> So `"record.*"` excludes any sub-dir starting with `record` inside the matched project dirs, and `"downloads.*"` excludes any sub-dir starting with `downloads`.
+
+**When to use each mode:**
+
+| Use case | Recommended settings |
+|----------|---------------------|
+| Sync a specific known directory | `is_path_regex=False` (default), exact `path` |
+| Sync directories matching a naming pattern | `is_path_regex=True`, regex `path` |
+| Exclude specific known sub-directories | `is_exclude_regex=False` (default), exact `exclude_paths` |
+| Exclude sub-directories matching a pattern | `is_exclude_regex=True`, regex `exclude_paths` |
+
+**Validation rules:**
+- When `is_path_regex=False` (default): wildcard characters (`*`, `?`, `[`, `]`) in `path` raise a `ValueError`
+- When `is_exclude_regex=False` (default): wildcard characters in any `exclude_paths` entry raise a `ValueError`
+- When the corresponding flag is `True`: the value is passed as-is to the server as a regex pattern — no client-side wildcard validation is performed
 
 
 

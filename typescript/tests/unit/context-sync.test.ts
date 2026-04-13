@@ -239,7 +239,7 @@ describe("ContextSync Unit Tests", () => {
           syncPolicyWithInvalidPath
         );
       }).toThrow(
-        "Wildcard patterns are not supported in path. Got: /path/with/*. Please use exact directory paths instead."
+        "Wildcard patterns are not supported in path when isPathRegex=false. Got: /path/with/*. Please use exact directory paths or set isPathRegex=true for regex matching."
       );
     });
 
@@ -354,6 +354,89 @@ describe("ContextSync Unit Tests", () => {
       expect(contextSync.policy).toBeDefined();
       expect(contextSync.policy?.mappingPolicy).toBeDefined();
       expect(contextSync.policy?.mappingPolicy?.path).toBe(windowsPath);
+    });
+  });
+
+  describe("WhiteList Regex Path and Exclude Tests", () => {
+    it("should support combined isPathRegex and isExcludeRegex mode", () => {
+      // ── Construction: both regex flags enabled ────────────────────────────
+      const wl = {
+        path: "project-.*",
+        isPathRegex: true,
+        excludePaths: ["cache.*", "下载.*"],
+        isExcludeRegex: true,
+      };
+      expect(wl.path).toBe("project-.*");
+      expect(wl.isPathRegex).toBe(true);
+      expect(wl.excludePaths).toEqual(["cache.*", "下载.*"]);
+      expect(wl.isExcludeRegex).toBe(true);
+
+      // ── Serialization ────────────────────────────────────────────────────
+      const json = JSON.parse(JSON.stringify(wl));
+      expect(json.path).toBe("project-.*");
+      expect(json.isPathRegex).toBe(true);
+      expect(json.excludePaths).toEqual(["cache.*", "下载.*"]);
+      expect(json.isExcludeRegex).toBe(true);
+
+      // ── Wildcard in regex path is allowed ─────────────────────────────────
+      expect(() => {
+        new ContextSync("ctx", "/base", {
+          bwList: { whiteLists: [{ path: "/home/wuying/.*", isPathRegex: true }] },
+        });
+      }).not.toThrow();
+
+      // ── Wildcard in regex excludePaths is allowed ────────────────────────
+      expect(() => {
+        new ContextSync("ctx", "/base", {
+          bwList: {
+            whiteLists: [
+              { path: "/home/wuying", excludePaths: ["record.*"], isExcludeRegex: true },
+            ],
+          },
+        });
+      }).not.toThrow();
+
+      // ── Wildcard in path raises when isPathRegex=false ──────────────────
+      expect(() => {
+        new ContextSync("ctx", "/base", {
+          bwList: { whiteLists: [{ path: "/home/wuying/*" }] },
+        });
+      }).toThrow("isPathRegex=false");
+
+      // ── Wildcard in excludePaths raises when isExcludeRegex=false ──────
+      expect(() => {
+        new ContextSync("ctx", "/base", {
+          bwList: {
+            whiteLists: [{ path: "/home/wuying", excludePaths: ["/invalid/*"] }],
+          },
+        });
+      }).toThrow("isExcludeRegex=false");
+
+      // ── Integration in SyncPolicy ─────────────────────────────────────────
+      const syncPolicy: SyncPolicy = {
+        bwList: {
+          whiteLists: [
+            {
+              path: "project-.*",
+              isPathRegex: true,
+              excludePaths: ["cache.*"],
+              isExcludeRegex: true,
+            },
+          ],
+        },
+      };
+      const wlEntry = syncPolicy.bwList!.whiteLists![0];
+      expect(wlEntry.path).toBe("project-.*");
+      expect(wlEntry.isPathRegex).toBe(true);
+      expect(wlEntry.excludePaths).toEqual(["cache.*"]);
+      expect(wlEntry.isExcludeRegex).toBe(true);
+
+      const policyJson = JSON.parse(JSON.stringify(syncPolicy));
+      const wlJson = policyJson.bwList.whiteLists[0];
+      expect(wlJson.path).toBe("project-.*");
+      expect(wlJson.isPathRegex).toBe(true);
+      expect(wlJson.excludePaths).toEqual(["cache.*"]);
+      expect(wlJson.isExcludeRegex).toBe(true);
     });
   });
 });

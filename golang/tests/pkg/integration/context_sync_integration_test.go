@@ -4,6 +4,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -659,7 +660,297 @@ func TestContextSyncFilePersistence(t *testing.T) {
 	t.Logf("100MB file persistence verified successfully")
 }
 
-// TestContextStatusDataParsing tests the parsing of context status data
+// listFilesRecursive recursively lists files in context up to maxDepth.
+func listFilesRecursive(t *testing.T, ab *agentbay.AgentBay, contextID string, path string, depth int, maxDepth int) {
+	indent := strings.Repeat("  ", depth)
+	listResult, err := ab.Context.ListFiles(contextID, path, 1, 100)
+	if err != nil {
+		t.Logf("%s[list_files error for %s: %v]", indent, path, err)
+		return
+	}
+	if !listResult.Success {
+		t.Logf("%s[list_files failed for %s]", indent, path)
+		return
+	}
+	if len(listResult.Entries) == 0 {
+		t.Logf("%s(empty)", indent)
+		return
+	}
+	for _, entry := range listResult.Entries {
+		sizeInfo := ""
+		if entry.Size > 0 {
+			sizeInfo = fmt.Sprintf("  [%d bytes]", entry.Size)
+		}
+		t.Logf("%s%6s  %s%s", indent, entry.FileType, entry.FilePath, sizeInfo)
+		if (entry.FileType == "directory" || entry.FileType == "dir" || entry.FileType == "folder") && depth < maxDepth {
+			listFilesRecursive(t, ab, contextID, entry.FilePath, depth+1, maxDepth)
+		}
+	}
+}
+
+// TestExploreContextFilesAfterSync explores files synced to context to understand
+// directory structure under /home/wuying. Mirrors Python test_explore_context_files_after_sync.
+func TestExploreContextFilesAfterSync(t *testing.T) {
+	apiKey := os.Getenv("AGENTBAY_API_KEY")
+	if apiKey == "" || os.Getenv("CI") != "" {
+		t.Skip("Skipping integration test: No API key available or running in CI")
+	}
+
+	ab, err := agentbay.NewAgentBay(apiKey)
+	require.NoError(t, err, "Failed to create AgentBay client")
+
+	t.Log("Creating context test-explore-context...")
+	contextResult, err := ab.Context.Get("test-explore-context", true)
+	require.NoError(t, err, "Error getting/creating context")
+	require.True(t, contextResult.Success && contextResult.Context != nil, "Failed to get/create context")
+	ctx := contextResult.Context
+	t.Logf("Context ID: %s", ctx.ID)
+
+	// Mount /home/wuying directly to explore its internal directory structure
+	syncPolicy := agentbay.NewSyncPolicy()
+	contextSync, err := agentbay.NewContextSync(ctx.ID, "/home/wuying", syncPolicy)
+	require.NoError(t, err, "Error creating context sync")
+
+	sessionParams := agentbay.NewCreateSessionParams()
+	sessionParams.AddContextSyncConfig(contextSync)
+	sessionParams.WithLabels(map[string]string{"test": "explore-files"})
+
+	createResult, err := ab.Create(sessionParams)
+	require.NoError(t, err, "Error creating session")
+	require.True(t, createResult.Success, fmt.Sprintf("Session creation failed: %s", createResult.ErrorMessage))
+	session := createResult.Session
+	t.Logf("Session created with ID: %s", session.SessionID)
+
+	// Wait for initial sync to complete
+	t.Log("Waiting 10s for context sync to complete...")
+	time.Sleep(10 * time.Second)
+
+	// Trigger upload by deleting session with syncContext=true
+	t.Log("Deleting session with syncContext=true to trigger upload...")
+	deleteResult, err := ab.Delete(session, true)
+	if err != nil {
+		t.Logf("Warning: Failed to delete session: %v", err)
+	} else {
+		t.Logf("Delete result: success=%v, requestID=%s", deleteResult.Success, deleteResult.RequestID)
+	}
+
+	// Wait for upload to finish
+	t.Log("Waiting 15s for upload to complete...")
+	time.Sleep(15 * time.Second)
+
+	// List files under /home/wuying to see all subdirectories and files
+	t.Log("\n=== Listing context files under '/home/wuying' ===")
+	listFilesRecursive(t, ab, ctx.ID, "/home/wuying", 0, 3)
+}
+
+// TestWhiteListPatternBWList tests creating a session with ContextSync using
+// IsPathRegex and IsExcludeRegex fields. Mirrors Python test_create_session_with_pattern_bwlist.
+func TestWhiteListPatternBWList(t *testing.T) {
+	apiKey := os.Getenv("AGENTBAY_API_KEY")
+	if apiKey == "" || os.Getenv("CI") != "" {
+		t.Skip("Skipping integration test: No API key available or running in CI")
+	}
+
+	ab, err := agentbay.NewAgentBay(apiKey)
+	require.NoError(t, err, "Failed to create AgentBay client")
+
+	t.Log("Creating context test-pattern-bwlist-context...")
+	contextResult, err := ab.Context.Get("test-pattern-bwlist-context", true)
+	require.NoError(t, err, "Error getting/creating context")
+	require.True(t, contextResult.Success && contextResult.Context != nil, "Failed to get/create context")
+	ctx := contextResult.Context
+	t.Logf("Context ID: %s", ctx.ID)
+
+	// BWList configuration:
+	// - path="/home/wuying": exact directory to include (IsPathRegex=false, default)
+	// - ExcludePaths: relative sub-paths under /home/wuying to exclude
+	//   e.g. "record" means /home/wuying/record is excluded
+	// - IsExcludeRegex=true: treat ExcludePaths entries as regex patterns
+	//
+	// NOTE: ExcludePaths are RELATIVE to the white-listed path, not absolute.
+	// So "record" excludes /home/wuying/record,
+	// and "record.*" would exclude any sub-path matching that regex under /home/wuying.
+	syncPolicy := &agentbay.SyncPolicy{
+		UploadPolicy:   agentbay.NewUploadPolicy(),
+		DownloadPolicy: agentbay.NewDownloadPolicy(),
+		DeletePolicy:   agentbay.NewDeletePolicy(),
+		ExtractPolicy:  agentbay.NewExtractPolicy(),
+		RecyclePolicy:  agentbay.NewRecyclePolicy(),
+		BWList: &agentbay.BWList{
+			WhiteLists: []*agentbay.WhiteList{
+				{
+					Path:           "/home/wuying", // exact white-listed directory
+					IsPathRegex:    false,          // path is an absolute dir, not regex
+					ExcludePaths:   []string{"record", "\u4e0b\u8f7d"}, // exclude /home/wuying/record and /home/wuying/下载
+					IsExcludeRegex: true,           // treat ExcludePaths as regex patterns
+				},
+			},
+		},
+	}
+
+	contextSync, err := agentbay.NewContextSync(ctx.ID, "/home", syncPolicy)
+	require.NoError(t, err, "Error creating context sync")
+
+	sessionParams := agentbay.NewCreateSessionParams()
+	sessionParams.AddContextSyncConfig(contextSync)
+	sessionParams.WithLabels(map[string]string{"test": "patternBWList"})
+
+	createResult, err := ab.Create(sessionParams)
+	require.NoError(t, err, "Error creating session")
+	require.True(t, createResult.Success, fmt.Sprintf("Session creation failed: %s", createResult.ErrorMessage))
+	require.NotNil(t, createResult.Session)
+	session := createResult.Session
+	t.Logf("Session created with ID: %s", session.SessionID)
+
+	// Wait for session to initialise, then trigger upload via Delete(syncContext=true)
+	t.Log("Waiting 10s before triggering upload...")
+	time.Sleep(10 * time.Second)
+
+	t.Log("Deleting session with syncContext=true to trigger upload...")
+	deleteResult, err := ab.Delete(session, true)
+	require.NoError(t, err, "Delete failed")
+	require.True(t, deleteResult.Success, fmt.Sprintf("Delete failed: %s", deleteResult.ErrorMessage))
+	t.Logf("Delete result: success=%v, requestID=%s", deleteResult.Success, deleteResult.RequestID)
+
+	// Wait for upload to finish
+	t.Log("Waiting 20s for upload to complete...")
+	time.Sleep(20 * time.Second)
+
+	// === Verify via ListFiles: check entries under /home/wuying ===
+	// We list /home/wuying (not /home) because the excluded sub-dirs "record" and "下载"
+	// are children of /home/wuying. Only by listing /home/wuying can we confirm they
+	// were correctly filtered out by IsExcludeRegex.
+	t.Log("\n=== Verifying context files under '/home/wuying' ===")
+	listResult, err := ab.Context.ListFiles(ctx.ID, "/home/wuying", 1, 100)
+	require.NoError(t, err, "ListFiles failed")
+	require.True(t, listResult.Success, fmt.Sprintf("list_files failed: %s", listResult.ErrorMessage))
+
+	topLevelPaths := make([]string, 0, len(listResult.Entries))
+	for _, entry := range listResult.Entries {
+		topLevelPaths = append(topLevelPaths, entry.FilePath)
+	}
+	t.Logf("Entries under /home/wuying: %v", topLevelPaths)
+
+	// Verify /home/wuying content exists (BWList white-listed it)
+	assert.Greater(t, len(topLevelPaths), 0,
+		fmt.Sprintf("Expected /home/wuying to have content in context, but got: %v", topLevelPaths))
+	t.Logf("✅ /home/wuying content found in context: %v", topLevelPaths)
+
+	// Verify excluded sub-dirs are NOT present
+	// ExcludePaths are relative to /home/wuying, so:
+	// "record" -> /home/wuying/record should be absent
+	// "下载"   -> /home/wuying/下载 should be absent
+	excludedNames := []string{"record", "\u4e0b\u8f7d"}
+	for _, excluded := range excludedNames {
+		var matched []string
+		for _, p := range topLevelPaths {
+			stripped := strings.TrimRight(p, "/")
+			if strings.HasSuffix(stripped, excluded) {
+				matched = append(matched, p)
+			}
+		}
+		assert.Equal(t, 0, len(matched),
+			fmt.Sprintf("Expected '%s' to be excluded by IsExcludeRegex, but found: %v", excluded, matched))
+	}
+	t.Logf("✅ Excluded sub-dirs %v correctly absent from context", excludedNames)
+	t.Log("Session with BWList IsExcludeRegex (relative paths) verified successfully")
+}
+
+// TestWhiteListValidation tests that WhiteList correctly validates wildcard patterns
+// depending on the IsPathRegex and IsExcludeRegex flags.
+// Mirrors the validation behavior tested in Python's TestWhiteListPattern.
+func TestWhiteListValidation(t *testing.T) {
+	t.Run("ValidExactPath", func(t *testing.T) {
+		// Exact path without wildcards should pass when IsPathRegex=false
+		wl := &agentbay.WhiteList{
+			Path:        "/home/wuying",
+			IsPathRegex: false,
+		}
+		err := wl.Validate()
+		require.NoError(t, err, "Exact path should pass validation")
+	})
+
+	t.Run("WildcardPathWithIsPathRegexFalse", func(t *testing.T) {
+		// Wildcard in path should fail when IsPathRegex=false
+		wl := &agentbay.WhiteList{
+			Path:        "/home/wuying/*",
+			IsPathRegex: false,
+		}
+		err := wl.Validate()
+		require.Error(t, err, "Wildcard path should fail when IsPathRegex=false")
+		assert.Contains(t, err.Error(), "IsPathRegex=false")
+	})
+
+	t.Run("RegexPathWithIsPathRegexTrue", func(t *testing.T) {
+		// Wildcard-like regex in path should pass when IsPathRegex=true
+		wl := &agentbay.WhiteList{
+			Path:        "/home/wuying/.*",
+			IsPathRegex: true,
+		}
+		err := wl.Validate()
+		require.NoError(t, err, "Regex path should pass validation when IsPathRegex=true")
+	})
+
+	t.Run("WildcardExcludePathWithIsExcludeRegexFalse", func(t *testing.T) {
+		// Wildcard in ExcludePaths should fail when IsExcludeRegex=false
+		wl := &agentbay.WhiteList{
+			Path:           "/home/wuying",
+			IsPathRegex:    false,
+			ExcludePaths:   []string{"/home/wuying/temp/*"},
+			IsExcludeRegex: false,
+		}
+		err := wl.Validate()
+		require.Error(t, err, "Wildcard in ExcludePaths should fail when IsExcludeRegex=false")
+		assert.Contains(t, err.Error(), "IsExcludeRegex=false")
+	})
+
+	t.Run("RegexExcludePathWithIsExcludeRegexTrue", func(t *testing.T) {
+		// Wildcard-like regex in ExcludePaths should pass when IsExcludeRegex=true
+		wl := &agentbay.WhiteList{
+			Path:           "/home/wuying",
+			IsPathRegex:    false,
+			ExcludePaths:   []string{"record", "record.*", "\u4e0b\u8f7d"},
+			IsExcludeRegex: true,
+		}
+		err := wl.Validate()
+		require.NoError(t, err, "Regex ExcludePaths should pass validation when IsExcludeRegex=true")
+	})
+
+	t.Run("NewContextSyncRejectsWildcardPath", func(t *testing.T) {
+		// NewContextSync should reject policy with wildcard path when IsPathRegex=false
+		syncPolicy := &agentbay.SyncPolicy{
+			BWList: &agentbay.BWList{
+				WhiteLists: []*agentbay.WhiteList{
+					{
+						Path:        "/home/wuying/*",
+						IsPathRegex: false,
+					},
+				},
+			},
+		}
+		_, err := agentbay.NewContextSync("ctx-test", "/home", syncPolicy)
+		require.Error(t, err, "NewContextSync should fail when path has wildcards and IsPathRegex=false")
+		assert.Contains(t, err.Error(), "IsPathRegex=false")
+	})
+
+	t.Run("NewContextSyncAcceptsRegexConfig", func(t *testing.T) {
+		// NewContextSync should accept policy with regex exclude and IsExcludeRegex=true
+		syncPolicy := &agentbay.SyncPolicy{
+			BWList: &agentbay.BWList{
+				WhiteLists: []*agentbay.WhiteList{
+					{
+						Path:           "/home/wuying",
+						IsPathRegex:    false,
+						ExcludePaths:   []string{"record", "\u4e0b\u8f7d"},
+						IsExcludeRegex: true,
+					},
+				},
+			},
+		}
+		_, err := agentbay.NewContextSync("ctx-test", "/home", syncPolicy)
+		require.NoError(t, err, "NewContextSync should succeed with valid IsPathRegex/IsExcludeRegex config")
+	})
+}
 func TestContextStatusDataParsing(t *testing.T) {
 	// Skip in CI environment or if API key is not available
 	apiKey := os.Getenv("AGENTBAY_API_KEY")
