@@ -231,10 +231,22 @@ type WhiteList struct {
 	Path	string	`json:"path"`
 	// ExcludePaths are the paths to exclude from the white list
 	ExcludePaths	[]string	`json:"excludePaths,omitempty"`
+	// IsPathRegex indicates whether Path is a regex pattern (default: false)
+	IsPathRegex	bool	`json:"isPathRegex"`
+	// IsExcludeRegex indicates whether ExcludePaths entries are regex patterns (default: false)
+	IsExcludeRegex	bool	`json:"isExcludeRegex"`
 }
 ```
 
 WhiteList defines the white list configuration
+
+When IsPathRegex is false (default), Path must be an exact absolute directory path and wildcard
+characters (* ? [ ]) are not allowed. When IsPathRegex is true, Path is treated as a regex pattern
+(e.g. "/home/wuying/.*").
+
+When IsExcludeRegex is false (default), ExcludePaths entries must be exact paths and wildcard
+characters are not allowed. When IsExcludeRegex is true, ExcludePaths entries are treated as regex
+patterns.
 
 ## Type BWList
 
