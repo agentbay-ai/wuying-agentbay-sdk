@@ -35,7 +35,7 @@ describe("WhiteListValidator", () => {
     it("should reject path with asterisk wildcard", () => {
       const whitelist: WhiteList = { path: "/data/*" };
       expect(() => WhiteListValidator.validate(whitelist)).toThrow(
-        "Wildcard patterns are not supported in path. Got: /data/*"
+        "Wildcard patterns are not supported in path when isPathRegex=false"
       );
     });
 
@@ -75,7 +75,7 @@ describe("WhiteListValidator", () => {
         excludePaths: ["*.log"],
       };
       expect(() => WhiteListValidator.validate(whitelist)).toThrow(
-        "Wildcard patterns are not supported in exclude_paths. Got: *.log"
+        "Wildcard patterns are not supported in excludePaths when isExcludeRegex=false"
       );
     });
 
@@ -85,7 +85,7 @@ describe("WhiteListValidator", () => {
         excludePaths: ["/node_modules", "**/*.tmp"],
       };
       expect(() => WhiteListValidator.validate(whitelist)).toThrow(
-        "Wildcard patterns are not supported in exclude_paths"
+        "Wildcard patterns are not supported in excludePaths when isExcludeRegex=false"
       );
     });
   });
@@ -120,7 +120,7 @@ describe("ContextSync validation", () => {
           whiteLists: [{ path: "/src", excludePaths: ["*.log"] }],
         },
       });
-    }).toThrow("Wildcard patterns are not supported in exclude_paths");
+    }).toThrow("Wildcard patterns are not supported in excludePaths when isExcludeRegex=false");
   });
 
   it("should allow valid policy", () => {
