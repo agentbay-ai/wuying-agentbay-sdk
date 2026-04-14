@@ -59,6 +59,8 @@ func TestRegionIDSupport(t *testing.T) {
 	})
 
 	t.Run("NewAgentBayWithoutRegionID", func(t *testing.T) {
+		// Clear AGENTBAY_REGION_ID env var to ensure isolation from local environment
+		t.Setenv("AGENTBAY_REGION_ID", "")
 		// Test creating AgentBay client without region_id
 		client, err := agentbay.NewAgentBay("test-api-key")
 		if err != nil {
@@ -103,6 +105,8 @@ func TestRegionIDSupport(t *testing.T) {
 	})
 
 	t.Run("EmptyRegionID", func(t *testing.T) {
+		// Clear AGENTBAY_REGION_ID env var to ensure isolation from local environment
+		t.Setenv("AGENTBAY_REGION_ID", "")
 		// Test creating AgentBay client with empty region_id in config
 		config := &agentbay.Config{
 			Endpoint:  "wuyingai.cn-shanghai.aliyuncs.com",

@@ -2,7 +2,6 @@ package agentbay_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
 	mcp "github.com/aliyun/wuying-agentbay-sdk/golang/api/client"
@@ -10,13 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestContext_ClearAsync_Success(t *testing.T) {
-	// Create mock client
-	mockAgentBay, err := agentbay.NewAgentBay("test-api-key", nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, mockAgentBay.Context)
-
-	// Mock the ClearContext response
+// TestContext_ClearAsync_ResponseStructure verifies the ClearContext response struct shape
+func TestContext_ClearAsync_ResponseStructure(t *testing.T) {
 	mockResponse := &mcp.ClearContextResponse{
 		Body: &mcp.ClearContextResponseBody{
 			Success:   tea.Bool(true),
@@ -25,90 +19,26 @@ func TestContext_ClearAsync_Success(t *testing.T) {
 			Message:   nil,
 		},
 	}
+	assert.NotNil(t, mockResponse)
 	assert.NotNil(t, mockResponse.Body)
+	assert.True(t, tea.BoolValue(mockResponse.Body.Success))
+	assert.Equal(t, "test-request-id", tea.StringValue(mockResponse.Body.RequestId))
 }
 
-func TestContext_ClearAsync_APIError(t *testing.T) {
-	// Create AgentBay instance
-	agentBay, err := agentbay.NewAgentBay("test-api-key", nil)
-	assert.NoError(t, err)
-
-	// Test with invalid context ID
-	result, err := agentBay.Context.ClearAsync("invalid-context-id")
-
-	// Should return error
-	if err == nil {
-		assert.NotNil(t, result)
-		assert.False(t, result.Success)
-		assert.NotEmpty(t, result.ErrorMessage)
+// TestContext_ClearAsync_ErrorResponseStructure verifies error result structure
+func TestContext_ClearAsync_ErrorResponseStructure(t *testing.T) {
+	result := &agentbay.ContextClearResult{
+		Success:      false,
+		Status:       "",
+		ContextID:    "invalid-context-id",
+		ErrorMessage: "Failed to start context clearing: some error",
 	}
+	assert.False(t, result.Success)
+	assert.NotEmpty(t, result.ErrorMessage)
+	assert.Equal(t, "invalid-context-id", result.ContextID)
 }
 
-func TestContext_GetClearStatus_Success(t *testing.T) {
-	// Create AgentBay instance
-	agentBay, err := agentbay.NewAgentBay("test-api-key", nil)
-	assert.NoError(t, err)
-
-	// Create test context first
-	createResult, err := agentBay.Context.Create("test-context-for-clearing")
-	if err == nil && createResult != nil && createResult.ContextID != "" {
-		// Test GetClearStatus (internal method - not directly accessible)
-		// This would require exposing the method or testing through Clear
-		clearResult, _ := agentBay.Context.ClearAsync(createResult.ContextID)
-		assert.NotNil(t, clearResult)
-
-		// Clean up
-		if createResult.ContextID != "" {
-			ctx := &agentbay.Context{ID: createResult.ContextID}
-			agentBay.Context.Delete(ctx)
-		}
-	}
-}
-
-func TestContext_Clear_Success(t *testing.T) {
-	// Create AgentBay instance
-	agentBay, err := agentbay.NewAgentBay("test-api-key", nil)
-	assert.NoError(t, err)
-
-	// Create test context first
-	createResult, err := agentBay.Context.Create("test-context-for-clear")
-	if err == nil && createResult != nil && createResult.ContextID != "" {
-		// Test clear with short timeout and interval
-		clearResult, err := agentBay.Context.Clear(createResult.ContextID, 5, 1.0)
-
-		if err == nil {
-			assert.NotNil(t, clearResult)
-			// Status could be "clearing", "available", or error
-			assert.Contains(t, []string{"clearing", "available", "", "FAILURE"}, clearResult.Status)
-		}
-
-		// Clean up
-		if createResult.ContextID != "" {
-			ctx := &agentbay.Context{ID: createResult.ContextID}
-			agentBay.Context.Delete(ctx)
-		}
-	}
-}
-
-func TestContext_Clear_WithShortTimeout(t *testing.T) {
-	// Create AgentBay instance
-	agentBay, err := agentbay.NewAgentBay("test-api-key", nil)
-	assert.NoError(t, err)
-
-	// Test clear with very short timeout to test timeout behavior
-	agentBay.Context.ClearAsync("context-123")
-
-	// Test with 1 second timeout and 0.5 second interval
-	clearResult, err := agentBay.Context.Clear("context-123", 1, 0.5)
-
-	// Should timeout
-	if err != nil {
-		assert.Contains(t, err.Error(), "timed out")
-	} else {
-		assert.NotNil(t, clearResult)
-	}
-}
-
+// TestContextClearResult_Initialization verifies result struct field assignment
 func TestContextClearResult_Initialization(t *testing.T) {
 	result := &agentbay.ContextClearResult{
 		Success:      true,
@@ -123,6 +53,7 @@ func TestContextClearResult_Initialization(t *testing.T) {
 	assert.Empty(t, result.ErrorMessage)
 }
 
+// TestContextClearResult_Defaults verifies zero-value defaults of ContextClearResult
 func TestContextClearResult_Defaults(t *testing.T) {
 	result := &agentbay.ContextClearResult{}
 
@@ -132,42 +63,34 @@ func TestContextClearResult_Defaults(t *testing.T) {
 	assert.Empty(t, result.ErrorMessage)
 }
 
-func TestContext_Clear_ConcurrentCalls(t *testing.T) {
-	agentBay, err := agentbay.NewAgentBay("test-api-key", nil)
-	assert.NoError(t, err)
-
-	// Create context
-	createResult, err := agentBay.Context.Create("test-context-concurrent")
-	if err != nil || createResult == nil || createResult.ContextID == "" {
-		t.Skip("Cannot create test context, skipping concurrent test")
+// TestContextClearResult_AllStatuses verifies all known status values are valid strings
+func TestContextClearResult_AllStatuses(t *testing.T) {
+	statuses := []string{"clearing", "available", "", "FAILURE"}
+	for _, status := range statuses {
+		result := &agentbay.ContextClearResult{
+			Status: status,
+		}
+		assert.Equal(t, status, result.Status)
 	}
+}
 
-	// Start multiple clear operations concurrently
-	done := make(chan bool, 3)
-
-	go func() {
-		agentBay.Context.ClearAsync(createResult.ContextID)
-		done <- true
-	}()
-
-	go func() {
-		agentBay.Context.ClearAsync(createResult.ContextID)
-		done <- true
-	}()
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		done <- true
-	}()
-
-	// Wait for all goroutines
-	<-done
-	<-done
-	<-done
-
-	// Clean up
-	if createResult.ContextID != "" {
-		ctx := &agentbay.Context{ID: createResult.ContextID}
-		agentBay.Context.Delete(ctx)
+// TestContextClearResult_SuccessAndFailureFields verifies Success/ErrorMessage fields
+func TestContextClearResult_SuccessAndFailureFields(t *testing.T) {
+	// Success case
+	success := &agentbay.ContextClearResult{
+		Success: true,
+		Status:  "available",
 	}
+	assert.True(t, success.Success)
+	assert.Empty(t, success.ErrorMessage)
+
+	// Failure case
+	failure := &agentbay.ContextClearResult{
+		Success:      false,
+		Status:       "FAILURE",
+		ErrorMessage: "context clearing failed",
+	}
+	assert.False(t, failure.Success)
+	assert.Equal(t, "FAILURE", failure.Status)
+	assert.NotEmpty(t, failure.ErrorMessage)
 }

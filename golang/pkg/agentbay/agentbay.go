@@ -1240,7 +1240,6 @@ func (a *AgentBay) getSession(sessionID string) (*GetSessionResult, error) {
 //	defer result.Session.Delete()
 func (a *AgentBay) Get(sessionID string) (*SessionResult, error) {
 	if sessionID == "" {
-		logOperationError("Get", "session_id is required", false)
 		return &SessionResult{
 			ApiResponse: models.ApiResponse{
 				RequestID: "",

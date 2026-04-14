@@ -56,27 +56,27 @@ func TestWhiteListValidation_InvalidPathsWithWildcards(t *testing.T) {
 		{
 			name:        "path with asterisk wildcard",
 			path:        "/data/*",
-			expectedErr: "wildcard patterns are not supported in path. Got: /data/*",
+			expectedErr: "wildcard patterns are not supported in path when IsPathRegex=false",
 		},
 		{
 			name:        "path with double asterisk",
 			path:        "/logs/**/*.txt",
-			expectedErr: "wildcard patterns are not supported in path",
+			expectedErr: "wildcard patterns are not supported in path when IsPathRegex=false",
 		},
 		{
 			name:        "path with question mark",
 			path:        "/file?.txt",
-			expectedErr: "wildcard patterns are not supported in path",
+			expectedErr: "wildcard patterns are not supported in path when IsPathRegex=false",
 		},
 		{
 			name:        "path with brackets",
 			path:        "/file[0-9].txt",
-			expectedErr: "wildcard patterns are not supported in path",
+			expectedErr: "wildcard patterns are not supported in path when IsPathRegex=false",
 		},
 		{
 			name:        "glob pattern",
 			path:        "*.json",
-			expectedErr: "wildcard patterns are not supported in path",
+			expectedErr: "wildcard patterns are not supported in path when IsPathRegex=false",
 		},
 	}
 
@@ -101,12 +101,12 @@ func TestWhiteListValidation_InvalidExcludePathsWithWildcards(t *testing.T) {
 		{
 			name:         "exclude_paths with asterisk",
 			excludePaths: []string{"*.log"},
-			expectedErr:  "wildcard patterns are not supported in exclude_paths. Got: *.log",
+			expectedErr:  "wildcard patterns are not supported in excludePaths when IsExcludeRegex=false",
 		},
 		{
 			name:         "exclude_paths with pattern",
 			excludePaths: []string{"/node_modules", "**/*.tmp"},
-			expectedErr:  "wildcard patterns are not supported in exclude_paths",
+			expectedErr:  "wildcard patterns are not supported in excludePaths when IsExcludeRegex=false",
 		},
 	}
 
@@ -171,7 +171,7 @@ func TestContextSyncValidation_Constructor(t *testing.T) {
 		contextSync, err := agentbay.NewContextSync("ctx-123", "/tmp/data", policy)
 		assert.Error(t, err)
 		assert.Nil(t, contextSync)
-		assert.Contains(t, err.Error(), "wildcard patterns are not supported in exclude_paths")
+		assert.Contains(t, err.Error(), "wildcard patterns are not supported in excludePaths when IsExcludeRegex=false")
 	})
 
 	t.Run("nil policy is valid", func(t *testing.T) {
@@ -219,6 +219,6 @@ func TestContextSyncValidation_WithPolicy(t *testing.T) {
 		result, err := contextSync.WithPolicy(policy)
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "wildcard patterns are not supported in exclude_paths")
+		assert.Contains(t, err.Error(), "wildcard patterns are not supported in excludePaths when IsExcludeRegex=false")
 	})
 }
