@@ -23,6 +23,7 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/git"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/internal"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/mobile"
+	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/pty"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/models"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/oss"
 )
@@ -164,6 +165,9 @@ type Session struct {
 
 	// Context management
 	Context *ContextManager
+
+	// PTY for interactive terminal sessions
+	Pty *pty.Pty
 }
 
 func (s *Session) getLinkHttpClient() *http.Client {
@@ -386,6 +390,9 @@ func NewSession(agentBay *AgentBay, sessionID string) *Session {
 
 	// Initialize context manager
 	session.Context = NewContextManager(session)
+
+	// Initialize PTY module
+	session.Pty = pty.NewPty(session)
 
 	return session
 }
