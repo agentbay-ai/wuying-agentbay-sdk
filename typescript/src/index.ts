@@ -30,6 +30,7 @@ export * from "./extension";
 export * from "./filesystem";
 export * from "./oss";
 export { Mobile } from "./mobile";
+export * from "./pty";
 export {
   MobileSimulateService,
   type MobileSimulateUploadResult,
