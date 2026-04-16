@@ -76,10 +76,10 @@ type WsClient struct {
 	reconnecting     bool
 	reconnectTimer   *time.Timer
 
-	heartbeatIntervalMs    int
+	heartbeatIntervalMs     int
 	reconnectInitialDelayMs int
-	reconnectMaxDelayMs    int
-	heartbeatStop          chan struct{}
+	reconnectMaxDelayMs     int
+	heartbeatStop           chan struct{}
 }
 
 type stateListenerEntry struct {

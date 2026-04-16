@@ -17,12 +17,12 @@ type GitCommitResult struct {
 
 // GitFileStatus represents the status of a single file in the working tree.
 type GitFileStatus struct {
-	Path            string
-	Status          string // Combined status: "added", "modified", "deleted", "renamed", "copied", "typechange", "untracked", "conflict", "unknown"
-	IndexStatus     string // X in porcelain status output (' '=unmodified, M=modified, A=added, D=deleted, R=renamed, C=copied, U=unmerged, ?=untracked)
-	WorkTreeStatus  string // Y in porcelain status output (' '=unmodified, M=modified, A=added, D=deleted, R=renamed, C=copied, U=unmerged, ?=untracked)
-	Staged          bool
-	RenamedFrom     string
+	Path           string
+	Status         string // Combined status: "added", "modified", "deleted", "renamed", "copied", "typechange", "untracked", "conflict", "unknown"
+	IndexStatus    string // X in porcelain status output (' '=unmodified, M=modified, A=added, D=deleted, R=renamed, C=copied, U=unmerged, ?=untracked)
+	WorkTreeStatus string // Y in porcelain status output (' '=unmodified, M=modified, A=added, D=deleted, R=renamed, C=copied, U=unmerged, ?=untracked)
+	Staged         bool
+	RenamedFrom    string
 }
 
 // GitStatusResult represents the result of a git status operation.
@@ -126,7 +126,7 @@ type GitLogResult struct {
 
 // GitBranchInfo represents information about a git branch.
 type GitBranchInfo struct {
-	Name     string
+	Name      string
 	IsCurrent bool
 }
 
