@@ -72,6 +72,7 @@ const docMappings = [
     identifiers: ['Class MobileSimulateService', 'MobileSimulateService', 'mobile-simulate'],
   },
   { target: 'common-features/advanced/git.md', symbol: 'Git', identifiers: ['Class Git', 'Git'] },
+  { target: 'common-features/basics/pty.md', symbol: 'Pty', identifiers: ['Class Pty', 'Pty', 'PtyHandle', 'PtySession'] },
 ]
 
 const symbolToTarget = new Map()

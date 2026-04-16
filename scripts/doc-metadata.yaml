@@ -693,3 +693,39 @@ modules:
 
     emoji: 🔀
     category: common-features/advanced
+
+  # PTY Terminal module
+  pty:
+    python: agentbay.pty
+    typescript: pty
+    golang: pkg/agentbay/pty
+    java: com.aliyun.agentbay.pty
+
+    tutorial:
+      url: ../../../../../docs/guides/common-features/basics/pty-terminal.md
+      text: "PTY Terminal Guide"
+      description: "Learn how to use interactive terminal sessions in cloud environments"
+
+    overview: |
+      The PTY module provides interactive terminal sessions in cloud sandbox
+      environments. Unlike the Command module which executes single commands,
+      PTY gives you a persistent, interactive shell with real-time streaming
+      output, terminal resize support, and session lifecycle management.
+
+    best_practices:
+      - "Always disconnect or wait when done with a PTY handle"
+      - "Use carriage return (\\r) to submit commands instead of newline"
+      - "Handle the on_data callback efficiently as it may be called frequently"
+      - "Set terminal size to match the client for correct line wrapping"
+      - "Use appropriate timeouts with wait() to avoid blocking indefinitely"
+
+    related_resources:
+      - name: Session API Reference
+        module: session
+        category: common-features/basics
+      - name: Command API Reference
+        module: command
+        category: common-features/basics
+
+    emoji: 💻
+    category: common-features/basics

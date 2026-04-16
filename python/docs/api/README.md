@@ -46,6 +46,7 @@ All synchronous API classes are in the `sync/` directory:
 - [MobileSimulate](sync/mobile-simulate.md) - `agentbay.mobile_simulate`
 - [SessionParams](sync/session-params.md) - `agentbay.agentbay._common.params.session_params`
 - [Git](sync/git.md) - `agentbay.git.git`
+- [Pty](sync/pty.md) - `agentbay.pty`
 
 ## Asynchronous API
 
@@ -70,6 +71,7 @@ All asynchronous API classes are in the `async/` directory:
 - [AsyncMobileSimulate](async/async-mobile-simulate.md) - `agentbay.mobile_simulate`
 - [AsyncSessionParams](async/async-session-params.md) - `agentbay.agentbay._common.params.session_params`
 - [AsyncGit](async/async-git.md) - `agentbay.git.git`
+- [AsyncPty](async/async-pty.md) - `agentbay.pty`
 
 ## Common Classes
 

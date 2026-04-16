@@ -1318,6 +1318,11 @@ public class GenerateApiDocs {
             "com.aliyun.agentbay.git.GitNotARepoError",
             "com.aliyun.agentbay.git.GitNotFoundError"
         ));
+        moduleToClasses.put("pty", Arrays.asList(
+            "com.aliyun.agentbay.pty.Pty",
+            "com.aliyun.agentbay.pty.PtyHandle",
+            "com.aliyun.agentbay.pty.PtySession"
+        ));
         
         return moduleToClasses.getOrDefault(moduleName, new ArrayList<>());
     }
@@ -1371,6 +1376,8 @@ public class GenerateApiDocs {
             "The Computer module provides desktop automation capabilities including screen capture and interaction."));
         modules.put("mobile", createModuleConfig("Mobile", "common-features/advanced", "\\uD83D\\uDCF1", 
             "The Mobile module provides mobile device automation and testing capabilities."));
+        modules.put("pty", createModuleConfig("PTY", "common-features/basics", "\\uD83D\\uDCBB",
+            "The PTY module provides interactive terminal sessions in cloud sandbox environments with real-time streaming, resize, and session lifecycle management."));
         
         fallbackData.put("modules", modules);
         
