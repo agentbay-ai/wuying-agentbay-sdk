@@ -284,7 +284,7 @@ Before using the SDK, you need to:
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.19.0</version>
+    <version>0.18.0</version>
 </dependency>
 ```
 
@@ -3859,10 +3859,7 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	session := NewSession(a, *response.Body.Data.SessionId)
 	session.ImageId = params.ImageId
 
-	// Set AppInstanceId and ResourceUrl
-	if response.Body.Data.GetAppInstanceId() != nil {
-		session.AppInstanceId = *response.Body.Data.GetAppInstanceId()
-	}
+	// Set ResourceUrl
 	if response.Body.Data.ResourceUrl != nil {
 		session.ResourceUrl = *response.Body.Data.ResourceUrl
 	}
@@ -4018,8 +4015,13 @@ func (a *AgentBay) waitForMobileSimulate(session *Session, mobileSimPath string,
 	case models.MobileSimulateModePackagesOnly:
 		wyaApplyOption = " -packages"
 	case models.MobileSimulateModeServicesOnly:
+		wyaApplyOption = " -services"
+	case models.MobileSimulateModeAll:
+		wyaApplyOption = " -all"
+	}
 
-... [truncated, 27,714 chars remaining] ...
+
+... [truncated, 27,560 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func NewListSessionParams() *ListSessionParams {
@@ -8060,9 +8062,6 @@ type Session struct {
 	ImageId   string // ImageId used when creating this session
 	McpTools  []McpTool
 
-	// Application instance ID
-	AppInstanceId string
-
 	// Resource URL for accessing the session
 	ResourceUrl string
 
@@ -8588,8 +8587,9 @@ func (s *Session) Delete(syncContext ...bool) (*DeleteResult, error) {
 
 	// Poll for session deletion status
 	LogInfo(fmt.Sprintf("Waiting for session %s to be deleted... (DeleteRequestId=%s)", s.SessionID, requestID))
+	pollTimeout := 5 * time.Minute  // 5 minutes timeout
 
-... [truncated, 45,125 chars remaining] ...
+... [truncated, 45,071 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func (s *Session) ValidateLabels(labels map[string]string) string {
@@ -8622,13 +8622,13 @@ FILE: java/README.md
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.19.0</version>
+    <version>0.15.0</version>
 </dependency>
 ```
 
 ### Gradle
 ```gradle
-implementation 'com.aliyun:agentbay-sdk:0.19.0'
+implementation 'com.aliyun:agentbay-sdk:0.15.0'
 ```
 
 ## 🚀 Prerequisites
@@ -10157,8 +10157,7 @@ class AsyncAgentBay:
         tool_list = response_data.get("ToolList")
         session.mcpTools = self._parse_tool_list_to_mcp_tools(tool_list)
 
-        # Set AppInstanceId and ResourceUrl
-        session.app_instance_id = app_instance_id
+        # Set ResourceUrl
         session.resource_url = resource_url
 
         # LinkUrl/token may be returned by the server for direct tool calls.
@@ -10367,7 +10366,7 @@ class AsyncAgentBay:
                 consume_time = end_time - start_time
                 _logger.info(
 
-... [truncated, 34,148 chars remaining] ...
+... [truncated, 34,034 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _log_request_debug_info(self, request: CreateMcpSessionRequest) -> None:
@@ -14044,7 +14043,7 @@ class AsyncFileTransfer:
         self,
         *,
 
-... [truncated, 81,269 chars remaining] ...
+... [truncated, 81,215 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _put_file_sync(
@@ -14846,9 +14845,6 @@ class AsyncSession:
     def __init__(self, agent_bay: "AsyncAgentBay", session_id: str):
         self.agent_bay = agent_bay
         self.session_id = session_id
-
-        # Application instance ID
-        self.app_instance_id = ""
 
         # Resource URL for accessing the session
         self.resource_url = ""
@@ -17279,7 +17275,7 @@ FILE: python/pyproject.toml
 ================================================
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.19.0"
+version = "0.18.1"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
@@ -19387,7 +19383,7 @@ FILE: typescript/package.json
 ================================================
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.19.0",
+    "version": "0.18.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",
@@ -20067,7 +20063,7 @@ export class AgentBay {
           errorMessage
         );
 
-... [truncated, 29,963 chars remaining] ...
+... [truncated, 29,823 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
         logDebug("Full response:", JSON.stringify(sessionData, null, 2));
@@ -23964,14 +23960,8 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
       timeoutMs
     );
     promise.then(
-      (v) => {
-        clearTimeout(timer);
-        resolve(v);
-      },
-      (e) => {
-        clearTimeout(timer);
-        reject(e);
-      }
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); }
     );
   });
 }
@@ -24697,8 +24687,9 @@ export class FileSystem {
             if (base64String) {
               // Base64 string should only contain A-Z, a-z, 0-9, +, /, and = (padding)
               // Remove padding for validation, then check remaining characters
+              const base64WithoutPadding = base64String.replace(/=+$/, "");
 
-... [truncated, 41,706 chars remaining] ...
+... [truncated, 41,391 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
               if (!/^[A-Za-z0-9+/]+$/.test(base64WithoutPadding)) {
@@ -24809,15 +24800,11 @@ export class FileSystem {
           logInfo(`Session expired, stopping WS monitoring for: ${path}`);
             clearTimeout(timeoutId);
             resolve();
-      logWarn(`WS push subscribe failed: ${error}. Falling back to polling.`);
+      logWarn(
       if (unsubscribePush) {
-          unsubscribePush();
       if (unsubscribeState) {
-          unsubscribeState();
     if (unsubscribePush) {
-        unsubscribePush();
     if (unsubscribeState) {
-        unsubscribeState();
     logInfo(`Stopped WS push monitoring for: ${path}`);
     logInfo(`Polling fallback (baseline pre-established) for: ${path}`);
     while (!signal?.aborted) {
@@ -25920,19 +25907,15 @@ export class Session {
   private agentBay: AgentBay;
   public sessionId: string;
 
+  // Resource URL for accessing the session
   public resourceUrl = "";
 
-  /** Application instance ID */
-  public appInstanceId = "";
-
-  /** Token for VPC sessions */
+  // LinkUrl-based direct tool call (non-VPC)
   public token = "";
   public linkUrl = "";
 
-  /** WebSocket URL for streaming features */
+  // WS long connection URL (for streaming output)
   public wsUrl = "";
-
-  /** Cached WebSocket client instance */
   private _wsClient: WsClient | null = null;
 
   // Recording functionality
@@ -26418,11 +26401,11 @@ export class Session {
         else if (sessionResult.status) {
           const status = sessionResult.status;
           logDebug(`📊 Session status: ${status}`);
+          if (status === "FINISH") {
 
-... [truncated, 46,571 chars remaining] ...
+... [truncated, 46,534 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
-          if (status === "FINISH") {
             logInfo(`✅ Session ${this.sessionId} successfully deleted`);
       logAPIResponseWithDetails("DeleteSessionAsync", requestId, true, {
       logError("Error calling delete_session_async:", error);

@@ -94,6 +94,8 @@ type UploadPolicy struct {
 	UploadStrategy	UploadStrategy	`json:"uploadStrategy"`
 	// UploadMode defines the upload mode
 	UploadMode	UploadMode	`json:"uploadMode"`
+	// ArchiveExcludePaths lists paths to upload as individual files when UploadMode is Archive
+	ArchiveExcludePaths	[]string	`json:"archiveExcludePaths,omitempty"`
 }
 ```
 

@@ -16,6 +16,62 @@ func TestNewUploadPolicy(t *testing.T) {
 	assert.Equal(t, agentbay.UploadBeforeResourceRelease, policy.UploadStrategy)
 }
 
+func TestUploadPolicyArchiveExcludePaths(t *testing.T) {
+	policy := agentbay.NewUploadPolicy()
+	policy.UploadMode = agentbay.UploadModeArchive
+	policy.ArchiveExcludePaths = []string{"AGENTS.md", "sessions", "chats.json"}
+
+	data, err := json.Marshal(policy)
+	assert.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	assert.NoError(t, err)
+
+	paths, ok := result["archiveExcludePaths"].([]interface{})
+	assert.True(t, ok, "archiveExcludePaths should be present")
+	assert.Equal(t, 3, len(paths))
+	assert.Equal(t, "AGENTS.md", paths[0].(string))
+	assert.Equal(t, "sessions", paths[1].(string))
+	assert.Equal(t, "chats.json", paths[2].(string))
+}
+
+func TestUploadPolicyArchiveExcludePathsOmitEmpty(t *testing.T) {
+	policy := agentbay.NewUploadPolicy()
+	policy.UploadMode = agentbay.UploadModeArchive
+
+	data, err := json.Marshal(policy)
+	assert.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	assert.NoError(t, err)
+
+	_, ok := result["archiveExcludePaths"]
+	assert.False(t, ok, "archiveExcludePaths should not be present when nil")
+}
+
+func TestSyncPolicyWithArchiveExcludePaths(t *testing.T) {
+	syncPolicy := agentbay.NewSyncPolicy()
+	syncPolicy.UploadPolicy.UploadMode = agentbay.UploadModeArchive
+	syncPolicy.UploadPolicy.ArchiveExcludePaths = []string{"AGENTS.md", "sessions"}
+
+	data, err := json.Marshal(syncPolicy)
+	assert.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	assert.NoError(t, err)
+
+	up, ok := result["uploadPolicy"].(map[string]interface{})
+	assert.True(t, ok)
+	paths, ok := up["archiveExcludePaths"].([]interface{})
+	assert.True(t, ok, "archiveExcludePaths should be in uploadPolicy")
+	assert.Equal(t, 2, len(paths))
+	assert.Equal(t, "AGENTS.md", paths[0].(string))
+	assert.Equal(t, "sessions", paths[1].(string))
+}
+
 func TestNewDownloadPolicy(t *testing.T) {
 	policy := agentbay.NewDownloadPolicy()
 
