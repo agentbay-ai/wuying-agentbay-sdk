@@ -62,7 +62,7 @@ class TestSessionIdleReleaseTimeoutIntegration(unittest.TestCase):
         idle_release_timeout = 60  # seconds
         max_over_seconds = 60  # must not exceed timeout + 60s
         poll_interval = 2  # seconds
-        image_id = "computer-use-ubuntu-2204-regionGW"
+        image_id = "linux_latest"
 
         print("api_key =", _mask_secret(self.api_key))
         print(
