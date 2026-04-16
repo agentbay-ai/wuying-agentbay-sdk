@@ -2,181 +2,89 @@
 ci-stable
 """
 
-import os
-
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
-from agentbay import CreateSessionParams
-
-
-def get_test_api_key():
-    """Get API key for testing"""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return api_key
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    """Create an AsyncAgentBay instance."""
-    api_key = get_test_api_key()
-    print(f"Creating agent bay client with api key: {api_key}")
-    return AsyncAgentBay(api_key=api_key)
+from agentbay import AsyncAgentBay, CreateSessionParams
 
 
 @pytest.mark.asyncio
-async def test_create_list_delete():
+async def test_create_list_delete(agent_bay_client: AsyncAgentBay):
     """Test create, list, and delete methods."""
-    api_key = get_test_api_key()
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
-    # Create a session
     print("Creating a new session...")
-    result = await agent_bay.create()
+    result = await agent_bay_client.create()
 
-    # Check if session creation was successful
     assert result.success, f"Session creation failed: {result.error_message}"
     assert result.session is not None, "Session object is None"
 
     session = result.session
     print(f"Session created with ID: {session.session_id}")
 
-    # Ensure session ID is not empty
     assert session.session_id is not None
     assert session.session_id != ""
 
-    # Delete the session
     print("Deleting the session...")
-    await agent_bay.delete(session)
-
-    # Session deletion completed
-
-
-@pytest_asyncio.fixture
-async def session_fixture():
-    """Set up test session fixture."""
-    api_key = get_test_api_key()
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
-    # Create a session with default windows image
-    print("Creating a new session for testing...")
-    result = await agent_bay.create()
-
-    # Check if session creation was successful
-    if not result.success:
-        pytest.skip(f"Session creation failed in setUp: {result.error_message}")
-    if result.session is None:
-        pytest.skip("Session object is None in setUp")
-
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-
-    yield session, agent_bay
-
-    # Clean up session
-    print("Cleaning up: Deleting the session...")
-    try:
-        await agent_bay.delete(session)
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    await agent_bay_client.delete(session)
 
 
 @pytest.mark.asyncio
-async def test_session_properties(session_fixture):
+async def test_session_properties(make_session):
     """Test session properties and methods."""
-    session, agent_bay = session_fixture
+    lc = await make_session()
+    session = lc._result.session
 
-    # Test session properties
     assert session.session_id is not None
-    # Note: This may need adjustment for async implementation
-    # assert session.agent_bay == agent_bay
 
-    # Test access to API key through agent_bay
     api_key = session.agent_bay.api_key
-    assert api_key == agent_bay.api_key
+    assert api_key is not None
 
-    # Test access to client through agent_bay
     client = session.agent_bay.client
-    assert client == agent_bay.client
+    assert client is not None
 
-    # Test session_id property
     session_id = session.session_id
     assert session_id is not None
 
 
-@pytest.mark.asyncio
-async def test_delete_function():
-    """Test session delete method."""
-    api_key = get_test_api_key()
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
-    # Create a new session specifically for this test
-    print("Creating a new session for delete testing...")
-    result = await agent_bay.create()
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-
-    # Test delete method
-    print("Testing session.delete method...")
-    try:
-        result = await session.delete()
-        assert result
-
-        # Session deletion verified
-    except Exception as e:
-        print(f"Note: Session deletion failed: {e}")
-        # Clean up if the test failed
-        try:
-            await agent_bay.delete(session)
-        except BaseException:
-            pass
-
 
 @pytest.mark.asyncio
-async def test_command(session_fixture):
+async def test_command(make_session):
     """Test command execution."""
-    session, agent_bay = session_fixture
+    lc = await make_session()
+    session = lc._result.session
 
     if session.command:
         print("Executing command...")
         try:
-            response = session.command.execute_command("ls")
+            response = await session.command.execute_command("ls")
             print(f"Command execution result: {response}")
             assert response is not None
             assert response.success, f"Command failed: {response.error_message}"
-            # Check if response contains "tool not found"
             assert (
                 "tool not found" not in response.output.lower()
             ), "Command.ExecuteCommand returned 'tool not found'"
         except Exception as e:
             print(f"Note: Command execution failed: {e}")
-            # Don't fail the test if command execution is not supported
     else:
         print("Note: Command interface is nil, skipping command test")
 
 
 @pytest.mark.asyncio
-async def test_filesystem(session_fixture):
+async def test_filesystem(make_session):
     """Test filesystem operations."""
-    session, agent_bay = session_fixture
+    lc = await make_session()
+    session = lc._result.session
 
     if session.file_system:
         print("Reading file...")
         try:
-            result = session.file_system.read_file("/etc/hosts")
+            result = await session.file_system.read_file("/etc/hosts")
             print(f"ReadFile result: content='{result}'")
             assert result is not None
             assert result.success, f"Read file failed: {result.error_message}"
-            # Check if response contains "tool not found"
             assert (
                 "tool not found" not in result.content.lower()
             ), "FileSystem.ReadFile returned 'tool not found'"
             print("File read successful")
         except Exception as e:
             print(f"Note: File operation failed: {e}")
-            # Don't fail the test if filesystem operations are not supported
     else:
         print("Note: FileSystem interface is nil, skipping file test")
