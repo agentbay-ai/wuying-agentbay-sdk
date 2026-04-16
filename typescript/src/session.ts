@@ -26,6 +26,7 @@ import { FileSystem } from "./filesystem";
 import { Git } from "./git";
 import { Mobile } from "./mobile";
 import { Oss } from "./oss";
+import { Pty } from "./pty";
 import { WsClient } from "./_internal/ws-client";
 import {
   ApiResponse,
@@ -257,6 +258,8 @@ export class Session {
   // Context management (matching Go version)
   public context: ContextManager;
 
+  public pty: Pty;
+
   // MCP tools list returned by backend for this session
   public mcpTools: McpTool[] = [];
 
@@ -291,6 +294,9 @@ export class Session {
 
     // Initialize context manager (matching Go version)
     this.context = newContextManager(this);
+
+    // Initialize PTY module
+    this.pty = new Pty(this);
   }
 
   /**

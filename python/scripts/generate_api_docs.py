@@ -52,6 +52,7 @@ DOC_MAPPINGS: Sequence[DocMapping] = (
     DocMapping("sync/mobile-simulate.md", "MobileSimulate", ("agentbay._sync.mobile_simulate",)),
     DocMapping("sync/session-params.md", "SessionParams", ("agentbay._common.params.session_params",)),
     DocMapping("sync/git.md", "Git", ("agentbay._sync.git.git",)),
+    DocMapping("sync/pty.md", "Pty", ("agentbay._sync.pty",)),
 )
 
 # Async API docs
@@ -75,6 +76,7 @@ ASYNC_DOC_MAPPINGS: Sequence[DocMapping] = (
     DocMapping("async/async-mobile-simulate.md", "AsyncMobileSimulate", ("agentbay._async.mobile_simulate",)),
     DocMapping("async/async-session-params.md", "AsyncSessionParams", ("agentbay._common.params.session_params",)),
     DocMapping("async/async-git.md", "AsyncGit", ("agentbay._async.git.git",)),
+    DocMapping("async/async-pty.md", "AsyncPty", ("agentbay._async.pty",)),
 )
 
 # Common/Shared docs (Config, Exceptions, etc.)
@@ -304,6 +306,7 @@ def get_async_note_section(module_name: str, metadata: dict[str, Any]) -> str:
         "code": ("AsyncCode", "../async/async-code.md"),
         "computer": ("AsyncComputer", "../async/async-computer.md"),
         "mobile": ("AsyncMobile", "../async/async-mobile.md"),
+        "pty": ("AsyncPty", "../async/async-pty.md"),
     }
 
     async_info = async_class_map.get(module_name)
@@ -334,6 +337,7 @@ def get_sync_note_section(module_name: str, metadata: dict[str, Any]) -> str:
         "code": ("Code", "../sync/code.md"),
         "computer": ("Computer", "../sync/computer.md"),
         "mobile": ("Mobile", "../sync/mobile.md"),
+        "pty": ("Pty", "../sync/pty.md"),
     }
 
     sync_info = sync_class_map.get(module_name)
@@ -509,6 +513,7 @@ SYNC_ASYNC_MODULES = {
     'mobile',
     'session-params',
     'network',
+    'pty',
 }
 
 

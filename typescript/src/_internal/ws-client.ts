@@ -60,6 +60,7 @@ export class WsClient {
       onError?: OnError;
       resolveEnd: (data: Record<string, any>) => void;
       rejectEnd: (err: Error) => void;
+      isCall?: boolean;
     }
   >();
 
@@ -360,6 +361,50 @@ export class WsClient {
     };
   }
 
+  /**
+   * Send a request and wait for a single response (no phase semantics).
+   * Used for PTY operations and other simple request-response patterns.
+   */
+  async call(
+    target: string,
+    data: Record<string, any>,
+    timeoutMs = 30000
+  ): Promise<Record<string, any>> {
+    await this.connect();
+    const ws = this.ws;
+    if (!ws) {
+      throw new Error("WS is not connected");
+    }
+
+    const invocationId = newInvocationId();
+    const payload = {
+      invocationId,
+      source: "SDK",
+      target,
+      data,
+    };
+
+    const endPromise = new Promise<Record<string, any>>((resolve, reject) => {
+      this.pendingById.set(invocationId, {
+        resolveEnd: resolve,
+        rejectEnd: reject,
+        isCall: true,
+      });
+
+      setTimeout(() => {
+        if (this.pendingById.has(invocationId)) {
+          this.pendingById.delete(invocationId);
+          reject(new Error(`call() timed out after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+    });
+
+    this.logFrame(">>", payload);
+    ws.send(safeStringify(payload));
+
+    return endPromise;
+  }
+
   private cancelPending(invocationId: string): void {
     const pending = this.pendingById.get(invocationId);
     if (!pending) return;
@@ -466,6 +511,13 @@ export class WsClient {
       const err = new Error(data.error);
       if (pending.onError) pending.onError(invocationId, err);
       pending.rejectEnd(err);
+      this.pendingById.delete(invocationId);
+      return;
+    }
+
+    if (pending.isCall) {
+      if (pending.onEnd) pending.onEnd(invocationId, data);
+      pending.resolveEnd(data);
       this.pendingById.delete(invocationId);
       return;
     }

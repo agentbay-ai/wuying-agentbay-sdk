@@ -49,6 +49,8 @@ def agent_bay():
 def session(agent_bay):
     params = CreateSessionParams(image_id="mobile-use-android-12-gw")
     result = agent_bay.create(params)
+    if "no authorized app" in result.error_message and not result.success:
+        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
     assert result.success, f"Failed to create session: {result.error_message}"
     assert result.session is not None
     # Force API-based MCP tool calls (no LinkUrl direct calls) for test stability.

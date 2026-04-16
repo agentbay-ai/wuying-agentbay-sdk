@@ -331,6 +331,13 @@ var mappings = []docMapping{
 		IncludeAllTypes: true,
 		IncludeAllFuncs: true,
 	},
+	{
+		Target:          "common-features/basics/pty.md",
+		Title:           "PTY Terminal",
+		PackagePath:     "pkg/agentbay/pty",
+		IncludeAllTypes: true,
+		IncludeAllFuncs: true,
+	},
 }
 
 var packageCache = map[string]*packageDoc{}

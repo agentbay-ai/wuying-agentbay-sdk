@@ -92,6 +92,7 @@ type pendingStream struct {
 	onEnd   OnEnd
 	onError OnError
 	endCh   chan endResult
+	isCall  bool
 }
 
 type WsStreamHandle struct {
@@ -493,6 +494,77 @@ func (c *WsClient) SendMessage(target string, data map[string]interface{}) error
 	return nil
 }
 
+// Call sends a request and blocks until a single response arrives (no phase semantics).
+// Used for PTY operations and other simple request-response patterns.
+func (c *WsClient) Call(target string, data map[string]interface{}, timeoutMs int) (map[string]interface{}, error) {
+	if err := c.Connect(); err != nil {
+		return nil, err
+	}
+
+	invocationID := newInvocationID()
+	endCh := make(chan endResult, 1)
+	p := &pendingStream{
+		endCh:  endCh,
+		isCall: true,
+	}
+
+	c.mu.Lock()
+	c.pending[invocationID] = p
+	conn := c.conn
+	c.mu.Unlock()
+
+	if conn == nil {
+		c.mu.Lock()
+		delete(c.pending, invocationID)
+		c.mu.Unlock()
+		return nil, fmt.Errorf("WS is not connected")
+	}
+
+	payload := map[string]interface{}{
+		"invocationId": invocationID,
+		"source":       "SDK",
+		"target":       target,
+		"data":         data,
+	}
+
+	c.logFrame(">>", payload)
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		c.mu.Lock()
+		delete(c.pending, invocationID)
+		c.mu.Unlock()
+		return nil, fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := websocket.Message.Send(conn, string(payloadBytes)); err != nil {
+		c.mu.Lock()
+		delete(c.pending, invocationID)
+		c.mu.Unlock()
+		return nil, fmt.Errorf("failed to send message: %w", err)
+	}
+
+	timeout := time.Duration(timeoutMs) * time.Millisecond
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+
+	select {
+	case result := <-endCh:
+		if result.err != nil {
+			return nil, result.err
+		}
+		return result.data, nil
+	case <-time.After(timeout):
+		c.mu.Lock()
+		delete(c.pending, invocationID)
+		c.mu.Unlock()
+		return nil, &WsTimeoutError{Timeout: timeout}
+	case <-c.closedCh:
+		return nil, fmt.Errorf("WS connection closed")
+	}
+}
+
 func (c *WsClient) CallStream(target string, data map[string]interface{}, onEvent OnEvent, onEnd OnEnd, onError OnError) (*WsStreamHandle, error) {
 	if err := c.Connect(); err != nil {
 		return nil, err
@@ -744,6 +816,15 @@ func (c *WsClient) handleIncoming(msg map[string]interface{}) {
 		}
 		select {
 		case p.endCh <- endResult{err: err}:
+		default:
+		}
+		c.finishPending(invocationID)
+		return
+	}
+
+	if p.isCall {
+		select {
+		case p.endCh <- endResult{data: data}:
 		default:
 		}
 		c.finishPending(invocationID)
