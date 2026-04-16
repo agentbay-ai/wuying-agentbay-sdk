@@ -295,6 +295,17 @@ Get the mobile service for this session
 **Returns:**
 - `Mobile`: Mobile instance
 
+### getEnv
+
+```java
+public Env getEnv()
+```
+
+Get the environment variable service for this session
+
+**Returns:**
+- `Env`: Env instance
+
 ### getFileTransferContextId
 
 ```java

@@ -17,6 +17,7 @@ import { Browser } from "./browser";
 import { Code } from "./code";
 import { Command } from "./command";
 import { Computer } from "./computer";
+import { Env } from "./env";
 import {
   ContextManager,
   ContextSyncResult,
@@ -239,6 +240,7 @@ export class Session {
   // File, command, code, and oss handlers (matching Python naming)
   public fileSystem: FileSystem; // file_system in Python
   public command: Command;
+  public env: Env;
   public code: Code;
   public oss: Oss;
 
@@ -276,6 +278,7 @@ export class Session {
     // Initialize file system, command and code handlers (matching Python naming)
     this.fileSystem = new FileSystem(this);
     this.command = new Command(this);
+    this.env = new Env(this);
     this.code = new Code(this);
     this.oss = new Oss(this);
 

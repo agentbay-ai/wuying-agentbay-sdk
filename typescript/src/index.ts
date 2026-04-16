@@ -15,6 +15,7 @@ export * from "./api";
 export * from "./browser";
 export { Code } from "./code";
 export * from "./command";
+export * from "./env";
 export { Context, ContextService } from "./context";
 export { BetaNetworkService } from "./beta-network";
 export {

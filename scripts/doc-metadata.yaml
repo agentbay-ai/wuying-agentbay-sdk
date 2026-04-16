@@ -234,6 +234,34 @@ modules:
     emoji: ⚡
     category: common-features/basics
 
+  # Environment variable module
+  env:
+    python: agentbay.env
+    typescript: env
+    golang: pkg/agentbay/env
+    java: com.aliyun.agentbay.env
+
+    overview: |
+      The Env module provides methods for setting and querying global environment variables within a session sandbox.
+      Variables set via this module persist across all MCP tools (shell, code interpreter, etc.) within the session.
+
+    best_practices:
+      - "Use env.set to configure variables before running shell commands or code"
+      - "Both keys and values must be strings"
+      - "Setting a key that already exists will overwrite the previous value"
+      - "Use env.get with specific keys to reduce response size"
+
+    related_resources:
+      - name: Session API Reference
+        module: session
+        category: common-features/basics
+      - name: Command API Reference
+        module: command
+        category: common-features/basics
+
+    emoji: 🌐
+    category: common-features/basics
+
   # Context module
   context:
     python: agentbay.context

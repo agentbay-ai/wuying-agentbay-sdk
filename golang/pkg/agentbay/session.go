@@ -19,6 +19,7 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/code"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/command"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/computer"
+	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/env"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/filesystem"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/git"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/internal"
@@ -162,6 +163,8 @@ type Session struct {
 
 	// Agent for task execution
 	Agent *agent.Agent
+
+	Env *env.Env
 
 	// Context management
 	Context *ContextManager
@@ -387,6 +390,8 @@ func NewSession(agentBay *AgentBay, sessionID string) *Session {
 
 	// Initialize Agent
 	session.Agent = agent.NewAgent(session)
+
+	session.Env = env.NewEnv(session, session)
 
 	// Initialize context manager
 	session.Context = NewContextManager(session)
@@ -1260,6 +1265,11 @@ func (s *Session) GetMcpServerForTool(toolName string) string {
 		}
 	}
 	return ""
+}
+
+// AppendMcpTool adds an MCP tool entry to the session's tool list.
+func (s *Session) AppendMcpTool(name, server string) {
+	s.McpTools = append(s.McpTools, McpTool{Name: name, Server: server})
 }
 
 // CallMcpTool calls an MCP tool using the OpenAPI route.

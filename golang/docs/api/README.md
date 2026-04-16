@@ -26,6 +26,7 @@ This directory is generated. Run `go run scripts/generate_api_docs.go` to refres
 - `common-features/advanced/network.md` – Network
 - `common-features/advanced/git.md` – Git
 - `common-features/basics/pty.md` – PTY Terminal
+- `common-features/basics/env.md` – Env
 
 ## Computer Use
 

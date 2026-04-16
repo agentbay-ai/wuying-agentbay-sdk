@@ -8,6 +8,7 @@ Fundamental capabilities shared across all AgentBay SDKs (Python, TypeScript, Go
 - [Command Execution](command-execution.md) - Execute shell commands and scripts
 - [File Operations](file-operations.md) - Upload, download, and manipulate files
 - [Data Persistence](data-persistence.md) - Persistent data storage across sessions
+- [Environment Variables](environment-variables.md) - Set and query global environment variables in sessions
 
 ## Getting Help
 

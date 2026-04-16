@@ -55,6 +55,7 @@ code: [`Code`](../../codespace/code.md)
 command: [`Command`](command.md)
 computer: [`Computer`](../../computer-use/computer.md)
 context: [`ContextManager`](context-manager.md)
+env: [`Env`](env.md)
 fileSystem: [`FileSystem`](filesystem.md)
 git: [`Git`](../advanced/git.md)
 linkUrl: `string` = `""`

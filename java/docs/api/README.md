@@ -15,6 +15,7 @@ This directory is generated. Run `mvn exec:java` in `java/agentbay` to refresh i
 - [common-features/basics/context-manager.md](common-features/basics/context-manager.md)
 - [common-features/basics/context-sync.md](common-features/basics/context-sync.md)
 - [common-features/basics/context.md](common-features/basics/context.md)
+- [common-features/basics/env.md](common-features/basics/env.md)
 - [common-features/basics/filesystem.md](common-features/basics/filesystem.md)
 - [common-features/basics/pty.md](common-features/basics/pty.md)
 - [common-features/basics/session-params.md](common-features/basics/session-params.md)

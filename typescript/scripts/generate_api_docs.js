@@ -66,6 +66,7 @@ const docMappings = [
     identifiers: ['Class CreateSessionParams', 'CreateSessionParams', 'BrowserContext', 'session-params'],
   },
   { target: 'mobile-use/mobile.md', symbol: 'Mobile', identifiers: ['Class Mobile', 'Mobile'] },
+  { target: 'common-features/basics/env.md', symbol: 'Env', identifiers: ['Class Env', 'Env', 'EnvResult', 'BoolResult'] },
   {
     target: 'mobile-use/mobile-simulate.md',
     symbol: 'MobileSimulateService',

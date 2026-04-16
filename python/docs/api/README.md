@@ -47,6 +47,7 @@ All synchronous API classes are in the `sync/` directory:
 - [SessionParams](sync/session-params.md) - `agentbay.agentbay._common.params.session_params`
 - [Git](sync/git.md) - `agentbay.git.git`
 - [Pty](sync/pty.md) - `agentbay.pty`
+- [Env](sync/env.md) - `agentbay.env`
 
 ## Asynchronous API
 
@@ -72,6 +73,7 @@ All asynchronous API classes are in the `async/` directory:
 - [AsyncSessionParams](async/async-session-params.md) - `agentbay.agentbay._common.params.session_params`
 - [AsyncGit](async/async-git.md) - `agentbay.git.git`
 - [AsyncPty](async/async-pty.md) - `agentbay.pty`
+- [AsyncEnv](async/async-env.md) - `agentbay.env`
 
 ## Common Classes
 
