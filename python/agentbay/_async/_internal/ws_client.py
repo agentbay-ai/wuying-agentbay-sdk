@@ -67,6 +67,7 @@ class _PendingStream:
     on_end: Optional[OnEnd]
     on_error: Optional[OnError]
     end_future: asyncio.Future[dict[str, Any]]
+    is_call: bool = False
 
 
 class WsStreamHandle:
@@ -260,6 +261,53 @@ class WsClient:
             raise
 
         return WsStreamHandle(self, pending)
+
+    async def call(
+        self,
+        *,
+        target: str,
+        data: dict[str, Any],
+        timeout: float = 30.0,
+    ) -> dict[str, Any]:
+        """
+        Send a request and wait for a single response (no phase semantics).
+
+        Returns the response data dict. Check data["result"] for the result.
+        """
+        if not isinstance(target, str) or not target:
+            raise ValueError("target must be a non-empty string")
+        if not isinstance(data, dict):
+            raise ValueError("data must be a dict")
+
+        await self._ensure_open()
+
+        invocation_id = _new_invocation_id()
+        loop = asyncio.get_running_loop()
+        end_future: asyncio.Future[dict[str, Any]] = loop.create_future()
+        pending = _PendingStream(
+            invocation_id=invocation_id,
+            target=target,
+            on_event=None,
+            on_end=None,
+            on_error=None,
+            end_future=end_future,
+            is_call=True,
+        )
+        self._pending_by_id[invocation_id] = pending
+
+        try:
+            await self._write_business(
+                invocation_id=invocation_id,
+                target=target,
+                data=data,
+            )
+        except Exception as e:
+            self._pending_by_id.pop(invocation_id, None)
+            if not end_future.done():
+                end_future.set_exception(e)
+            raise
+
+        return await asyncio.wait_for(asyncio.shield(end_future), timeout=timeout)
 
     async def send_message(
         self,
@@ -510,6 +558,31 @@ class WsClient:
                 pending.on_error(invocation_id, err)
             if not pending.end_future.done():
                 pending.end_future.set_exception(err)
+            self._pending_by_id.pop(invocation_id, None)
+            return
+
+        if pending.is_call:
+            result = data.get("result")
+            if result is not None:
+                if pending.on_end is not None:
+                    pending.on_end(invocation_id, data)
+                if not pending.end_future.done():
+                    pending.end_future.set_result(data)
+                self._pending_by_id.pop(invocation_id, None)
+                return
+            error = data.get("error")
+            if error is not None:
+                err = WsRemoteError(
+                    _truncate_string_for_log(_mask_sensitive_data_string(str(error)), 2000)
+                )
+                if pending.on_error is not None:
+                    pending.on_error(invocation_id, err)
+                if not pending.end_future.done():
+                    pending.end_future.set_exception(err)
+                self._pending_by_id.pop(invocation_id, None)
+                return
+            if not pending.end_future.done():
+                pending.end_future.set_result(data)
             self._pending_by_id.pop(invocation_id, None)
             return
 

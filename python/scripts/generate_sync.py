@@ -238,6 +238,7 @@ def generate_sync():
         "AsyncBrowserOperator": "BrowserOperator",
         "AsyncBrowserFingerprintGenerator": "BrowserFingerprintGenerator",
         "AsyncBaseService": "BaseService",
+        "AsyncPty": "Pty",
         "AsyncMobileSimulateService": "MobileSimulateService",
         "AsyncExtensionsService": "ExtensionsService",
 
@@ -820,7 +821,7 @@ def generate_sync():
                     # e.g., "AsyncGit module" -> "SyncGit module", "AsyncCommand" -> "SyncCommand"
                     # Uses negative lookbehind to avoid matching API model names like DeleteSessionAsyncRequest
                     content = re.sub(
-                        r'(?<!\w)Async(Git|Command|Code|FileSystem|FileTransfer|Session|Browser|Computer|Mobile|Oss|Agent|Network|Context|ContextManager|ContextService|MobileSimulate|MobileSimulateService|BrowserOperator|BetaNetwork|BetaSkills|BaseService|Skills|Extensions|ExtensionsService)\b(?!\w*(?:Request|Response|Body))',
+                        r'(?<!\w)Async(Git|Command|Code|FileSystem|FileTransfer|Session|Browser|Computer|Mobile|Oss|Agent|Network|Context|ContextManager|ContextService|MobileSimulate|MobileSimulateService|BrowserOperator|BetaNetwork|BetaSkills|BaseService|Skills|Extensions|ExtensionsService|Pty)\b(?!\w*(?:Request|Response|Body))',
                         r'Sync\1',
                         content
                     )
