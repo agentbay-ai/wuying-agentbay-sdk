@@ -1,4 +1,4 @@
-# Context Sync API Reference
+# Class: ContextSync
 
 ## 🔄 Related Tutorial
 
@@ -8,178 +8,519 @@
 
 Context Sync provides a mechanism to persist files and directories across sessions by synchronizing local paths to a named context. It supports policies for upload/download behavior and selective path inclusion.
 
-## UploadStrategy
+## Table of contents
 
-```typescript
-enum UploadStrategy
-```
-
-Upload strategy for context synchronization.
-
-| Value | Description |
-|-------|-------------|
-| `UploadBeforeResourceRelease` | Upload before the resource is released (default) |
-
-## DownloadStrategy
-
-```typescript
-enum DownloadStrategy
-```
-
-Download strategy for context synchronization.
-
-| Value | Description |
-|-------|-------------|
-| `DownloadAsync` | Download asynchronously (default) |
-
-## UploadMode
-
-```typescript
-enum UploadMode
-```
-
-Upload mode for context synchronization.
-
-| Value | Description |
-|-------|-------------|
-| `File` | Default mode — files uploaded as-is |
-| `Archive` | Files compressed into an archive before upload |
-
-## UploadPolicy
-
-```typescript
-interface UploadPolicy
-```
-
-Defines the upload policy for context synchronization.
 
 ### Properties
 
-#### autoUpload
+- [betaWaitForCompletion](#betawaitforcompletion)
+- [policy](#policy)
+
+### Methods
+
+- [withBetaWaitForCompletion](#withbetawaitforcompletion)
+- [withPolicy](#withpolicy)
+
+## Properties
 
 ```typescript
-autoUpload: boolean  // default: true
+contextId: `string`
+path: `string`
 ```
 
-Enables automatic upload.
 
-#### uploadStrategy
+### betaWaitForCompletion
 
-```typescript
-uploadStrategy: UploadStrategy  // default: UploadBeforeResourceRelease
-```
+• `Optional` **betaWaitForCompletion**: `boolean`
 
-Defines the upload strategy.
+Beta feature flag to control whether session creation should wait for this context's
+initial download to finish. If set to false, the SDK will not block create() on this context.
+Defaults to undefined (treated as true for backward compatibility).
 
-#### uploadMode
+___
 
-```typescript
-uploadMode: UploadMode  // default: File
-```
+### policy
 
-Defines the upload mode (`UploadMode.File` or `UploadMode.Archive`).
+• `Optional` **policy**: ``SyncPolicy``
 
-#### archiveExcludePaths
+## Methods
 
-```typescript
-archiveExcludePaths?: string[]
-```
+### withBetaWaitForCompletion
 
-Paths excluded from Archive packaging, stored as individual files (FILE mode). Only applicable when `uploadMode = UploadMode.Archive`. Each entry is a relative path prefix (no wildcards). Matching files support Presigned URL direct access.
+▸ **withBetaWaitForCompletion**(`wait`): [`ContextSync`](context-sync.md)
 
-### Factory Function
+#### Parameters
 
-```typescript
-function newUploadPolicy(options?: Partial<UploadPolicy>): UploadPolicy
-```
+| Name | Type |
+| :------ | :------ |
+| `wait` | `boolean` |
 
-Creates a new upload policy with default values. Accepts partial options to override defaults.
+#### Returns
 
-## DownloadPolicy
+[`ContextSync`](context-sync.md)
 
-```typescript
-interface DownloadPolicy
-```
+___
 
-Defines the download policy for context synchronization.
+### withPolicy
+
+▸ **withPolicy**(`policy`): [`ContextSync`](context-sync.md)
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `policy` | ``SyncPolicy`` |
+
+#### Returns
+
+[`ContextSync`](context-sync.md)
+
+
+`wuying-agentbay-sdk` / SyncPolicyImpl
+
+# Class: SyncPolicyImpl
+
+## Implements
+
+- ``SyncPolicy``
+
+## Table of contents
+
+### Constructors
+
+- `constructor`
 
 ### Properties
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `autoDownload` | `boolean` | `true` | Enables automatic download |
-| `downloadStrategy` | `DownloadStrategy` | `DownloadAsync` | Defines the download strategy |
+- `bwList`
+- `deletePolicy`
+- `downloadPolicy`
+- `extractPolicy`
+- `recyclePolicy`
+- `uploadPolicy`
 
-### Factory Function
+### Methods
 
-```typescript
-function newDownloadPolicy(): DownloadPolicy
-```
+- `toJSON`
 
-## SyncPolicy
+## Constructors
 
-```typescript
-interface SyncPolicy
-```
+### constructor
 
-Defines the complete synchronization policy, combining upload, download, delete, extract, recycle, and BWList policies.
+• **new SyncPolicyImpl**(`policy?`): ``SyncPolicyImpl``
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `policy?` | `Partial`\<``SyncPolicy``\> |
+
+#### Returns
+
+``SyncPolicyImpl``
+
+## Properties
+
+### bwList
+
+• `Optional` **bwList**: ``BWList``
+
+#### Implementation of
+
+`SyncPolicy`.`bwList`
+
+___
+
+### deletePolicy
+
+• `Optional` **deletePolicy**: ``DeletePolicy``
+
+#### Implementation of
+
+`SyncPolicy`.`deletePolicy`
+
+___
+
+### downloadPolicy
+
+• `Optional` **downloadPolicy**: ``DownloadPolicy``
+
+#### Implementation of
+
+`SyncPolicy`.`downloadPolicy`
+
+___
+
+### extractPolicy
+
+• `Optional` **extractPolicy**: ``ExtractPolicy``
+
+#### Implementation of
+
+`SyncPolicy`.`extractPolicy`
+
+___
+
+### recyclePolicy
+
+• `Optional` **recyclePolicy**: ``RecyclePolicy``
+
+#### Implementation of
+
+`SyncPolicy`.`recyclePolicy`
+
+___
+
+### uploadPolicy
+
+• `Optional` **uploadPolicy**: ``UploadPolicy``
+
+#### Implementation of
+
+`SyncPolicy`.`uploadPolicy`
+
+## Methods
+
+### toJSON
+
+▸ **toJSON**(): ``SyncPolicy``
+
+#### Returns
+
+``SyncPolicy``
+
+
+`wuying-agentbay-sdk` / SyncPolicy
+
+# Interface: SyncPolicy
+
+## Implemented by
+
+- ``SyncPolicyImpl``
+
+## Table of contents
 
 ### Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `uploadPolicy?` | `UploadPolicy` | Upload behavior configuration |
-| `downloadPolicy?` | `DownloadPolicy` | Download behavior configuration |
-| `deletePolicy?` | `DeletePolicy` | Deletion synchronization configuration |
-| `extractPolicy?` | `ExtractPolicy` | Archive extraction configuration |
-| `recyclePolicy?` | `RecyclePolicy` | Data lifecycle configuration |
-| `bwList?` | `BWList` | Directory whitelist configuration |
+- `bwList`
+- `deletePolicy`
+- `downloadPolicy`
+- `extractPolicy`
+- `mappingPolicy`
+- `recyclePolicy`
+- `uploadPolicy`
 
-### Factory Function
+## Properties
 
-```typescript
-function newSyncPolicy(): SyncPolicy
-```
+### bwList
 
-Creates a new sync policy with all sub-policies set to their defaults.
+• `Optional` **bwList**: ``BWList``
 
-## ContextSync
+___
 
-```typescript
-class ContextSync
-```
+### deletePolicy
 
-Defines the context synchronization configuration linking a context to a session path.
+• `Optional` **deletePolicy**: ``DeletePolicy``
+
+___
+
+### downloadPolicy
+
+• `Optional` **downloadPolicy**: ``DownloadPolicy``
+
+___
+
+### extractPolicy
+
+• `Optional` **extractPolicy**: ``ExtractPolicy``
+
+___
+
+### mappingPolicy
+
+• `Optional` **mappingPolicy**: ``MappingPolicy``
+
+___
+
+### recyclePolicy
+
+• `Optional` **recyclePolicy**: ``RecyclePolicy``
+
+___
+
+### uploadPolicy
+
+• `Optional` **uploadPolicy**: ``UploadPolicy``
+
+
+`wuying-agentbay-sdk` / UploadPolicy
+
+# Interface: UploadPolicy
+
+## Table of contents
 
 ### Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `contextId` | `string` | The context identifier |
-| `path` | `string` | The local path to synchronize |
-| `policy?` | `SyncPolicy` | The synchronization policy |
+- `archiveExcludePaths`
+- `autoUpload`
+- `uploadMode`
+- `uploadStrategy`
 
-### Factory Function
+## Properties
 
-```typescript
-function newContextSync(contextId: string, path: string, policy?: SyncPolicy): ContextSync
-```
+### archiveExcludePaths
 
-## ContextSyncResult
+• `Optional` **archiveExcludePaths**: `string`[]
 
-```typescript
-interface ContextSyncResult extends ApiResponse
-```
+___
 
-Result of a context sync operation.
+### autoUpload
+
+• **autoUpload**: `boolean`
+
+___
+
+### uploadMode
+
+• **uploadMode**: ``UploadMode``
+
+___
+
+### uploadStrategy
+
+• **uploadStrategy**: ``UploadBeforeResourceRelease``
+
+
+`wuying-agentbay-sdk` / DownloadPolicy
+
+# Interface: DownloadPolicy
+
+## Table of contents
 
 ### Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `success` | `boolean` | Whether the operation succeeded |
-| `errorMessage?` | `string` | Optional error message if the operation failed |
-| `requestId?` | `string` | Optional request identifier for tracking API calls |
+- `autoDownload`
+- `downloadStrategy`
+
+## Properties
+
+### autoDownload
+
+• **autoDownload**: `boolean`
+
+___
+
+### downloadStrategy
+
+• **downloadStrategy**: ``DownloadAsync``
+
+
+`wuying-agentbay-sdk` / DeletePolicy
+
+# Interface: DeletePolicy
+
+## Table of contents
+
+### Properties
+
+- `syncLocalFile`
+
+## Properties
+
+### syncLocalFile
+
+• **syncLocalFile**: `boolean`
+
+
+`wuying-agentbay-sdk` / ExtractPolicy
+
+# Interface: ExtractPolicy
+
+## Implemented by
+
+- ``ExtractPolicyClass``
+
+## Table of contents
+
+### Properties
+
+- `deleteSrcFile`
+- `extract`
+- `extractToCurrentFolder`
+
+## Properties
+
+### deleteSrcFile
+
+• **deleteSrcFile**: `boolean`
+
+___
+
+### extract
+
+• **extract**: `boolean`
+
+___
+
+### extractToCurrentFolder
+
+• **extractToCurrentFolder**: `boolean`
+
+
+`wuying-agentbay-sdk` / RecyclePolicy
+
+# Interface: RecyclePolicy
+
+## Table of contents
+
+### Properties
+
+- `lifecycle`
+- `paths`
+
+## Properties
+
+### lifecycle
+
+• **lifecycle**: ``Lifecycle``
+
+___
+
+### paths
+
+• **paths**: `string`[]
+
+
+`wuying-agentbay-sdk` / MappingPolicy
+
+# Interface: MappingPolicy
+
+## Table of contents
+
+### Properties
+
+- `path`
+
+## Properties
+
+### path
+
+• **path**: `string`
+
+
+`wuying-agentbay-sdk` / UploadMode
+
+# Enumeration: UploadMode
+
+## Table of contents
+
+### Enumeration Members
+
+- `Archive`
+- `File`
+
+## Enumeration Members
+
+### Archive
+
+• **Archive** = ``"Archive"``
+
+___
+
+### File
+
+• **File** = ``"File"``
+
+
+`wuying-agentbay-sdk` / UploadStrategy
+
+# Enumeration: UploadStrategy
+
+## Table of contents
+
+### Enumeration Members
+
+- `UploadBeforeResourceRelease`
+
+## Enumeration Members
+
+### UploadBeforeResourceRelease
+
+• **UploadBeforeResourceRelease** = ``"UploadBeforeResourceRelease"``
+
+
+`wuying-agentbay-sdk` / DownloadStrategy
+
+# Enumeration: DownloadStrategy
+
+## Table of contents
+
+### Enumeration Members
+
+- `DownloadAsync`
+
+## Enumeration Members
+
+### DownloadAsync
+
+• **DownloadAsync** = ``"DownloadAsync"``
+
+
+`wuying-agentbay-sdk` / ContextSyncResult
+
+# Interface: ContextSyncResult
+
+Base interface for API responses
+
+## Hierarchy
+
+- ``ApiResponse``
+
+  ↳ **`ContextSyncResult`**
+
+## Table of contents
+
+### Properties
+
+- `errorMessage`
+- `requestId`
+- `success`
+
+## Properties
+
+### errorMessage
+
+• `Optional` **errorMessage**: `string`
+
+Optional error message if the operation failed
+
+#### Overrides
+
+`ApiResponse`.`errorMessage`
+
+___
+
+### requestId
+
+• `Optional` **requestId**: `string`
+
+Optional request identifier for tracking API calls
+
+#### Inherited from
+
+`ApiResponse`.`requestId`
+
+___
+
+### success
+
+• **success**: `boolean`
+
+Optional status code if the operation failed
+
+#### Overrides
+
+`ApiResponse`.`success`
 
 ## Related Resources
 

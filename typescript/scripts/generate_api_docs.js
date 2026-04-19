@@ -33,6 +33,11 @@ const docMappings = [
   {
     target: 'common-features/basics/context-sync.md',
     symbol: 'ContextSync',
+    collectPages: [
+      'ContextSync', 'SyncPolicyImpl', 'Interface: SyncPolicy', 'UploadPolicy', 'DownloadPolicy',
+      'DeletePolicy', 'Interface: ExtractPolicy', 'RecyclePolicy', 'MappingPolicy',
+      'UploadMode', 'UploadStrategy', 'DownloadStrategy', 'ContextSyncResult',
+    ],
     identifiers: ['Interface ContextSync', 'ContextSync', 'SyncPolicy', 'UploadPolicy', 'DownloadPolicy', 'DeletePolicy', 'ExtractPolicy', 'RecyclePolicy', 'WhiteList', 'BWList', 'MappingPolicy'],
   },
   {
