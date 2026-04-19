@@ -4,7 +4,7 @@ import pytest
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
 
-IMAGE_ID = "imgc-0ab5takiyxtc4h5bn"
+IMAGE_ID = "linux_latest"
 
 
 @pytest.fixture(scope="module")

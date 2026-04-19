@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
  * Integration tests for the PTY module.
  */
 public class PtyIntegrationTest {
-    private static final String IMAGE_ID = "imgc-0ab5takiyxtc4h5bn";
+    private static final String IMAGE_ID = "linux_latest";
 
     private static AgentBay agentBay;
     private static Session session;

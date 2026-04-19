@@ -10,7 +10,7 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/tests/pkg/agentbay/testutil"
 )
 
-const ptyImageID = "imgc-0ab5takiyxtc4h5bn"
+const ptyImageID = "linux_latest"
 
 func createPtySession(t *testing.T) (*agentbay.AgentBay, *agentbay.Session) {
 	t.Helper()

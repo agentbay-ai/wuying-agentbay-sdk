@@ -1,7 +1,7 @@
 import { AgentBay, Session } from "../../src";
 import { getTestApiKey } from "../utils/test-helpers";
 
-const IMAGE_ID = "imgc-0ab5takiyxtc4h5bn";
+const IMAGE_ID = "linux_latest";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
