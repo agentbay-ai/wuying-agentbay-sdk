@@ -7,12 +7,10 @@ Integration tests for context sync with MappingPolicy.
 This test simulates: Windows session -> persist data -> Linux session -> access data
 """
 
-import os
 import time
 
 import pytest
 
-from agentbay import AgentBay
 from agentbay import (
     ContextSync,
     DeletePolicy,
@@ -25,19 +23,10 @@ from agentbay import (
 from agentbay import CreateSessionParams
 
 
-@pytest.fixture
-def api_key():
-    """Get API key, skip if not available."""
-    key = os.getenv("AGENTBAY_API_KEY")
-    if not key or os.getenv("CI"):
-        pytest.skip("Skipping integration test: No API key available or running in CI")
-    return key
-
-
 @pytest.mark.sync
-def test_context_sync_with_mapping_policy(api_key):
+def test_context_sync_with_mapping_policy(agent_bay_client):
     """Test that context sync works with MappingPolicy for cross-platform persistence."""
-    ab = AgentBay(api_key)
+    ab = agent_bay_client
 
     # 1. Create a unique context name
     context_name = f"test-mapping-policy-{int(time.time())}"
@@ -76,7 +65,7 @@ def test_context_sync_with_mapping_policy(api_key):
 
         # Create Windows session
         windows_session_result = ab.create(windows_session_params)
-        if("no authorized app" in windows_session_result.error_message):
+        if "no authorized app" in windows_session_result.error_message:
             pytest.skip("No authorized app")
         assert windows_session_result.success
         assert windows_session_result.session is not None
@@ -115,7 +104,10 @@ def test_context_sync_with_mapping_policy(api_key):
 
         # Sync Windows session to upload data
         print("Syncing Windows session to upload data...")
-        windows_sync_result = windows_session.context.sync()
+        windows_sync_result = windows_session.context.sync(
+            context_id=context.id,
+            path=windows_path,
+        )
         assert windows_sync_result.success
         print(
             f"Windows context sync successful (RequestID: {windows_sync_result.request_id})"

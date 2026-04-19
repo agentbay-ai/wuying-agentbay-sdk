@@ -4,40 +4,15 @@
 """Integration tests for command timeout."""
 # ci-stable
 
-import os
-
-import pytest
 import pytest
 
-from agentbay import AgentBay
 from agentbay import CreateSessionParams
 
 
-@pytest.fixture(scope="module", loop_scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
 @pytest.fixture
-def test_session(agent_bay):
-    params = CreateSessionParams(
-        image_id="code_latest",
-    )
-    session_result = agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        pytest.skip("Failed to create session")
-
-    session = session_result.session  # Assuming session has direct access to command
-    yield session
-
-    # Clean up session
-    try:
-        agent_bay.delete(session)
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+def test_session(make_session):
+    lc = make_session(params=CreateSessionParams(image_id="code_latest"))
+    return lc._result.session
 
 
 @pytest.mark.sync

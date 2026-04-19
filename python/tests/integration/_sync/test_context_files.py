@@ -5,78 +5,59 @@
 ci-stable
 """
 
-import os
-
 import pytest
-import pytest
-
-from agentbay import AgentBay
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
-@pytest.fixture
-def test_session(agent_bay):
-    result = agent_bay.create()
-    assert result.success
-    yield result.session
-    result.session.delete()
 
 
 @pytest.mark.sync
-def test_context_file_operations(test_session):
+def test_context_file_operations(agent_bay_client):
     """Test context file operations using upload/download URLs."""
     import httpx
 
     # Create a context
-    ctx_result = test_session.agent_bay.context.get("test_ctx", create=True)
+    ctx_result = agent_bay_client.context.get("test_ctx", create=True)
     assert ctx_result.success
 
-    # Get upload URL for a file
-    upload_url_result = test_session.agent_bay.context.get_file_upload_url(
-        ctx_result.context_id, "/test_file.txt"
-    )
-    assert upload_url_result.success
-    assert upload_url_result.url != ""
+    try:
+        # Get upload URL for a file
+        upload_url_result = agent_bay_client.context.get_file_upload_url(
+            ctx_result.context_id, "/test_file.txt"
+        )
+        assert upload_url_result.success
+        assert upload_url_result.url != ""
 
-    # Upload file content
-    file_content = b"test content for context file"
-    with httpx.Client() as client:
-        response = client.put(upload_url_result.url, content=file_content)
-        assert response.status_code == 200
+        # Upload file content
+        file_content = b"test content for context file"
+        with httpx.Client() as client:
+            response = client.put(upload_url_result.url, content=file_content)
+            assert response.status_code == 200
 
-    # List files in context
-    files_result = test_session.agent_bay.context.list_files(
-        ctx_result.context_id, "/"
-    )
-    assert files_result.success
+        # List files in context
+        files_result = agent_bay_client.context.list_files(
+            ctx_result.context_id, "/"
+        )
+        assert files_result.success
 
-    # Get download URL
-    download_url_result = test_session.agent_bay.context.get_file_download_url(
-        ctx_result.context_id, "/test_file.txt"
-    )
-    assert download_url_result.success
-    assert download_url_result.url != ""
+        # Get download URL
+        download_url_result = agent_bay_client.context.get_file_download_url(
+            ctx_result.context_id, "/test_file.txt"
+        )
+        assert download_url_result.success
+        assert download_url_result.url != ""
 
-    # Download and verify content
-    with httpx.Client() as client:
-        response = client.get(download_url_result.url)
-        assert response.status_code == 200
-        assert response.content == file_content
+        # Download and verify content
+        with httpx.Client() as client:
+            response = client.get(download_url_result.url)
+            assert response.status_code == 200
+            assert response.content == file_content
 
-    # Delete the file
-    delete_result = test_session.agent_bay.context.delete_file(
-        ctx_result.context_id, "/test_file.txt"
-    )
-    assert delete_result.success
+        # Delete the file
+        delete_result = agent_bay_client.context.delete_file(
+            ctx_result.context_id, "/test_file.txt"
+        )
+        assert delete_result.success
 
-    # Clean up context
-    test_session.agent_bay.context.delete(ctx_result.context)
+    finally:
+        # Clean up context
+        agent_bay_client.context.delete(ctx_result.context)
 
     print("Context file operations test completed successfully")

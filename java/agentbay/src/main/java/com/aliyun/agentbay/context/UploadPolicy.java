@@ -88,7 +88,8 @@ public class UploadPolicy {
         map.put("uploadStrategy", uploadStrategy != null ? uploadStrategy.getValue() : null);
         map.put("uploadMode", uploadMode != null ? uploadMode.getValue() : null);
         map.put("period", period);
-        if (archiveExcludePaths != null && !archiveExcludePaths.isEmpty()) {
+        if (archiveExcludePaths != null && !archiveExcludePaths.isEmpty()
+                && uploadMode == UploadMode.ARCHIVE) {
             map.put("archiveExcludePaths", archiveExcludePaths);
         }
         return map;

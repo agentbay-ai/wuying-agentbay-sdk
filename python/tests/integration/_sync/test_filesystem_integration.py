@@ -5,53 +5,17 @@
 ci-stable
 """
 
-import os
-import time
-
 import pytest
 import pytest
-
-from agentbay import AgentBay
-from agentbay import CreateSessionParams
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create an AgentBay instance."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
 
 
 @pytest.fixture
-def filesystem_session(agent_bay):
+def filesystem_session(make_session):
     """Create a session for filesystem testing."""
-    # Get API key from environment
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    # Initialize AgentBay client
-    # Create a session
     print("Creating a new session for FileSystem testing...")
-    params = CreateSessionParams(
-        image_id="linux_latest",
-    )
-    result = agent_bay.create(params)
-    if not result.success or not result.session:
-        pytest.skip("Failed to create session")
-
-    session = result.session
+    lc = make_session("linux_latest")
+    session = lc._result.session
     yield session
-
-    # Clean up session
-    print("Cleaning up: Deleting the session...")
-    try:
-        agent_bay.delete(session)
-        print(f"Session deleted: {session.session_id}")
-    except Exception as e:
-        print(f"Warning: Failed to delete session: {e}")
 
 
 def test_read_file(filesystem_session):

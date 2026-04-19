@@ -4,28 +4,13 @@
 """Integration tests for multiline commands."""
 # ci-stable
 
-import os
-
 import pytest
-import pytest
-
-from agentbay import AgentBay
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
 
 
 @pytest.fixture
-def test_session(agent_bay):
-    result = agent_bay.create()
-    assert result.success
-    yield result.session
-    result.session.delete()
+def test_session(make_session):
+    lc = make_session()
+    return lc._result.session
 
 
 @pytest.mark.sync

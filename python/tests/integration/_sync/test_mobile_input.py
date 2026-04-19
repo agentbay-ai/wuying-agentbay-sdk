@@ -3,39 +3,20 @@
 
 """Integration tests for Mobile input operations functionality."""
 
-import os
-
 import pytest
 import pytest
 
-from agentbay import AgentBay
-from agentbay import CreateSessionParams
 from agentbay import KeyCode
 
 
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create AgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
 @pytest.fixture
-def session(agent_bay):
+def session(make_session):
     """Create a session with mobile_latest image."""
     print("\nCreating session for mobile input testing...")
-    session_param = CreateSessionParams(image_id="mobile_latest")
-    result = agent_bay.create(session_param)
-    if not result.success and "no authorized app" in result.error_message:
-        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
+    lc = make_session("mobile_latest")
+    session = lc._result.session
     print(f"Session created with ID: {session.session_id}")
-    yield session
-    print("\nCleaning up: Deleting the session...")
-    session.delete()
+    return session
 
 
 @pytest.mark.sync

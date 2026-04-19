@@ -6,32 +6,22 @@
 Integration tests for GetCdpLink API
 """
 # ci-stable
-import os
 
 import pytest
 
-from agentbay import AgentBay
 
 
 class TestGetCdpLinkIntegration:
     """Integration tests for GetCdpLink API"""
 
-    @pytest.fixture
-    def agentbay(self):
-        """Create AgentBay instance"""
-        api_key = os.getenv("AGENTBAY_API_KEY")
-        if not api_key:
-            pytest.skip("AGENTBAY_API_KEY environment variable not set")
-        return AgentBay(api_key=api_key)
-
     @pytest.mark.sync
-    def test_get_cdp_link_with_browser_session(self, agentbay):
+    def test_get_cdp_link_with_browser_session(self, agent_bay_client):
         """Test get_cdp_link with a real browser session"""
         from agentbay import CreateSessionParams
 
         # Create a browser session
         params = CreateSessionParams(image_id="browser_latest")
-        session_result = agentbay.create(params)
+        session_result = agent_bay_client.create(params)
         assert session_result is not None
         assert session_result.success is True
         assert session_result.session is not None
@@ -45,12 +35,12 @@ class TestGetCdpLinkIntegration:
             from agentbay.api.models import GetCdpLinkRequest
 
             request = GetCdpLinkRequest(
-                authorization=f"Bearer {agentbay.api_key}",
+                authorization=f"Bearer {agent_bay_client.api_key}",
                 session_id=session.session_id,
             )
 
             try:
-                response = agentbay.client.get_cdp_link(request)
+                response = agent_bay_client.client.get_cdp_link(request)
             except ClientException as e:
                 if "InvalidAction.NotFound" in str(e):
                     pytest.skip("GetCdpLink API not yet available in production")
@@ -70,22 +60,22 @@ class TestGetCdpLinkIntegration:
 
         finally:
             # Clean up
-            session.delete()
+            agent_bay_client.delete(session)
 
-    def test_get_cdp_link_with_invalid_session(self, agentbay):
+    def test_get_cdp_link_with_invalid_session(self, agent_bay_client):
         """Test get_cdp_link with invalid session ID"""
         from alibabacloud_tea_openapi.exceptions._client import ClientException
 
         from agentbay.api.models import GetCdpLinkRequest
 
         request = GetCdpLinkRequest(
-            authorization=f"Bearer {agentbay.api_key}",
+            authorization=f"Bearer {agent_bay_client.api_key}",
             session_id="invalid-session-id-12345",
         )
 
         # Should raise exception for invalid session
         with pytest.raises(ClientException) as exc_info:
-            response = agentbay.client.get_cdp_link(request)
+            response = agent_bay_client.client.get_cdp_link(request)
 
         # Verify it's the expected error
         assert "InvalidMcpSession.NotFound" in str(

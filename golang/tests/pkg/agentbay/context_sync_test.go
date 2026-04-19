@@ -72,6 +72,22 @@ func TestSyncPolicyWithArchiveExcludePaths(t *testing.T) {
 	assert.Equal(t, "sessions", paths[1].(string))
 }
 
+func TestUploadPolicyArchiveExcludePathsOmittedForFileMode(t *testing.T) {
+	policy := agentbay.NewUploadPolicy()
+	policy.UploadMode = agentbay.UploadModeFile
+	policy.ArchiveExcludePaths = []string{"AGENTS.md", "sessions"}
+
+	data, err := json.Marshal(policy)
+	assert.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	assert.NoError(t, err)
+
+	_, ok := result["archiveExcludePaths"]
+	assert.False(t, ok, "archiveExcludePaths should not be present when UploadMode is File")
+}
+
 func TestNewDownloadPolicy(t *testing.T) {
 	policy := agentbay.NewDownloadPolicy()
 

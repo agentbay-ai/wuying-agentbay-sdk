@@ -9,13 +9,10 @@ import re
 import time
 
 import pytest
-import pytest
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel
 
-from agentbay import AgentBay
 from agentbay._sync.browser_operator import ActOptions, ExtractOptions, ObserveOptions
-from agentbay import CreateSessionParams
 from agentbay import BrowserFingerprint, BrowserOption, BrowserProxy
 
 
@@ -23,17 +20,6 @@ class DummySchema(BaseModel):
     """Schema for extract test."""
 
     title: str
-
-
-def get_test_api_key():
-    """Get API key for testing"""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        api_key = "akm-xxx"  # Replace with your test API key
-        print(
-            "Warning: Using default API key. Set AGENTBAY_API_KEY environment variable for testing."
-        )
-    return api_key
 
 
 def _mask_secret(secret: str, visible: int = 4) -> str:
@@ -54,25 +40,15 @@ def is_windows_user_agent(user_agent: str) -> bool:
 
 
 @pytest.fixture
-def browser_session():
-    api_key = get_test_api_key()
-    print("api_key =", _mask_secret(api_key))
-    agent_bay = AgentBay(api_key=api_key)
-
+def browser_session(make_session):
+    """Create a browser session for operator testing."""
+    api_key = os.environ.get("AGENTBAY_API_KEY", "")
+    print(f"api_key = {_mask_secret(api_key)}")
     print("Creating a new session for browser operator testing...")
-    session_param = CreateSessionParams(image_id="browser_latest")
-    result = agent_bay.create(session_param)
-    assert result.success
-    session = result.session
+    lc = make_session("browser_latest")
+    session = lc._result.session
     print(f"Session created with ID: {session.session_id}")
-
-    yield session
-
-    print("Cleaning up: Deleting the session...")
-    try:
-        session.delete()
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    return session
 
 
 @pytest.mark.sync
@@ -90,7 +66,7 @@ def test_initialize_browser(browser_session):
     print("endpoint_url =", endpoint_url)
     assert endpoint_url is not None
 
-    time.sleep(1)  # Reduced for faster testing  # Reduced for faster testing
+    time.sleep(1)
 
     with sync_playwright() as p:
         playwright_browser = p.chromium.connect_over_cdp(endpoint_url)
@@ -127,7 +103,7 @@ def test_initialize_browser_with_fingerprint(browser_session):
     print("endpoint_url =", endpoint_url)
     assert endpoint_url is not None
 
-    time.sleep(3)  # Reduced for faster testing
+    time.sleep(3)
 
     with sync_playwright() as p:
         playwright_browser = p.chromium.connect_over_cdp(endpoint_url)
@@ -165,7 +141,7 @@ def test_initialize_browser_with_captchas(browser_session):
     print("endpoint_url =", endpoint_url)
     assert endpoint_url is not None
 
-    time.sleep(3)  # Reduced for faster testing
+    time.sleep(3)
 
     with sync_playwright() as p:
         playwright_browser = p.chromium.connect_over_cdp(endpoint_url)
@@ -181,16 +157,13 @@ def test_initialize_browser_with_captchas(browser_session):
         # Wait for phone input and interact
         input_selector = "#name_in"
         input_element = page.wait_for_selector(input_selector, timeout=10000)
-        # Clear input field and enter phone number
         phone_number = "15011556760"
         print(f"Entering phone number: {phone_number}")
 
-        # await input_element.click(force=True)
         input_element.fill("")  # Clear input field
         input_element.type(phone_number, delay=50)
         print("Waiting for captcha")
-        # Wait for potential captcha handling and navigation
-        time.sleep(10)  # Reduced from 30s for faster testing
+        time.sleep(10)
         # href changed indicates captcha solved
         current_url_location = page.evaluate(
             "() => window.location && window.location.href"
@@ -298,12 +271,8 @@ def test_extract_success(browser_session):
 
 @pytest.mark.sync
 @pytest.mark.timeout(180)  # 3 minute timeout for proxy test
-def test_restricted_proxy_ip_comparison(browser_session):
+def test_restricted_proxy_ip_comparison(browser_session, make_session):
     """Test restricted proxy by comparing IP addresses before and after proxy setup."""
-    # This test requires creating two sessions, so we might not use the fixture for everything
-    # Or we use the fixture for the first session and create a second manually.
-
-    # Use the session from fixture for Phase 1
     browser = browser_session.browser
     assert browser is not None
 
@@ -311,14 +280,13 @@ def test_restricted_proxy_ip_comparison(browser_session):
 
     # Phase 1: Initialize browser without proxy and get original IP
     print("phase 1: initialize browser without proxy...")
-    no_proxy_option = BrowserOption()
-    browser.initialize(no_proxy_option)
+    browser.initialize(BrowserOption())
 
     endpoint_url = browser.get_endpoint_url()
     print(f"endpoint_url = {endpoint_url}")
     assert endpoint_url is not None
 
-    time.sleep(2)  # Reduced for faster testing
+    time.sleep(2)
 
     # Get original IP
     original_ip = None
@@ -342,84 +310,68 @@ def test_restricted_proxy_ip_comparison(browser_session):
         page.close()
         playwright_browser.close()
 
-    # We need to delete the first session to clean up?
-    # The fixture will clean it up at the end, but we can delete it now manually?
-    # The fixture yield handles teardown. Calling delete() twice is usually fine (idempotent) or throws.
-    # But best to just leave it and create a NEW session for Phase 2.
-
-    # Wait a bit
     time.sleep(3)
 
-    # Phase 2: Create new session with restricted proxy
+    # Phase 2: Create new session with restricted proxy via make_session
     print("phase 2: create new session with restricted proxy...")
-    api_key = get_test_api_key()
-    agent_bay = AgentBay(api_key=api_key)
+    lc2 = make_session("browser_latest")
+    session2 = lc2._result.session
 
     restricted_proxy = BrowserProxy(proxy_type="wuying", strategy="restricted")
-
     proxy_option = BrowserOption(proxies=[restricted_proxy])
-    session_param2 = CreateSessionParams(image_id="browser_latest")
-    result2 = agent_bay.create(session_param2)
-    assert result2.success
-    session2 = result2.session
 
-    try:
-        browser2 = session2.browser
-        init_result2 = browser2.initialize(proxy_option)
-        assert init_result2 is True
+    browser2 = session2.browser
+    init_result2 = browser2.initialize(proxy_option)
+    assert init_result2 is True
 
-        # Verify proxy configuration
-        saved_option = browser2.get_option()
-        assert saved_option.proxies is not None
-        assert len(saved_option.proxies) == 1
-        assert saved_option.proxies[0].type == "wuying"
-        assert saved_option.proxies[0].strategy == "restricted"
-        print("✓ proxy config validation success")
+    # Verify proxy configuration
+    saved_option = browser2.get_option()
+    assert saved_option.proxies is not None
+    assert len(saved_option.proxies) == 1
+    assert saved_option.proxies[0].type == "wuying"
+    assert saved_option.proxies[0].strategy == "restricted"
+    print("✓ proxy config validation success")
 
-        endpoint_url2 = browser2.get_endpoint_url()
-        print(f"proxy mode endpoint_url = {endpoint_url2}")
+    endpoint_url2 = browser2.get_endpoint_url()
+    print(f"proxy mode endpoint_url = {endpoint_url2}")
 
-        time.sleep(2)  # Reduced for faster testing
+    time.sleep(2)
 
-        # Get proxy IP
-        proxy_ip = None
-        with sync_playwright() as p2:
-            playwright_browser2 = p2.chromium.connect_over_cdp(endpoint_url2)
-            assert playwright_browser2 is not None
+    # Get proxy IP
+    proxy_ip = None
+    with sync_playwright() as p2:
+        playwright_browser2 = p2.chromium.connect_over_cdp(endpoint_url2)
+        assert playwright_browser2 is not None
 
-            context2 = playwright_browser2.contexts[0]
-            page2 = context2.new_page()
-            page2.goto("https://httpbin.org/ip")
+        context2 = playwright_browser2.contexts[0]
+        page2 = context2.new_page()
+        page2.goto("https://httpbin.org/ip")
 
-            try:
-                response2 = page2.evaluate(
-                    "() => JSON.parse(document.body.textContent)"
-                )
-                proxy_ip = response2.get("origin", "").strip()
-                print(f"proxy IP: {proxy_ip}")
-            except Exception as e:
-                print(f"get proxy IP failed: {e}")
+        try:
+            response2 = page2.evaluate(
+                "() => JSON.parse(document.body.textContent)"
+            )
+            proxy_ip = response2.get("origin", "").strip()
+            print(f"proxy IP: {proxy_ip}")
+        except Exception as e:
+            print(f"get proxy IP failed: {e}")
 
-            page2.close()
-            playwright_browser2.close()
+        page2.close()
+        playwright_browser2.close()
 
-        # Compare IPs
-        if original_ip and proxy_ip:
-            if original_ip != proxy_ip:
-                print(
-                    f"✅ static proxy test success! IP changed: {original_ip} -> {proxy_ip}"
-                )
-            else:
-                print(
-                    f"⚠️  warning: proxy IP is the same, maybe proxy not working: {original_ip}"
-                )
-                pytest.fail("proxy IP is the same, maybe proxy not working")
+    # Compare IPs
+    if original_ip and proxy_ip:
+        if original_ip != proxy_ip:
+            print(
+                f"✅ static proxy test success! IP changed: {original_ip} -> {proxy_ip}"
+            )
         else:
-            print("⚠️  failed to compare IP, but proxy config applied")
-
-    finally:
-        # Clean up session2
-        session2.delete()
+            print(
+                f"⚠️  warning: proxy IP is the same, maybe proxy not working: {original_ip}"
+            )
+            pytest.fail("proxy IP is the same, maybe proxy not working")
+    else:
+        print("⚠️  failed to compare IP, but proxy config applied")
 
 
 @pytest.mark.sync
@@ -450,7 +402,7 @@ def test_polling_proxy_multiple_ips(browser_session):
     endpoint_url = browser.get_endpoint_url()
     print(f"endpoint_url = {endpoint_url}")
 
-    time.sleep(2)  # Reduced for faster testing
+    time.sleep(2)
 
     # Create multiple pages and collect IPs
     with sync_playwright() as p:
@@ -477,7 +429,7 @@ def test_polling_proxy_multiple_ips(browser_session):
                 except Exception:
                     pass
 
-                #  to avoid cache
+                # to avoid cache
                 cache_buster = random.randint(1000000, 9999999)
                 timestamp = int(time.time() * 1000)
                 random_str = "".join(random.choices("abcdefghijklmnopqrstuvwxyz", k=8))
@@ -497,22 +449,17 @@ def test_polling_proxy_multiple_ips(browser_session):
                     f"page {i+1} requesting with cache-busting: ifconfig.me?_cb={cache_buster}&_t={timestamp}..."
                 )
 
-                # use reload to force reload
                 page.goto(url, timeout=30000, wait_until="networkidle")
-
-                # wait for page to load
                 time.sleep(1)
 
                 # extract IP from ifconfig.me
                 ip = page.evaluate(
                     """
                     () => {
-                        // method 1: get IP by ID
                         const ipElement = document.getElementById('ip_address');
                         if (ipElement) {
                             return ipElement.textContent.trim();
                         }
-
                         return null;
                     }
                 """
@@ -521,8 +468,6 @@ def test_polling_proxy_multiple_ips(browser_session):
                 if not ip:
                     # if javascript parsing failed, try to get page content and extract IP with regex
                     page_content = page.content()
-                    import re
-
                     ip_match = re.search(
                         r'<strong id="ip_address">\s*([0-9.]+)\s*</strong>',
                         page_content,
@@ -534,7 +479,7 @@ def test_polling_proxy_multiple_ips(browser_session):
                         ip = None
                 ips_collected.append(ip)
                 print(f"page {i+1} IP: {ip}")
-                time.sleep(1)  # wait for proxy to change - reduced for faster testing
+                time.sleep(1)
             except Exception as e:
                 print(f"page {i+1} get IP failed: {e}")
                 ips_collected.append(None)
@@ -559,5 +504,4 @@ def test_polling_proxy_multiple_ips(browser_session):
         else:
             print("❌ failed to get valid IP")
 
-        # At least verify we got some valid responses
         assert len(unique_ips) > 1, "at least two valid ip"

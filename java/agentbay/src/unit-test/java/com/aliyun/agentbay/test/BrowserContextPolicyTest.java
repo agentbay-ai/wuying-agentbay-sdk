@@ -354,6 +354,17 @@ public class BrowserContextPolicyTest {
     }
 
     @Test
+    public void testUploadPolicyArchiveExcludePathsOmittedForFileMode() {
+        UploadPolicy policy = new UploadPolicy();
+        policy.setUploadMode(UploadMode.FILE);
+        policy.setArchiveExcludePaths(Arrays.asList("AGENTS.md", "sessions"));
+
+        Map<String, Object> map = policy.toMap();
+        assertFalse("archiveExcludePaths should not be present when uploadMode is FILE",
+                    map.containsKey("archiveExcludePaths"));
+    }
+
+    @Test
     public void testUploadPolicyArchiveExcludePathsInSyncPolicy() throws Exception {
         UploadPolicy uploadPolicy = new UploadPolicy();
         uploadPolicy.setUploadMode(UploadMode.ARCHIVE);

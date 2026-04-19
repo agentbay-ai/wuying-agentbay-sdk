@@ -5,14 +5,11 @@
 
 from __future__ import annotations
 
-import os
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import pytest
 import pytest
-
-from agentbay import AgentBay, CreateSessionParams
 
 
 def _parse_bounds_rect(bounds: Any) -> Optional[Tuple[int, int, int, int]]:
@@ -34,24 +31,10 @@ def _parse_bounds_rect(bounds: Any) -> Optional[Tuple[int, int, int, int]]:
     return None
 
 
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
 @pytest.fixture
-def session(agent_bay):
-    session_param = CreateSessionParams(image_id="mobile_latest")
-    result = agent_bay.create(session_param)
-    if not result.success and "no authorized app" in result.error_message:
-        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
-    assert result.success, f"Failed to create session: {result.error_message}"
-    s = result.session
-    yield s
-    s.delete()
+def session(make_session):
+    lc = make_session("mobile_latest")
+    return lc._result.session
 
 
 @pytest.mark.sync

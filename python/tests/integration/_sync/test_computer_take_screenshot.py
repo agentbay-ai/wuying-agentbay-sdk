@@ -8,30 +8,15 @@ Integration test for SyncComputer.beta_take_screenshot().
 This test uses real backend resources (no mocks).
 """
 
-import os
-
-import pytest
 import pytest
 
-from agentbay import AgentBay, CreateSessionParams
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
+from agentbay import CreateSessionParams
 
 
 @pytest.fixture
-def session(agent_bay):
-    params = CreateSessionParams(image_id="linux_latest")
-    result = agent_bay.create(params)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    assert result.session is not None
-    yield result.session
-    result.session.delete()
+def session(make_session):
+    lc = make_session(params=CreateSessionParams(image_id="linux_latest"))
+    return lc._result.session
 
 
 @pytest.mark.sync
@@ -51,4 +36,3 @@ def test_take_screenshot_jpg_returns_jpeg_bytes(session):
     assert isinstance(result.data, (bytes, bytearray))
     assert len(result.data) > 0
     assert bytes(result.data[:3]) == b"\xff\xd8\xff"
-

@@ -5,42 +5,15 @@
 ci-stable
 """
 
-import os
 from uuid import uuid4
 
 import pytest
 import pytest
-from dotenv import load_dotenv
 
-from agentbay import AgentBay, Config, CreateSessionParams
-
-load_dotenv()
+from agentbay import AgentBay, CreateSessionParams
 
 
-def _get_test_api_key() -> str:
-    """Get API key for integration testing."""
-    return os.environ.get("AGENTBAY_API_KEY") or ""
-
-
-def _get_test_endpoint() -> str:
-    """Get endpoint for integration testing."""
-    return os.environ.get("AGENTBAY_ENDPOINT") or ""
-
-
-@pytest.fixture(scope="session")
-def agent_bay() -> AgentBay:
-    api_key = _get_test_api_key()
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    endpoint = _get_test_endpoint()
-    if endpoint:
-        cfg = Config(endpoint=endpoint, timeout_ms=60000)
-        return AgentBay(api_key=api_key, cfg=cfg)
-    return AgentBay(api_key=api_key)
-
-
-def _create_test_session(agent_bay: AgentBay):
+def _create_test_session(agent_bay: AgentBay) -> object:
     session_name = f"test-beta-pause-resume-{uuid4().hex[:8]}"
     params = CreateSessionParams(
         image_id="linux_latest",
@@ -73,16 +46,16 @@ def _safe_cleanup_session(agent_bay: AgentBay, session) -> None:
 
 
 @pytest.fixture
-def session(agent_bay: AgentBay):
-    s = _create_test_session(agent_bay)
+def session(agent_bay_client: AgentBay):
+    s = _create_test_session(agent_bay_client)
     try:
         yield s
     finally:
-        _safe_cleanup_session(agent_bay, s)
+        _safe_cleanup_session(agent_bay_client, s)
 
 
 @pytest.mark.sync
-def test_beta_pause_and_resume_session_success(session):
+def test_beta_pause_and_resume_session_success(session) -> None:
     status_result = session.get_status()
     assert status_result.success, f"Failed to get session status: {status_result.error_message}"
     assert status_result.status == "RUNNING", f"Expected RUNNING, got {status_result.status}"
@@ -97,7 +70,8 @@ def test_beta_pause_and_resume_session_success(session):
 
 
 @pytest.mark.sync
-def test_beta_pause_and_delete_session_success(agent_bay: AgentBay):
+def test_beta_pause_and_delete_session_success(agent_bay_client: AgentBay):
+    agent_bay = agent_bay_client
     s = _create_test_session(agent_bay)
     try:
         pause_result = s.beta_pause(timeout=600, poll_interval=2.0)
@@ -113,7 +87,8 @@ def test_beta_pause_and_delete_session_success(agent_bay: AgentBay):
 
 
 @pytest.mark.sync
-def test_beta_pause_nonexistent_session(agent_bay: AgentBay):
+def test_beta_pause_nonexistent_session(agent_bay_client: AgentBay):
+    agent_bay = agent_bay_client
     fake_session_id = f"session-nonexistent-{uuid4().hex[:8]}"
     get_result = agent_bay.get(fake_session_id)
     assert not get_result.success, f"Expected get() to fail for nonexistent session {get_result.error_message}"

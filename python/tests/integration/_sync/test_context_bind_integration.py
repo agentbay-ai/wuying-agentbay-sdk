@@ -5,41 +5,31 @@
 ci-stable
 """
 
-import os
 from uuid import uuid4
 
 import pytest
 import pytest
 
-from agentbay import AgentBay, CreateSessionParams, ContextSync
+from agentbay import CreateSessionParams, ContextSync
 
 
 @pytest.fixture(scope="module")
-def agent_bay():
-    """Create AgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
-@pytest.fixture(scope="module")
-def context_id(agent_bay):
+def context_id(agent_bay_client):
     """Create a test context and return its ID. Clean up after all tests."""
     context_name = f"test-bind-{uuid4().hex[:8]}"
-    create_result = agent_bay.context.get(name=context_name, create=True)
+    create_result = agent_bay_client.context.get(name=context_name, create=True)
     assert create_result.success is True, f"Failed to create context: {create_result.error_message}"
     ctx = create_result.context
     print(f"Created test context: {ctx.id}, name: {ctx.name}")
     yield ctx.id
-    agent_bay.context.delete(ctx)
+    agent_bay_client.context.delete(ctx)
     print(f"Deleted test context: {ctx.id}")
 
 
 @pytest.mark.sync
-def test_bind_single_context(agent_bay, context_id):
+def test_bind_single_context(agent_bay_client, context_id):
     """Test dynamically binding a single context to a running session."""
-    session_result = agent_bay.create(CreateSessionParams())
+    session_result = agent_bay_client.create(CreateSessionParams())
     assert session_result.success, f"Failed to create session: {session_result.error_message}"
     session = session_result.session
     try:
@@ -53,9 +43,9 @@ def test_bind_single_context(agent_bay, context_id):
 
 
 @pytest.mark.sync
-def test_list_bindings_after_bind(agent_bay, context_id):
+def test_list_bindings_after_bind(agent_bay_client, context_id):
     """Test listing bindings after dynamically binding a context."""
-    session_result = agent_bay.create(CreateSessionParams())
+    session_result = agent_bay_client.create(CreateSessionParams())
     assert session_result.success, f"Failed to create session: {session_result.error_message}"
     session = session_result.session
     try:
@@ -79,16 +69,16 @@ def test_list_bindings_after_bind(agent_bay, context_id):
 
 
 @pytest.mark.sync
-def test_bind_multiple_contexts(agent_bay):
+def test_bind_multiple_contexts(agent_bay_client):
     """Test dynamically binding multiple contexts at once."""
     ctx_name_1 = f"test-multi-1-{uuid4().hex[:8]}"
     ctx_name_2 = f"test-multi-2-{uuid4().hex[:8]}"
 
-    ctx1_result = agent_bay.context.get(name=ctx_name_1, create=True)
-    ctx2_result = agent_bay.context.get(name=ctx_name_2, create=True)
+    ctx1_result = agent_bay_client.context.get(name=ctx_name_1, create=True)
+    ctx2_result = agent_bay_client.context.get(name=ctx_name_2, create=True)
     assert ctx1_result.success and ctx2_result.success
 
-    session_result = agent_bay.create(CreateSessionParams())
+    session_result = agent_bay_client.create(CreateSessionParams())
     assert session_result.success, f"Failed to create session: {session_result.error_message}"
     session = session_result.session
     try:
@@ -106,14 +96,14 @@ def test_bind_multiple_contexts(agent_bay):
         print(f"Bound {len(bindings_result.bindings)} contexts successfully")
     finally:
         session.delete()
-        agent_bay.context.delete(ctx1_result.context)
-        agent_bay.context.delete(ctx2_result.context)
+        agent_bay_client.context.delete(ctx1_result.context)
+        agent_bay_client.context.delete(ctx2_result.context)
 
 
 @pytest.mark.sync
-def test_list_bindings_empty_session(agent_bay):
+def test_list_bindings_empty_session(agent_bay_client):
     """Test list_bindings on a session with no dynamically bound contexts."""
-    session_result = agent_bay.create(CreateSessionParams())
+    session_result = agent_bay_client.create(CreateSessionParams())
     assert session_result.success, f"Failed to create session: {session_result.error_message}"
     session = session_result.session
     try:

@@ -7,59 +7,21 @@ import time
 Tests the WS-based streaming execution path with real backend services.
 Uses debug image imgc-0ab5takhnmlvhx9gp for Mobile Agent.
 """
-import os
 
 import pytest
-import pytest
 
-from agentbay import AgentBay, AgentEvent, CreateSessionParams, get_logger
+from agentbay import AgentEvent, get_logger
 
-from dotenv import load_dotenv
+# make_session factory fixture is provided by conftest.py (auto-loaded by pytest)
 
 logger = get_logger("agent-streaming-integration-test")
-load_dotenv()
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create an AgentBay instance."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
-@pytest.fixture(scope="module")
-def mobile_streaming_session(agent_bay):
-    """Create a session with Mobile Agent debug image for streaming tests."""
-    time.sleep(3)
-    params = CreateSessionParams(
-        image_id="mobile_latest",
-    )
-    session_result = agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        print(f"\n❌ Failed to create session: {session_result.error_message}")
-        logger.error(f"Failed to create session: {session_result.error_message}")
-        pytest.skip("Failed to create session")
-
-    session = session_result.session
-    print(f"\n✅ Session created: {session.session_id}")
-    print(f"   WS URL: {session.ws_url}")
-    logger.info(f"Session created: {session.session_id}, ws_url={session.ws_url}")
-    yield session
-
-    try:
-        print(f"🧹 Cleaning up session: {session.session_id}")
-        session.delete()
-        print(f"✅ Session deleted: {session.session_id}")
-    except Exception as e:
-        logger.warning(f"Error deleting session: {e}")
 
 
 @pytest.mark.sync
-def test_mobile_streaming_with_typed_callbacks(mobile_streaming_session):
+def test_mobile_streaming_with_typed_callbacks(make_session):
     """Test mobile agent streaming with typed callbacks (on_reasoning, on_tool_call, etc.)."""
-    agent = mobile_streaming_session.agent
+    lc = make_session("mobile_latest")
+    agent = lc._result.session.agent
     reasoning_events = []
     content_events = []
     tool_calls = []
@@ -109,32 +71,12 @@ def test_mobile_streaming_with_typed_callbacks(mobile_streaming_session):
     assert isinstance(result.task_status, str), "task_status should be a string"
 
 
-@pytest.fixture(scope="function")
-def mobile_streaming_session_2(agent_bay):
-    """Create a separate session for the second streaming test."""
-    time.sleep(3)
-    params = CreateSessionParams(
-        image_id="imgc-0ab5takhnmlvhx9gp",
-    )
-    session_result = agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        pytest.skip("Failed to create session")
-
-    session = session_result.session
-    print(f"\n✅ Session created (test 2): {session.session_id}")
-    yield session
-
-    try:
-        session.delete()
-        print(f"✅ Session deleted: {session.session_id}")
-    except Exception as e:
-        logger.warning(f"Error deleting session: {e}")
-
-
 @pytest.mark.sync
-def test_mobile_streaming_token_level(mobile_streaming_session_2):
+def test_mobile_streaming_token_level(make_session):
     """Test mobile agent streaming with typed callbacks for real-time output."""
-    agent = mobile_streaming_session_2.agent
+    time.sleep(3)
+    lc = make_session("imgc-0ab5takhnmlvhx9gp")
+    agent = lc._result.session.agent
     reasoning_chunks = []
     content_chunks = []
 

@@ -413,6 +413,20 @@ describe("ContextSync Unit Tests", () => {
       expect(parsed.uploadPolicy.archiveExcludePaths).toBeUndefined();
     });
 
+    it("should not include archiveExcludePaths in JSON when uploadMode is File", () => {
+      const syncPolicy = new SyncPolicyImpl({
+        uploadPolicy: {
+          autoUpload: true,
+          uploadStrategy: UploadStrategy.UploadBeforeResourceRelease,
+          uploadMode: UploadMode.File,
+          archiveExcludePaths: ["AGENTS.md", "sessions"],
+        },
+      });
+      const json = JSON.stringify(syncPolicy);
+      const parsed = JSON.parse(json);
+      expect(parsed.uploadPolicy.archiveExcludePaths).toBeUndefined();
+    });
+
     it("should keep backward compatibility - newUploadPolicy() without args still works", () => {
       const policy = newUploadPolicy();
       expect(policy.autoUpload).toBe(true);
