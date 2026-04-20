@@ -480,7 +480,7 @@ def discover_typescript_tests(state: AgentState, pattern: Optional[str]) -> Agen
     # 查找Node.js
     for node_path in node_paths:
         try:
-            node_version_result = subprocess.run([node_path, "--version"], capture_output=True, text=True, timeout=10)
+            node_version_result = subprocess.run([node_path, "--version"], capture_output=True, encoding='utf-8', errors='replace', timeout=10)
             if node_version_result.returncode == 0:
                 node_cmd = node_path
                 print(f"✅ Node.js环境检查通过: {node_version_result.stdout.strip()}")
@@ -495,7 +495,7 @@ def discover_typescript_tests(state: AgentState, pattern: Optional[str]) -> Agen
     # 查找npm
     for npm_path in npm_paths:
         try:
-            npm_version_result = subprocess.run([npm_path, "--version"], capture_output=True, text=True, timeout=10)
+            npm_version_result = subprocess.run([npm_path, "--version"], capture_output=True, encoding='utf-8', errors='replace', timeout=10)
             if npm_version_result.returncode == 0:
                 npm_cmd = npm_path
                 print(f"✅ npm环境检查通过: {npm_version_result.stdout.strip()}")
@@ -567,7 +567,7 @@ def discover_typescript_tests(state: AgentState, pattern: Optional[str]) -> Agen
         print(f"🔄 尝试Jest命令: {' '.join(cmd)}")
         
         try:
-            result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=60)
+            result = subprocess.run(cmd, cwd=cwd, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
             if result.returncode == 0:
                 for line in result.stdout.splitlines():
                     line = line.strip()
@@ -635,7 +635,7 @@ def discover_golang_tests(state: AgentState, pattern: Optional[str]) -> AgentSta
     
     for go_path in go_paths:
         try:
-            go_version_result = subprocess.run([go_path, "version"], capture_output=True, text=True, timeout=10)
+            go_version_result = subprocess.run([go_path, "version"], capture_output=True, encoding='utf-8', errors='replace', timeout=10)
             if go_version_result.returncode == 0:
                 go_cmd = go_path
                 print(f"✅ Go环境检查通过: {go_version_result.stdout.strip()}")
@@ -670,7 +670,7 @@ def discover_golang_tests(state: AgentState, pattern: Optional[str]) -> AgentSta
     print(f"执行命令: {' '.join(cmd)} 在目录 {cwd}")
     
     try:
-        result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=60)
+        result = subprocess.run(cmd, cwd=cwd, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
         
         test_ids = []
         if result.returncode == 0:
@@ -747,7 +747,7 @@ def discover_java_tests(state: AgentState, pattern: Optional[str]) -> AgentState
     
     for mvn_path in mvn_paths:
         try:
-            mvn_version_result = subprocess.run([mvn_path, "--version"], capture_output=True, text=True, timeout=10)
+            mvn_version_result = subprocess.run([mvn_path, "--version"], capture_output=True, encoding='utf-8', errors='replace', timeout=10)
             if mvn_version_result.returncode == 0:
                 mvn_cmd = mvn_path
                 print(f"✅ Maven环境检查通过: {mvn_version_result.stdout.splitlines()[0]}")
@@ -976,7 +976,7 @@ def execute_python_test(test_id: str) -> Dict[str, Any]:
 
     # Run specific test
     cmd = [sys.executable, "-m", "pytest", test_id, "-vv"]
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, encoding='utf-8', errors='replace', env=env)
     
     status = "passed" if result.returncode == 0 else "failed"
     output = result.stdout + "\n" + result.stderr
@@ -1038,7 +1038,7 @@ def execute_golang_test(test_id: str) -> Dict[str, Any]:
     
     for go_path in go_paths:
         try:
-            subprocess.run([go_path, "version"], capture_output=True, text=True, timeout=5)
+            subprocess.run([go_path, "version"], capture_output=True, encoding='utf-8', errors='replace', timeout=5)
             go_cmd = go_path
             break
         except:
@@ -1068,7 +1068,7 @@ def execute_golang_test(test_id: str) -> Dict[str, Any]:
     if test_name:
         cmd.extend(["-run", test_name])
     
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, encoding='utf-8', errors='replace', env=env)
     
     status = "passed" if result.returncode == 0 else "failed"
     output = result.stdout + "\n" + result.stderr
@@ -1087,7 +1087,7 @@ def execute_java_test(test_id: str) -> Dict[str, Any]:
     
     for mvn_path in mvn_paths:
         try:
-            subprocess.run([mvn_path, "--version"], capture_output=True, text=True, timeout=5)
+            subprocess.run([mvn_path, "--version"], capture_output=True, encoding='utf-8', errors='replace', timeout=5)
             mvn_cmd = mvn_path
             break
         except:
@@ -1121,7 +1121,7 @@ def execute_java_test(test_id: str) -> Dict[str, Any]:
     print(f"   执行命令: {' '.join(cmd)}")
     print(f"   工作目录: {cwd}")
     
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, encoding='utf-8', errors='replace', env=env)
     
     # 输出详细的执行结果日志
     print(f"   返回码: {result.returncode}")
