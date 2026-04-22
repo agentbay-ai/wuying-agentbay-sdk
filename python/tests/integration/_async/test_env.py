@@ -1,4 +1,3 @@
-# ci-stable
 
 import os
 

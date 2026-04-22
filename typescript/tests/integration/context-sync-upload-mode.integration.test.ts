@@ -512,6 +512,7 @@ describe("Context Sync Upload Mode Integration Tests", () => {
       expect(hasImportant).toBe(true);
       expect(hasConfig).toBe(true);
 
+      // Check for download URL on excluded files (passive check from entry properties)
       for (const entry of listResult.entries) {
         const isExcluded =
           entry.filePath.includes("important") ||
@@ -519,23 +520,15 @@ describe("Context Sync Upload Mode Integration Tests", () => {
         if (!isExcluded) {
           continue;
         }
-        const dl = await agentBay.context.getFileDownloadUrl(
-          contextResult.contextId,
-          entry.filePath
-        );
-        if (dl.success && dl.url && dl.url.length > 0) {
+        const presignedUrl = (entry as any).presignedUrl || (entry as any).downloadUrl;
+        if (presignedUrl) {
           log(
-            `Excluded file '${entry.fileName}' has download URL (length ${dl.url.length})`
-          );
-        } else {
-          log(
-            `Note: download URL not available for excluded file '${entry.fileName}' (${dl.errorMessage ?? "unknown"})`
+            `Excluded file '${entry.fileName}' has Presigned URL: ${presignedUrl.substring(0, 80)}...`
           );
         }
       }
 
       log("✅ Archive mode with archiveExcludePaths integration test completed");
-    },
-    120000
+    }
   );
 });

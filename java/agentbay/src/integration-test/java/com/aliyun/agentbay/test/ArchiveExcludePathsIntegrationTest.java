@@ -1,4 +1,3 @@
-// ci-stable
 package com.aliyun.agentbay.test;
 
 import com.aliyun.agentbay.AgentBay;

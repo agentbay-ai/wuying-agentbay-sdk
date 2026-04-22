@@ -3,6 +3,7 @@ package integration
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -49,6 +50,13 @@ func TestComputerRealE2E(t *testing.T) {
 
 	// Wait for session to be ready
 	time.Sleep(10 * time.Second)
+
+	// Check if session supports screenshot before running Computer tests
+	screenshotCheck := session.Computer.Screenshot()
+	if screenshotCheck.ErrorMessage != "" && 
+	    strings.Contains(screenshotCheck.ErrorMessage, "not support `screenshot()`") {
+		t.Skip("Skipping Computer tests: session does not support screenshot()")
+	}
 
 	t.Run("Computer Screenshot", func(t *testing.T) {
 		result := session.Computer.Screenshot()
