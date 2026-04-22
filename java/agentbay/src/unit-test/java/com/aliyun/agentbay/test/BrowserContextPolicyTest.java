@@ -330,5 +330,55 @@ public class BrowserContextPolicyTest {
         Map<String, Object> uploadPolicyMap = uploadPolicy.toMap();
         assertEquals("autoUpload should be false", false, uploadPolicyMap.get("autoUpload"));
     }
+
+    @Test
+    public void testUploadPolicyArchiveExcludePaths() {
+        UploadPolicy policy = new UploadPolicy();
+        policy.setUploadMode(UploadMode.ARCHIVE);
+        List<String> excludePaths = Arrays.asList("AGENTS.md", "sessions", "chats.json");
+        policy.setArchiveExcludePaths(excludePaths);
+
+        Map<String, Object> map = policy.toMap();
+        assertEquals("Archive", map.get("uploadMode"));
+        assertEquals(excludePaths, map.get("archiveExcludePaths"));
+    }
+
+    @Test
+    public void testUploadPolicyArchiveExcludePathsEmpty() {
+        UploadPolicy policy = new UploadPolicy();
+        policy.setUploadMode(UploadMode.ARCHIVE);
+
+        Map<String, Object> map = policy.toMap();
+        assertFalse("archiveExcludePaths should not be present when not set",
+                    map.containsKey("archiveExcludePaths"));
+    }
+
+    @Test
+    public void testUploadPolicyArchiveExcludePathsOmittedForFileMode() {
+        UploadPolicy policy = new UploadPolicy();
+        policy.setUploadMode(UploadMode.FILE);
+        policy.setArchiveExcludePaths(Arrays.asList("AGENTS.md", "sessions"));
+
+        Map<String, Object> map = policy.toMap();
+        assertFalse("archiveExcludePaths should not be present when uploadMode is FILE",
+                    map.containsKey("archiveExcludePaths"));
+    }
+
+    @Test
+    public void testUploadPolicyArchiveExcludePathsInSyncPolicy() throws Exception {
+        UploadPolicy uploadPolicy = new UploadPolicy();
+        uploadPolicy.setUploadMode(UploadMode.ARCHIVE);
+        uploadPolicy.setArchiveExcludePaths(Arrays.asList("AGENTS.md", "sessions"));
+
+        SyncPolicy syncPolicy = new SyncPolicy();
+        syncPolicy.setUploadPolicy(uploadPolicy);
+
+        Map<String, Object> map = syncPolicy.toMap();
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(map);
+
+        assertTrue("JSON should contain archiveExcludePaths", json.contains("archiveExcludePaths"));
+        assertTrue("JSON should contain AGENTS.md", json.contains("AGENTS.md"));
+    }
 }
 

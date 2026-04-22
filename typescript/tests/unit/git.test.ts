@@ -73,9 +73,7 @@ describe("Git module", () => {
       // Verify the clone command was constructed with shell-escaped arguments
       const cloneCall = executeCommandMock.mock.calls[1];
       const cmd = cloneCall[0] as string;
-      expect(cmd).toBe(
-        "git 'clone' 'https://github.com/user/repo.git' 'repo'"
-      );
+      expect(cmd).toBe("git 'clone' 'https://github.com/user/repo.git' 'repo'");
     });
 
     it("should escape strings containing single quotes", async () => {
@@ -111,9 +109,7 @@ describe("Git module", () => {
 
       const cloneCall = executeCommandMock.mock.calls[1];
       const cmd = cloneCall[0] as string;
-      expect(cmd).toBe(
-        "git 'clone' 'https://github.com/user/repo.git' 'repo'"
-      );
+      expect(cmd).toBe("git 'clone' 'https://github.com/user/repo.git' 'repo'");
     });
   });
 
@@ -211,9 +207,7 @@ describe("Git module", () => {
 
       const cloneCall = executeCommandMock.mock.calls[1];
       const cmd = cloneCall[0] as string;
-      expect(cmd).toBe(
-        "git 'clone' 'https://github.com/user/repo.git' 'repo'"
-      );
+      expect(cmd).toBe("git 'clone' 'https://github.com/user/repo.git' 'repo'");
     });
 
     it("should add --branch and --single-branch when branch is specified", async () => {
@@ -464,9 +458,9 @@ describe("Git module", () => {
         })
       );
 
-      await expect(
-        git.clone("https://example.com/not-a-repo")
-      ).rejects.toThrow(GitNotARepoError);
+      await expect(git.clone("https://example.com/not-a-repo")).rejects.toThrow(
+        GitNotARepoError
+      );
     });
 
     it("should throw GitNotFoundError for 'command not found'", async () => {
@@ -529,7 +523,8 @@ describe("Git module", () => {
       executeCommandMock.mockResolvedValueOnce(
         failureResult({
           exitCode: 128,
-          stderr: "fatal: Authentication failed for 'https://github.com/user/repo.git'",
+          stderr:
+            "fatal: Authentication failed for 'https://github.com/user/repo.git'",
         })
       );
 
@@ -679,9 +674,7 @@ describe("Git module", () => {
 
       const initCall = executeCommandMock.mock.calls[1];
       const cmd = initCall[0] as string;
-      expect(cmd).toBe(
-        "git 'init' '--bare' '/home/user/my-project.git'"
-      );
+      expect(cmd).toBe("git 'init' '--bare' '/home/user/my-project.git'");
     });
 
     it("should combine initialBranch and bare", async () => {
@@ -826,7 +819,9 @@ describe("Git module", () => {
     it("should parse commit hash from stdout", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(
-        successResult({ stdout: "[main abc1234] Initial commit\n 1 file changed" })
+        successResult({
+          stdout: "[main abc1234] Initial commit\n 1 file changed",
+        })
       );
 
       const result = await git.commit("/home/user/repo", "Initial commit");
@@ -966,23 +961,21 @@ describe("Git module", () => {
   describe("log", () => {
     it("should construct log command with custom format", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(
-        successResult({ stdout: "" })
-      );
+      executeCommandMock.mockResolvedValueOnce(successResult({ stdout: "" }));
 
       await git.log("/home/user/repo");
 
       const logCall = executeCommandMock.mock.calls[1];
       const cmd = logCall[0] as string;
       expect(cmd).toContain("'log'");
-      expect(cmd).toContain("'--format=%H%x01%h%x01%an%x01%ae%x01%aI%x01%s%x00'");
+      expect(cmd).toContain(
+        "'--format=%H%x01%h%x01%an%x01%ae%x01%aI%x01%s%x00'"
+      );
     });
 
     it("should add --max-count when specified", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(
-        successResult({ stdout: "" })
-      );
+      executeCommandMock.mockResolvedValueOnce(successResult({ stdout: "" }));
 
       await git.log("/home/user/repo", { maxCount: 5 });
 
@@ -1028,9 +1021,7 @@ describe("Git module", () => {
 
     it("should return empty entries for empty output", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(
-        successResult({ stdout: "" })
-      );
+      executeCommandMock.mockResolvedValueOnce(successResult({ stdout: "" }));
 
       const result = await git.log("/home/user/repo");
       expect(result.entries).toEqual([]);
@@ -1089,9 +1080,7 @@ describe("Git module", () => {
 
     it("should handle empty output", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(
-        successResult({ stdout: "" })
-      );
+      executeCommandMock.mockResolvedValueOnce(successResult({ stdout: "" }));
 
       const result = await git.listBranches("/home/user/repo");
       expect(result.current).toBe("");
@@ -1126,9 +1115,7 @@ describe("Git module", () => {
 
       const branchCall = executeCommandMock.mock.calls[1];
       const cmd = branchCall[0] as string;
-      expect(cmd).toBe(
-        "git -C '/home/user/repo' 'branch' 'feature/new'"
-      );
+      expect(cmd).toBe("git -C '/home/user/repo' 'branch' 'feature/new'");
     });
   });
 
@@ -1144,9 +1131,7 @@ describe("Git module", () => {
 
       const checkoutCall = executeCommandMock.mock.calls[1];
       const cmd = checkoutCall[0] as string;
-      expect(cmd).toBe(
-        "git -C '/home/user/repo' 'checkout' 'develop'"
-      );
+      expect(cmd).toBe("git -C '/home/user/repo' 'checkout' 'develop'");
     });
   });
 
@@ -1162,9 +1147,7 @@ describe("Git module", () => {
 
       const deleteCall = executeCommandMock.mock.calls[1];
       const cmd = deleteCall[0] as string;
-      expect(cmd).toBe(
-        "git -C '/home/user/repo' 'branch' '-d' 'feature/old'"
-      );
+      expect(cmd).toBe("git -C '/home/user/repo' 'branch' '-d' 'feature/old'");
     });
 
     it("should use -D for force delete", async () => {
@@ -1177,9 +1160,7 @@ describe("Git module", () => {
 
       const deleteCall = executeCommandMock.mock.calls[1];
       const cmd = deleteCall[0] as string;
-      expect(cmd).toBe(
-        "git -C '/home/user/repo' 'branch' '-D' 'feature/old'"
-      );
+      expect(cmd).toBe("git -C '/home/user/repo' 'branch' '-D' 'feature/old'");
     });
   });
 
@@ -1191,48 +1172,79 @@ describe("Git module", () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.remoteAdd("/home/user/repo", "origin", "https://github.com/user/repo.git");
+      await git.remoteAdd(
+        "/home/user/repo",
+        "origin",
+        "https://github.com/user/repo.git"
+      );
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'remote' 'add' 'origin' 'https://github.com/user/repo.git'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'remote' 'add' 'origin' 'https://github.com/user/repo.git'"
+      );
     });
 
     it("should add remote with fetch", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.remoteAdd("/home/user/repo", "origin", "https://github.com/user/repo.git", { fetch: true });
+      await git.remoteAdd(
+        "/home/user/repo",
+        "origin",
+        "https://github.com/user/repo.git",
+        { fetch: true }
+      );
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'remote' 'add' '-f' 'origin' 'https://github.com/user/repo.git'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'remote' 'add' '-f' 'origin' 'https://github.com/user/repo.git'"
+      );
     });
 
     it("should use runShell for overwrite mode", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.remoteAdd("/home/user/repo", "origin", "https://github.com/user/repo.git", { overwrite: true });
+      await git.remoteAdd(
+        "/home/user/repo",
+        "origin",
+        "https://github.com/user/repo.git",
+        { overwrite: true }
+      );
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toContain("git -C '/home/user/repo' 'remote' 'add' 'origin' 'https://github.com/user/repo.git'");
+      expect(cmd).toContain(
+        "git -C '/home/user/repo' 'remote' 'add' 'origin' 'https://github.com/user/repo.git'"
+      );
       expect(cmd).toContain("||");
-      expect(cmd).toContain("git -C '/home/user/repo' 'remote' 'set-url' 'origin' 'https://github.com/user/repo.git'");
+      expect(cmd).toContain(
+        "git -C '/home/user/repo' 'remote' 'set-url' 'origin' 'https://github.com/user/repo.git'"
+      );
     });
 
     it("should use runShell for overwrite+fetch mode", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.remoteAdd("/home/user/repo", "origin", "https://github.com/user/repo.git", { overwrite: true, fetch: true });
+      await git.remoteAdd(
+        "/home/user/repo",
+        "origin",
+        "https://github.com/user/repo.git",
+        { overwrite: true, fetch: true }
+      );
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toContain("git -C '/home/user/repo' 'remote' 'add' '-f' 'origin' 'https://github.com/user/repo.git'");
+      expect(cmd).toContain(
+        "git -C '/home/user/repo' 'remote' 'add' '-f' 'origin' 'https://github.com/user/repo.git'"
+      );
       expect(cmd).toContain("||");
-      expect(cmd).toContain("git -C '/home/user/repo' 'remote' 'set-url' 'origin' 'https://github.com/user/repo.git'");
+      expect(cmd).toContain(
+        "git -C '/home/user/repo' 'remote' 'set-url' 'origin' 'https://github.com/user/repo.git'"
+      );
       expect(cmd).toContain("git -C '/home/user/repo' 'fetch' 'origin'");
     });
 
@@ -1240,7 +1252,11 @@ describe("Git module", () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.remoteAdd("/home/user/repo", "origin", "https://github.com/user/repo.git");
+      await git.remoteAdd(
+        "/home/user/repo",
+        "origin",
+        "https://github.com/user/repo.git"
+      );
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
@@ -1249,9 +1265,17 @@ describe("Git module", () => {
 
     it("should throw error on failure", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(failureResult({ stderr: "error" }));
+      executeCommandMock.mockResolvedValueOnce(
+        failureResult({ stderr: "error" })
+      );
 
-      await expect(git.remoteAdd("/home/user/repo", "origin", "https://github.com/user/repo.git")).rejects.toThrow();
+      await expect(
+        git.remoteAdd(
+          "/home/user/repo",
+          "origin",
+          "https://github.com/user/repo.git"
+        )
+      ).rejects.toThrow();
     });
   });
 
@@ -1272,9 +1296,11 @@ describe("Git module", () => {
 
     it("should return URL when remote exists", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(successResult({
-        stdout: "https://github.com/user/repo.git\n",
-      }));
+      executeCommandMock.mockResolvedValueOnce(
+        successResult({
+          stdout: "https://github.com/user/repo.git\n",
+        })
+      );
 
       const url = await git.remoteGet("/home/user/repo", "origin");
       expect(url).toBe("https://github.com/user/repo.git");
@@ -1282,7 +1308,9 @@ describe("Git module", () => {
 
     it("should return undefined when remote does not exist", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(failureResult({ stderr: "fatal: No such remote 'nonexistent'" }));
+      executeCommandMock.mockResolvedValueOnce(
+        failureResult({ stderr: "fatal: No such remote 'nonexistent'" })
+      );
 
       const url = await git.remoteGet("/home/user/repo", "nonexistent");
       expect(url).toBeUndefined();
@@ -1301,9 +1329,13 @@ describe("Git module", () => {
 
     it("should throw on non-remote errors", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(failureResult({ stderr: "fatal: not a git repository" }));
+      executeCommandMock.mockResolvedValueOnce(
+        failureResult({ stderr: "fatal: not a git repository" })
+      );
 
-      await expect(git.remoteGet("/home/user/repo", "origin")).rejects.toThrow();
+      await expect(
+        git.remoteGet("/home/user/repo", "origin")
+      ).rejects.toThrow();
     });
   });
 
@@ -1370,11 +1402,17 @@ describe("Git module", () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.reset("/home/user/repo", { mode: "soft", target: "HEAD~1", paths: ["src/index.ts"] });
+      await git.reset("/home/user/repo", {
+        mode: "soft",
+        target: "HEAD~1",
+        paths: ["src/index.ts"],
+      });
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'reset' '--soft' 'HEAD~1' '--' 'src/index.ts'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'reset' '--soft' 'HEAD~1' '--' 'src/index.ts'"
+      );
     });
   });
 
@@ -1390,51 +1428,73 @@ describe("Git module", () => {
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'restore' '--worktree' '--' 'src/index.ts'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'restore' '--worktree' '--' 'src/index.ts'"
+      );
     });
 
     it("should restore staged files", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.restore("/home/user/repo", { paths: ["src/index.ts"], staged: true });
+      await git.restore("/home/user/repo", {
+        paths: ["src/index.ts"],
+        staged: true,
+      });
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'restore' '--staged' '--' 'src/index.ts'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'restore' '--staged' '--' 'src/index.ts'"
+      );
     });
 
     it("should restore both staged and worktree", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.restore("/home/user/repo", { paths: ["src/index.ts"], staged: true, worktree: true });
+      await git.restore("/home/user/repo", {
+        paths: ["src/index.ts"],
+        staged: true,
+        worktree: true,
+      });
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'restore' '--worktree' '--staged' '--' 'src/index.ts'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'restore' '--worktree' '--staged' '--' 'src/index.ts'"
+      );
     });
 
     it("should restore from specific source", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.restore("/home/user/repo", { paths: ["src/index.ts"], source: "HEAD~1" });
+      await git.restore("/home/user/repo", {
+        paths: ["src/index.ts"],
+        source: "HEAD~1",
+      });
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'restore' '--worktree' '--source' 'HEAD~1' '--' 'src/index.ts'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'restore' '--worktree' '--source' 'HEAD~1' '--' 'src/index.ts'"
+      );
     });
 
     it("should restore multiple files", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.restore("/home/user/repo", { paths: ["src/index.ts", "src/utils.ts"] });
+      await git.restore("/home/user/repo", {
+        paths: ["src/index.ts", "src/utils.ts"],
+      });
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'restore' '--worktree' '--' 'src/index.ts' 'src/utils.ts'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'restore' '--worktree' '--' 'src/index.ts' 'src/utils.ts'"
+      );
     });
 
     it("should restore all files with dot", async () => {
@@ -1445,7 +1505,9 @@ describe("Git module", () => {
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'restore' '--worktree' '--' '.'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'restore' '--worktree' '--' '.'"
+      );
     });
   });
 
@@ -1514,8 +1576,12 @@ describe("Git module", () => {
       const nameCmd = nameCall[0] as string;
       const emailCmd = emailCall[0] as string;
 
-      expect(nameCmd).toBe("git -C '/home/user/repo' 'config' '--global' 'user.name' 'Agent'");
-      expect(emailCmd).toBe("git -C '/home/user/repo' 'config' '--global' 'user.email' 'agent@example.com'");
+      expect(nameCmd).toBe(
+        "git -C '/home/user/repo' 'config' '--global' 'user.name' 'Agent'"
+      );
+      expect(emailCmd).toBe(
+        "git -C '/home/user/repo' 'config' '--global' 'user.email' 'agent@example.com'"
+      );
     });
 
     it("should set local user config when scope is local", async () => {
@@ -1523,15 +1589,21 @@ describe("Git module", () => {
       executeCommandMock.mockResolvedValueOnce(successResult());
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.configureUser("/home/user/repo", "Agent", "agent@example.com", { scope: "local" });
+      await git.configureUser("/home/user/repo", "Agent", "agent@example.com", {
+        scope: "local",
+      });
 
       const nameCall = executeCommandMock.mock.calls[1];
       const emailCall = executeCommandMock.mock.calls[2];
       const nameCmd = nameCall[0] as string;
       const emailCmd = emailCall[0] as string;
 
-      expect(nameCmd).toBe("git -C '/home/user/repo' 'config' '--local' 'user.name' 'Agent'");
-      expect(emailCmd).toBe("git -C '/home/user/repo' 'config' '--local' 'user.email' 'agent@example.com'");
+      expect(nameCmd).toBe(
+        "git -C '/home/user/repo' 'config' '--local' 'user.name' 'Agent'"
+      );
+      expect(emailCmd).toBe(
+        "git -C '/home/user/repo' 'config' '--local' 'user.email' 'agent@example.com'"
+      );
     });
 
     it("should set both name and email", async () => {
@@ -1557,18 +1629,24 @@ describe("Git module", () => {
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'config' '--global' 'pull.rebase' 'true'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'config' '--global' 'pull.rebase' 'true'"
+      );
     });
 
     it("should set local config when scope is local", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.setConfig("/home/user/repo", "core.autocrlf", "true", { scope: "local" });
+      await git.setConfig("/home/user/repo", "core.autocrlf", "true", {
+        scope: "local",
+      });
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'config' '--local' 'core.autocrlf' 'true'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'config' '--local' 'core.autocrlf' 'true'"
+      );
     });
 
     it("should handle special values", async () => {
@@ -1579,7 +1657,9 @@ describe("Git module", () => {
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'config' '--global' 'user.name' 'John Doe'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'config' '--global' 'user.name' 'John Doe'"
+      );
     });
   });
 
@@ -1590,32 +1670,36 @@ describe("Git module", () => {
     it("should skip detached HEAD state in branch list", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       // Simulate detached HEAD output
-      const branchOutput = "(HEAD detached at abc1234)\t*\nmain\t \nfeature\t \n";
+      const branchOutput =
+        "(HEAD detached at abc1234)\t*\nmain\t \nfeature\t \n";
 
       executeCommandMock.mockResolvedValueOnce(
         successResult({ stdout: branchOutput })
       );
 
       const result = await git.listBranches("/home/user/repo");
-      
+
       // Should NOT include detached HEAD as a branch
       expect(result.current).toBe(""); // No valid current branch
       expect(result.branches).toHaveLength(2);
-      expect(result.branches.map(b => b.name)).not.toContain("(HEAD detached at abc1234)");
-      expect(result.branches.map(b => b.name)).toContain("main");
-      expect(result.branches.map(b => b.name)).toContain("feature");
+      expect(result.branches.map((b) => b.name)).not.toContain(
+        "(HEAD detached at abc1234)"
+      );
+      expect(result.branches.map((b) => b.name)).toContain("main");
+      expect(result.branches.map((b) => b.name)).toContain("feature");
     });
 
     it("should handle detached HEAD with other branches", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      const branchOutput = "main\t*\n(HEAD detached at def5678)\t \nfeature\t \n";
+      const branchOutput =
+        "main\t*\n(HEAD detached at def5678)\t \nfeature\t \n";
 
       executeCommandMock.mockResolvedValueOnce(
         successResult({ stdout: branchOutput })
       );
 
       const result = await git.listBranches("/home/user/repo");
-      
+
       expect(result.current).toBe("main");
       expect(result.branches).toHaveLength(2);
       expect(result.branches[0]).toEqual({ name: "main", isCurrent: true });
@@ -1632,16 +1716,18 @@ describe("Git module", () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.reset("/home/user/repo", { 
-        mode: "mixed", 
-        target: "HEAD~1", 
-        paths: ["src/index.ts"] 
+      await git.reset("/home/user/repo", {
+        mode: "mixed",
+        target: "HEAD~1",
+        paths: ["src/index.ts"],
       });
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
       // Command is constructed as-is, git will error if invalid
-      expect(cmd).toBe("git -C '/home/user/repo' 'reset' '--mixed' 'HEAD~1' '--' 'src/index.ts'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'reset' '--mixed' 'HEAD~1' '--' 'src/index.ts'"
+      );
     });
 
     it("should handle reset with only target", async () => {
@@ -1663,7 +1749,9 @@ describe("Git module", () => {
 
       const call = executeCommandMock.mock.calls[1];
       const cmd = call[0] as string;
-      expect(cmd).toBe("git -C '/home/user/repo' 'reset' '--' 'file1.txt' 'file2.txt'");
+      expect(cmd).toBe(
+        "git -C '/home/user/repo' 'reset' '--' 'file1.txt' 'file2.txt'"
+      );
     });
   });
 
@@ -1690,8 +1778,8 @@ describe("Git module", () => {
       executeCommandMock.mockResolvedValueOnce(successResult());
       executeCommandMock.mockResolvedValueOnce(successResult());
 
-      await git.configureUser("/home/user/repo", "Agent", "agent@example.com", { 
-        scope: "global" 
+      await git.configureUser("/home/user/repo", "Agent", "agent@example.com", {
+        scope: "global",
       });
 
       const nameCall = executeCommandMock.mock.calls[1];
@@ -1707,9 +1795,11 @@ describe("Git module", () => {
   describe("getConfig - edge cases", () => {
     it("should trim whitespace from config value", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(successResult({
-        stdout: "  Agent  \n",
-      }));
+      executeCommandMock.mockResolvedValueOnce(
+        successResult({
+          stdout: "  Agent  \n",
+        })
+      );
 
       const value = await git.getConfig("/home/user/repo", "user.name");
       expect(value).toBe("Agent");
@@ -1717,9 +1807,11 @@ describe("Git module", () => {
 
     it("should return full trimmed output for multi-line stdout", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(successResult({
-        stdout: "Agent\nSome other output\n",
-      }));
+      executeCommandMock.mockResolvedValueOnce(
+        successResult({
+          stdout: "Agent\nSome other output\n",
+        })
+      );
 
       const value = await git.getConfig("/home/user/repo", "user.name");
       expect(value).toBe("Agent\nSome other output");
@@ -1732,9 +1824,11 @@ describe("Git module", () => {
   describe("remoteGet - edge cases", () => {
     it("should trim whitespace from URL", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(successResult({
-        stdout: "  https://github.com/user/repo.git  \n",
-      }));
+      executeCommandMock.mockResolvedValueOnce(
+        successResult({
+          stdout: "  https://github.com/user/repo.git  \n",
+        })
+      );
 
       const url = await git.remoteGet("/home/user/repo", "origin");
       expect(url).toBe("https://github.com/user/repo.git");
@@ -1742,9 +1836,12 @@ describe("Git module", () => {
 
     it("should handle multiple URLs (return first)", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
-      executeCommandMock.mockResolvedValueOnce(successResult({
-        stdout: "https://github.com/user/repo.git\nhttps://github.com/user/repo2.git\n",
-      }));
+      executeCommandMock.mockResolvedValueOnce(
+        successResult({
+          stdout:
+            "https://github.com/user/repo.git\nhttps://github.com/user/repo2.git\n",
+        })
+      );
 
       const url = await git.remoteGet("/home/user/repo", "origin");
       // Returns all output trimmed
@@ -1761,7 +1858,8 @@ describe("Git module", () => {
       executeCommandMock.mockResolvedValueOnce(
         failureResult({
           exitCode: 128,
-          stderr: "fatal: unable to access 'https://github.com/user/repo.git': The requested URL returned error: 403",
+          stderr:
+            "fatal: unable to access 'https://github.com/user/repo.git': The requested URL returned error: 403",
         })
       );
 
@@ -1775,7 +1873,7 @@ describe("Git module", () => {
       executeCommandMock.mockResolvedValueOnce(
         failureResult({
           exitCode: 128,
-          stderr: "fatal: access denied", 
+          stderr: "fatal: access denied",
         })
       );
 
@@ -1789,13 +1887,14 @@ describe("Git module", () => {
       executeCommandMock.mockResolvedValueOnce(
         failureResult({
           exitCode: 128,
-          stderr: "fatal: '/tmp/not-a-repo' does not appear to be a git repository",
+          stderr:
+            "fatal: '/tmp/not-a-repo' does not appear to be a git repository",
         })
       );
 
-      await expect(
-        git.status("/tmp/not-a-repo")
-      ).rejects.toThrow(GitNotARepoError);
+      await expect(git.status("/tmp/not-a-repo")).rejects.toThrow(
+        GitNotARepoError
+      );
     });
   });
 
@@ -1806,8 +1905,8 @@ describe("Git module", () => {
     it("should parse commit hash from root commit output", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(
-        successResult({ 
-          stdout: "[main (root-commit) abc1234] Initial commit\n" 
+        successResult({
+          stdout: "[main (root-commit) abc1234] Initial commit\n",
         })
       );
 
@@ -1818,8 +1917,8 @@ describe("Git module", () => {
     it("should parse commit hash with branch containing slashes", async () => {
       const { git, executeCommandMock } = createGitWithVersion();
       executeCommandMock.mockResolvedValueOnce(
-        successResult({ 
-          stdout: "[feature/new-branch def5678] Add feature\n" 
+        successResult({
+          stdout: "[feature/new-branch def5678] Add feature\n",
         })
       );
 

@@ -353,3 +353,152 @@ def test_upload_policy_serialization():
     assert "uploadMode" in default_dict
     assert default_dict["uploadMode"] == "File"  # Default should be File
     print("✅ Default policy serialization works correctly")
+
+
+@pytest.mark.asyncio
+async def test_archive_mode_with_exclude_paths(agent_bay_client, unique_id):
+    """Test Archive mode with archiveExcludePaths for hybrid storage.
+
+    Verifies that when archiveExcludePaths is set:
+    1. Session creation succeeds with the policy
+    2. Files can be written to both excluded and non-excluded paths
+    3. After sync, files are stored (excluded files individually, rest archived)
+    4. Excluded files should be accessible individually via list_files
+    """
+    print("\n=== Testing Archive mode with archiveExcludePaths ===")
+
+    context_name = f"archive-exclude-context-{unique_id}"
+    context_result = await agent_bay_client.context.get(context_name, True)
+    assert context_result.success, f"Failed to create context: {context_result.error_message}"
+    assert context_result.context_id is not None
+
+    upload_policy = UploadPolicy(
+        upload_mode=UploadMode.ARCHIVE,
+        archive_exclude_paths=["important/", "config.json"],
+    )
+    sync_policy = SyncPolicy(upload_policy=upload_policy)
+
+    sync_path = "/tmp/archive-exclude-test"
+    context_sync = ContextSync.new(
+        context_id=context_result.context_id,
+        path=sync_path,
+        policy=sync_policy,
+    )
+
+    assert context_sync.policy.upload_policy.upload_mode == UploadMode.ARCHIVE
+    assert context_sync.policy.upload_policy.archive_exclude_paths == [
+        "important/",
+        "config.json",
+    ]
+
+    session_params = CreateSessionParams(
+        labels={
+            "test": f"archive-exclude-{unique_id}",
+            "type": "archive-exclude-paths",
+        },
+        context_syncs=[context_sync],
+    )
+
+    print("Creating session with Archive mode + exclude paths...")
+    session_result = await agent_bay_client.create(session_params)
+    assert (
+        session_result.success
+    ), f"Failed to create session: {session_result.error_message}"
+    session = session_result.session
+
+    try:
+        # Create directory structure
+        dir_result = await session.file_system.create_directory(
+            f"{sync_path}/important"
+        )
+        assert dir_result.success
+        dir_result = await session.file_system.create_directory(
+            f"{sync_path}/regular"
+        )
+        assert dir_result.success
+
+        # Write files: some in excluded paths, some not
+        write_result = await session.file_system.write_file(
+            f"{sync_path}/important/data.txt",
+            "This file should be stored individually via FILE mode",
+            mode="overwrite",
+        )
+        assert write_result.success
+
+        write_result = await session.file_system.write_file(
+            f"{sync_path}/config.json",
+            '{"key": "value", "setting": true}',
+            mode="overwrite",
+        )
+        assert write_result.success
+
+        write_result = await session.file_system.write_file(
+            f"{sync_path}/regular/data.txt",
+            "This file should be archived with the rest",
+            mode="overwrite",
+        )
+        assert write_result.success
+
+        print("All files written successfully")
+
+        # Delete session with sync to trigger upload
+        delete_result = await agent_bay_client.delete(session, sync_context=True)
+        assert (
+            delete_result.success
+        ), f"Failed to delete session: {delete_result.error_message}"
+        session = None
+        print("Session deleted with sync_context=True")
+
+        # Verify files via list_files
+        list_result = await agent_bay_client.context.list_files(
+            context_result.context_id, sync_path, page_number=1, page_size=20
+        )
+        assert list_result.success, (
+            f"Failed to list files: "
+            f"{getattr(list_result, 'error_message', 'Unknown error')}"
+        )
+        assert len(list_result.entries) > 0, "Should have files after sync"
+
+        print(f"Total files found: {len(list_result.entries)}")
+        for entry in list_result.entries:
+            print(
+                f"  {entry.file_path} | {entry.file_name} "
+                f"({entry.file_type}, {entry.size} bytes)"
+            )
+
+        # Verify excluded files exist as individual entries
+        file_paths = [entry.file_path for entry in list_result.entries]
+        file_names = [entry.file_name for entry in list_result.entries]
+
+        has_important = any("important" in p for p in file_paths)
+        has_config = any("config.json" in n for n in file_names)
+
+        print(f"Has excluded 'important/' files individually: {has_important}")
+        print(f"Has excluded 'config.json' individually: {has_config}")
+
+        assert has_important, (
+            "Expected excluded path 'important/' files to be stored individually "
+            f"(archiveExcludePaths), but got: {file_names}"
+        )
+        assert has_config, (
+            "Expected excluded file 'config.json' to be stored individually "
+            f"(archiveExcludePaths), but got: {file_names}"
+        )
+
+        # Check for Presigned URL accessibility on excluded files
+        for entry in list_result.entries:
+            if "important" in entry.file_path or "config.json" in entry.file_name:
+                presigned_url = getattr(entry, "presigned_url", None) or getattr(
+                    entry, "download_url", None
+                )
+                if presigned_url:
+                    print(
+                        f"  Excluded file '{entry.file_name}' has "
+                        f"Presigned URL: {presigned_url[:80]}..."
+                    )
+
+        print("Archive mode with exclude paths test completed successfully")
+
+    finally:
+        if session is not None:
+            await agent_bay_client.delete(session, sync_context=True)

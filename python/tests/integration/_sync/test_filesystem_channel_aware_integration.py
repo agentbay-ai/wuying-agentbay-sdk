@@ -11,27 +11,14 @@ Verifies that:
 - Append mode works on HTTP channel
 """
 
-import os
-
 import pytest
 import pytest
-
-from agentbay import AgentBay
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
 
 
 @pytest.fixture
-def test_session(agent_bay):
-    result = agent_bay.create()
-    assert result.success, f"Failed to create session: {result}"
-    session = result.session
+def test_session(make_session):
+    lc = make_session("linux_latest")
+    session = lc._result.session
 
     # Log channel type for debugging
     link_url = session._get_link_url() if hasattr(session, '_get_link_url') else ""
@@ -40,8 +27,7 @@ def test_session(agent_bay):
     print(f"\n[Channel] Using {channel} channel")
     print(f"[Channel] link_url present: {bool(link_url)}, token present: {bool(token)}")
 
-    yield session
-    session.delete()
+    return session
 
 
 @pytest.mark.sync

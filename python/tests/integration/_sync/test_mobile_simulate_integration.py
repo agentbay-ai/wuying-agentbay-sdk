@@ -5,11 +5,8 @@ import time
 import os
 
 import pytest
-import pytest
 
-from agentbay import AgentBay
 from agentbay import MobileExtraConfig, MobileSimulateMode
-from agentbay import Session
 from agentbay import CreateSessionParams, ExtraConfigs
 from agentbay import MobileSimulateService
 
@@ -18,19 +15,8 @@ MOBILE_INFO_MODEL_A = "SM-A505F"
 MOBILE_INFO_MODEL_B = "moto g stylus 5G - 2024"
 
 
-@pytest.fixture(scope="module")
-def agent_bay():
-    """
-    Set up the test environment by creating an AgentBay instance.
-    """
-    api_key = os.getenv(
-        "AGENTBAY_API_KEY", "your_api_key"
-    )  # Replace with your actual API key
-    return AgentBay(api_key=api_key)
-
-
 @pytest.mark.sync
-def test_mobile_simulate_for_model_a(agent_bay):
+def test_mobile_simulate_for_model_a(agent_bay_client):
     """
     Test device properties after mobile simulate for model a.
     """
@@ -46,7 +32,7 @@ def test_mobile_simulate_for_model_a(agent_bay):
         mobile_info_content = f.read()
 
     # Create mobile simulate service and set simulate params
-    simulate_service = MobileSimulateService(agent_bay)
+    simulate_service = MobileSimulateService(agent_bay_client)
     simulate_service.set_simulate_enable(True)
     simulate_service.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
 
@@ -63,9 +49,11 @@ def test_mobile_simulate_for_model_a(agent_bay):
             )
         )
     )
-    result = agent_bay.create(params)
+    result = agent_bay_client.create(params)
     session = None
-    assert result.success, "Failed to create session"
+    if not result.success and "no authorized app" in result.error_message:
+        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
+    assert result.success, f"Failed to create session: {result.error_message}"
     assert result.session is not None, "Session should not be None"
     session = result.session
     print(f"Session created successfully: {session.session_id}")
@@ -81,14 +69,14 @@ def test_mobile_simulate_for_model_a(agent_bay):
 
     time.sleep(2)
     print("Deleting session...")
-    delete_result = agent_bay.delete(session)
+    delete_result = agent_bay_client.delete(session)
     assert delete_result.success, "Failed to delete session"
     print(f"Session deleted successfully (RequestID: {delete_result.request_id})")
 
 
 
 @pytest.mark.sync
-def test_mobile_simulate_for_model_b(agent_bay):
+def test_mobile_simulate_for_model_b(agent_bay_client):
     """
     Test device properties after mobile simulate for model b.
     """
@@ -103,7 +91,7 @@ def test_mobile_simulate_for_model_b(agent_bay):
         mobile_info_content = f.read()
 
     # Create mobile simulate service and set simulate params
-    simulate_service = MobileSimulateService(agent_bay)
+    simulate_service = MobileSimulateService(agent_bay_client)
     simulate_service.set_simulate_enable(True)
     simulate_service.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
 
@@ -120,9 +108,11 @@ def test_mobile_simulate_for_model_b(agent_bay):
             )
         )
     )
-    result = agent_bay.create(params)
+    result = agent_bay_client.create(params)
     session = None
-    assert result.success, "Failed to create session"
+    if not result.success and "no authorized app" in result.error_message:
+        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
+    assert result.success, f"Failed to create session {result.error_message}"
     assert result.session is not None, "Session should not be None"
     session = result.session
     print(f"Session created successfully: {session.session_id}")
@@ -138,14 +128,14 @@ def test_mobile_simulate_for_model_b(agent_bay):
 
     time.sleep(2)
     print("Deleting session...")
-    delete_result = agent_bay.delete(session)
+    delete_result = agent_bay_client.delete(session)
     assert delete_result.success, "Failed to delete session"
     print(f"Session deleted successfully (RequestID: {delete_result.request_id})")
 
 
 
 @pytest.mark.sync
-def test_mobile_simulate_persistence(agent_bay):
+def test_mobile_simulate_persistence(agent_bay_client):
     """
     Using model a simulate context to test persistence mobile simulate across sessions.
     """
@@ -161,7 +151,7 @@ def test_mobile_simulate_persistence(agent_bay):
         mobile_info_content = f.read()
 
     # Create mobile simulate service and set simulate params
-    simulate_service_1 = MobileSimulateService(agent_bay)
+    simulate_service_1 = MobileSimulateService(agent_bay_client)
     simulate_service_1.set_simulate_enable(True)
     simulate_service_1.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
 
@@ -178,8 +168,10 @@ def test_mobile_simulate_persistence(agent_bay):
             )
         )
     )
-    result = agent_bay.create(params_1)
-    assert result.success, "Failed to create session"
+    result = agent_bay_client.create(params_1)
+    if not result.success and "no authorized app" in result.error_message:
+        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
+    assert result.success, f"Failed to create session: {result.error_message}"
     assert result.session is not None, "Session should not be None"
     session_1 = result.session
     print(f"Session 1 created successfully: {session_1.session_id}")
@@ -195,7 +187,7 @@ def test_mobile_simulate_persistence(agent_bay):
 
     time.sleep(2)
     print("Deleting session 1...")
-    delete_result = agent_bay.delete(session_1)
+    delete_result = agent_bay_client.delete(session_1)
     assert delete_result.success, "Failed to delete session"
     print(f"Session 1 deleted successfully (RequestID: {delete_result.request_id})")
 
@@ -203,7 +195,7 @@ def test_mobile_simulate_persistence(agent_bay):
     # In Session 2
     # Directly use model a simulate context id to do mobile simulate across sessions.
     # Create mobile simulate service and set simulate params
-    simulate_service_2 = MobileSimulateService(agent_bay)
+    simulate_service_2 = MobileSimulateService(agent_bay_client)
     simulate_service_2.set_simulate_enable(True)
     simulate_service_2.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
     simulate_service_2.set_simulate_context_id(mobile_sim_persistence_context_id)
@@ -216,7 +208,7 @@ def test_mobile_simulate_persistence(agent_bay):
             )
         )
     )
-    result = agent_bay.create(params_2)
+    result = agent_bay_client.create(params_2)
     assert result.success, "Failed to create session"
     assert result.session is not None, "Session should not be None"
     session_2 = result.session
@@ -234,6 +226,6 @@ def test_mobile_simulate_persistence(agent_bay):
     time.sleep(2)
 
     print("Deleting session 2...")
-    delete_result = agent_bay.delete(session_2)
+    delete_result = agent_bay_client.delete(session_2)
     assert delete_result.success, "Failed to delete session"
     print(f"Session 2 deleted successfully (RequestID: {delete_result.request_id})")

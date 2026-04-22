@@ -6,6 +6,8 @@ Unit tests for context_sync module.
 import unittest
 import pytest
 
+import copy
+
 from agentbay import (
     BWList,
     ContextSync,
@@ -14,6 +16,7 @@ from agentbay import (
     DownloadStrategy,
     MappingPolicy,
     SyncPolicy,
+    UploadMode,
     UploadPolicy,
     UploadStrategy,
     WhiteList,
@@ -247,6 +250,75 @@ class TestAsyncContextSyncWithMappingPolicy(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(context_sync.policy)
         self.assertIsNotNone(context_sync.policy.mapping_policy)
         self.assertEqual(context_sync.policy.mapping_policy.path, windows_path)
+
+
+class TestAsyncUploadPolicyArchiveExcludePaths(unittest.IsolatedAsyncioTestCase):
+    """Test UploadPolicy.archive_exclude_paths functionality."""
+
+    @pytest.mark.asyncio
+    async def test_archive_exclude_paths_serialization(self):
+        """Test that archive_exclude_paths serializes to camelCase archiveExcludePaths."""
+        policy = UploadPolicy(
+            upload_mode=UploadMode.ARCHIVE,
+            archive_exclude_paths=["AGENTS.md", "chats.json", "sessions"],
+        )
+        result = policy.__dict__()
+        self.assertIn("archiveExcludePaths", result)
+        self.assertEqual(
+            result["archiveExcludePaths"],
+            ["AGENTS.md", "chats.json", "sessions"],
+        )
+        self.assertEqual(result["uploadMode"], "Archive")
+
+    @pytest.mark.asyncio
+    async def test_archive_exclude_paths_empty_omitted(self):
+        """Test that empty archive_exclude_paths is not included in serialization."""
+        policy = UploadPolicy(upload_mode=UploadMode.ARCHIVE)
+        result = policy.__dict__()
+        self.assertNotIn("archiveExcludePaths", result)
+
+    @pytest.mark.asyncio
+    async def test_archive_exclude_paths_not_in_file_mode(self):
+        """Test that archive_exclude_paths is omitted when upload_mode is FILE."""
+        policy = UploadPolicy(
+            upload_mode=UploadMode.FILE,
+            archive_exclude_paths=["AGENTS.md"],
+        )
+        result = policy.__dict__()
+        self.assertNotIn("archiveExcludePaths", result)
+
+    @pytest.mark.asyncio
+    async def test_archive_exclude_paths_default(self):
+        """Test that archive_exclude_paths defaults to empty list."""
+        policy = UploadPolicy()
+        self.assertEqual(policy.archive_exclude_paths, [])
+
+    @pytest.mark.asyncio
+    async def test_archive_exclude_paths_in_sync_policy(self):
+        """Test that archive_exclude_paths survives full SyncPolicy serialization."""
+        sync_policy = SyncPolicy(
+            upload_policy=UploadPolicy(
+                upload_mode=UploadMode.ARCHIVE,
+                archive_exclude_paths=["config.json", "env.json"],
+            )
+        )
+        result = sync_policy.__dict__()
+        upload = result["uploadPolicy"]
+        self.assertIn("archiveExcludePaths", upload)
+        self.assertEqual(upload["archiveExcludePaths"], ["config.json", "env.json"])
+
+    @pytest.mark.asyncio
+    async def test_archive_exclude_paths_deepcopy(self):
+        """Test that archive_exclude_paths is preserved through deepcopy."""
+        original = UploadPolicy(
+            upload_mode=UploadMode.ARCHIVE,
+            archive_exclude_paths=["a.txt", "b.txt"],
+        )
+        copied = copy.deepcopy(original)
+        self.assertEqual(copied.archive_exclude_paths, ["a.txt", "b.txt"])
+        copied.archive_exclude_paths.append("c.txt")
+        self.assertEqual(original.archive_exclude_paths, ["a.txt", "b.txt"])
+        self.assertEqual(copied.archive_exclude_paths, ["a.txt", "b.txt", "c.txt"])
 
 
 if __name__ == "__main__":

@@ -202,6 +202,31 @@ class WsClient:
         async_handle = f.result()
         return WsStreamHandle(self, async_handle, loop=self._loop)
 
+    def call(
+        self,
+        *,
+        target: str,
+        data: dict[str, Any],
+        timeout: float = 30.0,
+    ) -> dict[str, Any]:
+        """
+        Send a request and wait for a single response (no phase semantics).
+
+        Returns the response data dict. Check data["result"] for the result.
+        """
+        self._ensure_thread()
+        assert self._loop is not None
+        assert self._async_client is not None
+        f = asyncio.run_coroutine_threadsafe(
+            self._async_client.call(
+                target=target,
+                data=data,
+                timeout=timeout,
+            ),
+            self._loop,
+        )
+        return f.result(timeout=timeout + 5.0)
+
     def send_message(
         self,
         *,

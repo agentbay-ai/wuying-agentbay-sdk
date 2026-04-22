@@ -362,7 +362,6 @@ func TestSessionResumeAlreadyRunning(t *testing.T) {
 	}
 }
 
-
 // TestSessionPauseWithShortTimeout tests pause with a short timeout parameter
 func TestSessionPauseWithShortTimeout(t *testing.T) {
 	apiKey := os.Getenv("AGENTBAY_API_KEY")

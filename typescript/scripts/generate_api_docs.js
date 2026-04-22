@@ -33,6 +33,11 @@ const docMappings = [
   {
     target: 'common-features/basics/context-sync.md',
     symbol: 'ContextSync',
+    collectPages: [
+      'ContextSync', 'SyncPolicyImpl', 'Interface: SyncPolicy', 'UploadPolicy', 'DownloadPolicy',
+      'DeletePolicy', 'Interface: ExtractPolicy', 'RecyclePolicy', 'MappingPolicy',
+      'UploadMode', 'UploadStrategy', 'DownloadStrategy', 'ContextSyncResult',
+    ],
     identifiers: ['Interface ContextSync', 'ContextSync', 'SyncPolicy', 'UploadPolicy', 'DownloadPolicy', 'DeletePolicy', 'ExtractPolicy', 'RecyclePolicy', 'WhiteList', 'BWList', 'MappingPolicy'],
   },
   {
@@ -66,12 +71,14 @@ const docMappings = [
     identifiers: ['Class CreateSessionParams', 'CreateSessionParams', 'BrowserContext', 'session-params'],
   },
   { target: 'mobile-use/mobile.md', symbol: 'Mobile', identifiers: ['Class Mobile', 'Mobile'] },
+  { target: 'common-features/basics/env.md', symbol: 'Env', identifiers: ['Class Env', 'Env', 'EnvResult', 'BoolResult'] },
   {
     target: 'mobile-use/mobile-simulate.md',
     symbol: 'MobileSimulateService',
     identifiers: ['Class MobileSimulateService', 'MobileSimulateService', 'mobile-simulate'],
   },
   { target: 'common-features/advanced/git.md', symbol: 'Git', identifiers: ['Class Git', 'Git'] },
+  { target: 'common-features/basics/pty.md', symbol: 'Pty', identifiers: ['Class Pty', 'Pty', 'PtyHandle', 'PtySession'] },
 ]
 
 const symbolToTarget = new Map()

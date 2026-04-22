@@ -30,9 +30,7 @@ describe("Session CRUD", () => {
 
     session = createResponse.session!;
     log(`Session created with ID: ${session.sessionId}`);
-    log(
-      `Create Session RequestId: ${createResponse.requestId || "undefined"}`
-    );
+    log(`Create Session RequestId: ${createResponse.requestId || "undefined"}`);
 
     // Ensure session ID is not empty
     expect(session.sessionId).toBeDefined();
@@ -54,9 +52,7 @@ describe("Session CRUD", () => {
     // Delete the session
     log("Deleting the session...");
     const deleteResponse = await agentBay.delete(session);
-    log(
-      `Delete Session RequestId: ${deleteResponse.requestId || "undefined"}`
-    );
+    log(`Delete Session RequestId: ${deleteResponse.requestId || "undefined"}`);
 
     // Verify DeleteResult structure
     expect(deleteResponse.success).toBe(true);

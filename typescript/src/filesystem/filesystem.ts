@@ -23,8 +23,14 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
       timeoutMs
     );
     promise.then(
-      (v) => { clearTimeout(timer); resolve(v); },
-      (e) => { clearTimeout(timer); reject(e); }
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
     );
   });
 }
@@ -1172,7 +1178,7 @@ export class FileSystem {
     try {
       // HTTP (LinkUrl) channel: read entire file in a single call, no chunking needed
       if (this.isUsingLinkUrl()) {
-        const formatType = format === 'bytes' ? 'binary' : 'text';
+        const formatType = format === "bytes" ? "binary" : "text";
         return await this.readFileChunk(path, 0, 0, formatType);
       }
 
@@ -1458,7 +1464,11 @@ export class FileSystem {
         try {
           return await this.writeFileChunk(path, content, mode);
         } catch (error) {
-          return { requestId: '', success: false, errorMessage: `Failed to write file: ${error}` };
+          return {
+            requestId: "",
+            success: false,
+            errorMessage: `Failed to write file: ${error}`,
+          };
         }
       }
 
@@ -1646,7 +1656,14 @@ export class FileSystem {
     );
 
     const monitoring = useWsPush
-      ? this.monitorWsPush(path, callback, interval, signal, readyResolve, serverName!)
+      ? this.monitorWsPush(
+          path,
+          callback,
+          interval,
+          signal,
+          readyResolve,
+          serverName!
+        )
       : this.monitorPolling(path, callback, interval, signal, readyResolve);
 
     return { monitoring, ready };
@@ -1857,14 +1874,20 @@ export class FileSystem {
         });
       }
     } catch (error) {
-      logWarn(
-        `WS push subscribe failed: ${error}. Falling back to polling.`
-      );
+      logWarn(`WS push subscribe failed: ${error}. Falling back to polling.`);
       if (unsubscribePush) {
-        try { unsubscribePush(); } catch (_e) { /* */ }
+        try {
+          unsubscribePush();
+        } catch (_e) {
+          /* */
+        }
       }
       if (unsubscribeState) {
-        try { unsubscribeState(); } catch (_e) { /* */ }
+        try {
+          unsubscribeState();
+        } catch (_e) {
+          /* */
+        }
       }
       await this.monitorPollingAfterBaseline(path, callback, interval, signal);
       return;
@@ -1873,10 +1896,18 @@ export class FileSystem {
     // Normal cleanup
     subscriptionActive = false;
     if (unsubscribePush) {
-      try { unsubscribePush(); } catch (_e) { /* */ }
+      try {
+        unsubscribePush();
+      } catch (_e) {
+        /* */
+      }
     }
     if (unsubscribeState) {
-      try { unsubscribeState(); } catch (_e) { /* */ }
+      try {
+        unsubscribeState();
+      } catch (_e) {
+        /* */
+      }
     }
     try {
       const wsClient = await this.session.getWsClient();
@@ -1884,7 +1915,9 @@ export class FileSystem {
         method: "unsubscribe_file_change",
         params: { path },
       });
-    } catch (_e) { /* best effort */ }
+    } catch (_e) {
+      /* best effort */
+    }
     logInfo(`Stopped WS push monitoring for: ${path}`);
   }
 

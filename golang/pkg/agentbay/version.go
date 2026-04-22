@@ -46,7 +46,7 @@ func getVersion() string {
 	}
 
 	// Fallback to default version (used in development)
-	return "0.18.0"
+	return "0.19.0"
 }
 
 // isReleaseVersion checks if this is a release build

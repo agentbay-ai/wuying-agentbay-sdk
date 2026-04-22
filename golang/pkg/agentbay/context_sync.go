@@ -66,6 +66,31 @@ type UploadPolicy struct {
 	UploadStrategy UploadStrategy `json:"uploadStrategy"`
 	// UploadMode defines the upload mode
 	UploadMode UploadMode `json:"uploadMode"`
+	// ArchiveExcludePaths lists paths to upload as individual files when UploadMode is Archive
+	ArchiveExcludePaths []string `json:"archiveExcludePaths,omitempty"`
+}
+
+// MarshalJSON implements custom JSON marshaling for UploadPolicy.
+// ArchiveExcludePaths is only serialized when UploadMode is Archive.
+func (p UploadPolicy) MarshalJSON() ([]byte, error) {
+	type base struct {
+		AutoUpload     bool           `json:"autoUpload"`
+		UploadStrategy UploadStrategy `json:"uploadStrategy"`
+		UploadMode     UploadMode     `json:"uploadMode"`
+	}
+	type withExclude struct {
+		base
+		ArchiveExcludePaths []string `json:"archiveExcludePaths,omitempty"`
+	}
+	b := base{
+		AutoUpload:     p.AutoUpload,
+		UploadStrategy: p.UploadStrategy,
+		UploadMode:     p.UploadMode,
+	}
+	if p.UploadMode == UploadModeArchive && len(p.ArchiveExcludePaths) > 0 {
+		return json.Marshal(withExclude{base: b, ArchiveExcludePaths: p.ArchiveExcludePaths})
+	}
+	return json.Marshal(b)
 }
 
 // DownloadPolicy defines the download policy for context synchronization

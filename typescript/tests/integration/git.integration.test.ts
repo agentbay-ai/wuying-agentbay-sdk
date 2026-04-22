@@ -306,9 +306,7 @@ describe("Git Full Workflow Test", () => {
     log("已执行 mixed reset");
 
     status = await session.git.status(LOCAL_REPO);
-    const afterReset = status.files.find(
-      (f) => f.path === "reset-test.txt"
-    );
+    const afterReset = status.files.find((f) => f.path === "reset-test.txt");
     expect(afterReset).toBeDefined();
     // 取消暂存后 indexStatus 应为空格，workTreeStatus 应为 M
     expect(afterReset!.indexStatus).toBe(" ");
@@ -438,11 +436,9 @@ describe("Git Full Workflow Test", () => {
     expect(val).toBe("false");
 
     // 查询不存在的 key 应返回 undefined
-    const missing = await session.git.getConfig(
-      LOCAL_REPO,
-      "nonexistent.key",
-      { scope: "local" }
-    );
+    const missing = await session.git.getConfig(LOCAL_REPO, "nonexistent.key", {
+      scope: "local",
+    });
     expect(missing).toBeUndefined();
     log("✓ setConfig + getConfig 成功");
   }, 60000);
@@ -459,8 +455,12 @@ describe("Git Full Workflow Test", () => {
     await session.git.add(LOCAL_REPO);
 
     let status = await session.git.status(LOCAL_REPO);
-    expect(status.files.some((f) => f.path === "file-a.txt" && f.indexStatus === "A")).toBe(true);
-    expect(status.files.some((f) => f.path === "file-b.txt" && f.indexStatus === "A")).toBe(true);
+    expect(
+      status.files.some((f) => f.path === "file-a.txt" && f.indexStatus === "A")
+    ).toBe(true);
+    expect(
+      status.files.some((f) => f.path === "file-b.txt" && f.indexStatus === "A")
+    ).toBe(true);
     log("两个文件已暂存");
 
     // 只取消 file-a.txt 的暂存
@@ -509,7 +509,9 @@ describe("Git Full Workflow Test", () => {
       expect(status.isClean).toBe(true);
 
       // 查看提交历史
-      const logResult = await session.git.log(cloneResult.path, { maxCount: 3 });
+      const logResult = await session.git.log(cloneResult.path, {
+        maxCount: 3,
+      });
       log(`最近提交:`);
       for (const entry of logResult.entries) {
         log(`  ${entry.shortHash} | ${entry.authorName} | ${entry.message}`);

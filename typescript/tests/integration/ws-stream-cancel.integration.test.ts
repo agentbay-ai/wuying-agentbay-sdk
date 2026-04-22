@@ -18,8 +18,7 @@ describe("WS stream cancel Integration Test", () => {
     }
 
     agentBay = new AgentBay({ apiKey });
-    const imageId =
-      process.env.AGENTBAY_WS_IMAGE_ID || "linux_latest";
+    const imageId = process.env.AGENTBAY_WS_IMAGE_ID || "linux_latest";
     const created = await agentBay.create({ imageId });
     if (!created.success || !created.session) {
       throw new Error(`Failed to create session: ${created.errorMessage}`);

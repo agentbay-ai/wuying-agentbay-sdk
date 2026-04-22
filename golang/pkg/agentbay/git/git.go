@@ -115,7 +115,7 @@ func classifyError(operation string, result *command.CommandResult) error {
 	if result.Success {
 		return nil
 	}
-	
+
 	stderr := strings.ToLower(result.Stderr)
 
 	// Check for git not found (exit code 127 = command not found)
@@ -130,15 +130,15 @@ func classifyError(operation string, result *command.CommandResult) error {
 			},
 		}
 	}
-	
+
 	// Check for authentication errors
-	if strings.Contains(stderr, "authentication") || 
-	   strings.Contains(stderr, "permission denied") ||
-	   strings.Contains(stderr, "could not read username") ||
-	   strings.Contains(stderr, "invalid credentials") ||
-	   strings.Contains(stderr, "authorization failed") ||
-	   strings.Contains(stderr, "access denied") ||
-	   strings.Contains(stderr, "403") {
+	if strings.Contains(stderr, "authentication") ||
+		strings.Contains(stderr, "permission denied") ||
+		strings.Contains(stderr, "could not read username") ||
+		strings.Contains(stderr, "invalid credentials") ||
+		strings.Contains(stderr, "authorization failed") ||
+		strings.Contains(stderr, "access denied") ||
+		strings.Contains(stderr, "403") {
 		return &GitAuthError{
 			GitError: GitError{
 				Message:  fmt.Sprintf("git authentication failed for %s", operation),
@@ -147,12 +147,12 @@ func classifyError(operation string, result *command.CommandResult) error {
 			},
 		}
 	}
-	
+
 	// Check for not a repository errors
 	stdout := strings.ToLower(result.Stdout)
 	if strings.Contains(stderr, "not a git repository") ||
-	   strings.Contains(stderr, "does not appear to be a git repository") ||
-	   strings.Contains(stdout, "not a git repository") {
+		strings.Contains(stderr, "does not appear to be a git repository") ||
+		strings.Contains(stdout, "not a git repository") {
 		return &GitNotARepoError{
 			GitError: GitError{
 				Message:  fmt.Sprintf("not a git repository for %s", operation),
@@ -161,11 +161,11 @@ func classifyError(operation string, result *command.CommandResult) error {
 			},
 		}
 	}
-	
+
 	// Check for conflict errors (use original case stderr for precise matching)
 	if strings.Contains(result.Stderr, "CONFLICT") ||
-	   strings.Contains(result.Stderr, "Merge conflict") ||
-	   strings.Contains(stderr, "automatic merge failed") {
+		strings.Contains(result.Stderr, "Merge conflict") ||
+		strings.Contains(stderr, "automatic merge failed") {
 		return &GitConflictError{
 			GitError: GitError{
 				Message:  fmt.Sprintf("merge/rebase conflict during %s", operation),
@@ -174,7 +174,7 @@ func classifyError(operation string, result *command.CommandResult) error {
 			},
 		}
 	}
-	
+
 	return &GitError{
 		Message:  fmt.Sprintf("git %s failed", operation),
 		ExitCode: result.ExitCode,
@@ -358,30 +358,30 @@ func parseGitBranches(output string) *GitBranchListResult {
 	result := &GitBranchListResult{
 		Branches: []GitBranchInfo{},
 	}
-	
+
 	lines := strings.Split(strings.TrimSpace(output), "\n")
 	for _, line := range lines {
 		if line == "" {
 			continue
 		}
-		
+
 		parts := strings.SplitN(line, "\t", 2)
 		name := strings.TrimSpace(parts[0])
 		if name == "" {
 			continue
 		}
-		
+
 		isCurrent := len(parts) > 1 && strings.TrimSpace(parts[1]) == "*"
 		if isCurrent {
 			result.Current = name
 		}
-		
+
 		result.Branches = append(result.Branches, GitBranchInfo{
 			Name:      name,
 			IsCurrent: isCurrent,
 		})
 	}
-	
+
 	return result
 }
 
@@ -430,14 +430,14 @@ func (g *Git) Clone(url string, opts ...CloneOption) (*GitCloneResult, error) {
 	if err := g.ensureGitAvailable(); err != nil {
 		return nil, err
 	}
-	
+
 	options := &cloneOptions{
 		timeoutMs: defaultCloneTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"clone"}
 	if options.branch != "" {
 		args = append(args, "--branch", options.branch, "--single-branch")
@@ -446,25 +446,25 @@ func (g *Git) Clone(url string, opts ...CloneOption) (*GitCloneResult, error) {
 		args = append(args, "--depth", strconv.Itoa(options.depth))
 	}
 	args = append(args, url)
-	
+
 	if options.path != "" {
 		args = append(args, options.path)
 	}
-	
+
 	result, err := g.runGit(args, "", options.timeoutMs)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !result.Success {
 		return nil, classifyError("clone", result)
 	}
-	
+
 	path := options.path
 	if path == "" {
 		path = deriveRepoDirFromURL(url)
 	}
-	
+
 	return &GitCloneResult{Path: path}, nil
 }
 
@@ -505,14 +505,14 @@ func (g *Git) Init(path string, opts ...InitOption) (*GitInitResult, error) {
 	if err := g.ensureGitAvailable(); err != nil {
 		return nil, err
 	}
-	
+
 	options := &initOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"init"}
 	if options.initialBranch != "" {
 		args = append(args, "--initial-branch", options.initialBranch)
@@ -520,17 +520,17 @@ func (g *Git) Init(path string, opts ...InitOption) (*GitInitResult, error) {
 	if options.bare {
 		args = append(args, "--bare")
 	}
-	
+
 	args = append(args, path)
 	result, err := g.runGit(args, "", options.timeoutMs)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !result.Success {
 		return nil, classifyError("init", result)
 	}
-	
+
 	return &GitInitResult{Path: path}, nil
 }
 
@@ -594,6 +594,7 @@ func WithAddTimeout(timeoutMs int) AddOption {
 //   - error: returns an error if the operation fails, nil otherwise
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -602,14 +603,14 @@ func (g *Git) Add(repoPath string, opts ...AddOption) error {
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &addOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"add"}
 	if len(options.paths) > 0 {
 		// Specific files take priority (matches TypeScript behavior)
@@ -621,16 +622,16 @@ func (g *Git) Add(repoPath string, opts ...AddOption) error {
 		// Default: stage all changes (matches TypeScript/E2B behavior)
 		args = append(args, "-A")
 	}
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("add", result)
 	}
-	
+
 	return nil
 }
 
@@ -711,6 +712,7 @@ func WithCommitTimeout(timeoutMs int) CommitOption {
 //   - error: returns an error if the operation fails, nil otherwise
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -719,7 +721,7 @@ func (g *Git) Commit(repoPath string, message string, opts ...CommitOption) (*Gi
 	if err := g.ensureGitAvailable(); err != nil {
 		return nil, err
 	}
-	
+
 	options := &commitOptions{
 		message:   message,
 		timeoutMs: defaultGitTimeoutMs,
@@ -727,7 +729,7 @@ func (g *Git) Commit(repoPath string, message string, opts ...CommitOption) (*Gi
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	// Build command manually to support -c global args before the "commit" subcommand.
 	// Command format: git -C <path> [-c user.name=xxx] [-c user.email=xxx] commit -m "msg" [flags]
 	cmdParts := []string{"git"}
@@ -741,7 +743,7 @@ func (g *Git) Commit(repoPath string, message string, opts ...CommitOption) (*Gi
 	if options.authorEmail != "" {
 		cmdParts = append(cmdParts, "-c", shellEscape(fmt.Sprintf("user.email=%s", options.authorEmail)))
 	}
-	
+
 	subArgs := []string{"commit"}
 	if options.allowEmpty {
 		subArgs = append(subArgs, "--allow-empty")
@@ -750,29 +752,29 @@ func (g *Git) Commit(repoPath string, message string, opts ...CommitOption) (*Gi
 	for _, arg := range subArgs {
 		cmdParts = append(cmdParts, shellEscape(arg))
 	}
-	
+
 	cmd := strings.Join(cmdParts, " ")
 	result, err := g.runShell(cmd, options.timeoutMs)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !result.Success {
 		return nil, classifyError("commit", result)
 	}
-	
+
 	// Extract commit hash from output
 	matches := commitHashPattern.FindStringSubmatch(result.Stdout)
 	if len(matches) > 1 {
 		return &GitCommitResult{CommitHash: matches[1]}, nil
 	}
-	
+
 	// Fallback: get the latest commit hash (this should rarely happen)
 	hashResult, err := g.runGit([]string{"rev-parse", "HEAD"}, repoPath, 5000)
 	if err == nil && hashResult.Success {
 		return &GitCommitResult{CommitHash: strings.TrimSpace(hashResult.Stdout)}, nil
 	}
-	
+
 	return &GitCommitResult{CommitHash: ""}, nil
 }
 
@@ -812,6 +814,7 @@ func WithStatusTimeout(timeoutMs int) StatusOption {
 //   - error: returns an error if the operation fails, nil otherwise
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -820,14 +823,14 @@ func (g *Git) Status(repoPath string, opts ...StatusOption) (*GitStatusResult, e
 	if err := g.ensureGitAvailable(); err != nil {
 		return nil, err
 	}
-	
+
 	options := &statusOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	// Get porcelain status with branch info in a single command
 	result, err := g.runGit([]string{"status", "--porcelain=1", "-b"}, repoPath, options.timeoutMs)
 	if err != nil {
@@ -891,6 +894,7 @@ func WithLogTimeout(timeoutMs int) LogOption {
 //   - error: returns an error if the operation fails, nil otherwise
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -899,7 +903,7 @@ func (g *Git) Log(repoPath string, opts ...LogOption) (*GitLogResult, error) {
 	if err := g.ensureGitAvailable(); err != nil {
 		return nil, err
 	}
-	
+
 	options := &logOptions{
 		maxCount:  0,
 		timeoutMs: defaultGitTimeoutMs,
@@ -907,22 +911,22 @@ func (g *Git) Log(repoPath string, opts ...LogOption) (*GitLogResult, error) {
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"log"}
 	if options.maxCount > 0 {
 		args = append(args, "-n", strconv.Itoa(options.maxCount))
 	}
 	args = append(args, "--format=%H%x01%h%x01%an%x01%ae%x01%aI%x01%s%x00")
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !result.Success {
 		return nil, classifyError("log", result)
 	}
-	
+
 	return parseGitLog(result.Stdout), nil
 }
 
@@ -961,6 +965,7 @@ func WithBranchListTimeout(timeoutMs int) BranchListOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -969,14 +974,14 @@ func (g *Git) ListBranches(repoPath string, opts ...BranchListOption) (*GitBranc
 	if err := g.ensureGitAvailable(); err != nil {
 		return nil, err
 	}
-	
+
 	options := &branchListOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	// Use structured format output for reliable parsing (matches TS/Python)
 	args := []string{"branch", "--format=%(refname:short)\t%(HEAD)"}
 	if options.remote {
@@ -1032,6 +1037,7 @@ func WithBranchCreateTimeout(timeoutMs int) BranchCreateOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1040,7 +1046,7 @@ func (g *Git) CreateBranch(repoPath string, branch string, opts ...BranchCreateO
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &branchCreateOptions{
 		checkout:  true,
 		timeoutMs: defaultGitTimeoutMs,
@@ -1048,7 +1054,7 @@ func (g *Git) CreateBranch(repoPath string, branch string, opts ...BranchCreateO
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	var args []string
 	if options.checkout {
 		// Create and switch to the new branch (default behavior, matches TS/Python)
@@ -1057,16 +1063,16 @@ func (g *Git) CreateBranch(repoPath string, branch string, opts ...BranchCreateO
 		// Only create the branch without switching
 		args = []string{"branch", branch}
 	}
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("branch", result)
 	}
-	
+
 	return nil
 }
 
@@ -1097,6 +1103,7 @@ func WithCheckoutTimeout(timeoutMs int) CheckoutOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1105,25 +1112,25 @@ func (g *Git) CheckoutBranch(repoPath string, branch string, opts ...CheckoutOpt
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &checkoutOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"checkout", branch}
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("checkout", result)
 	}
-	
+
 	return nil
 }
 
@@ -1162,6 +1169,7 @@ func WithBranchDeleteTimeout(timeoutMs int) BranchDeleteOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1170,14 +1178,14 @@ func (g *Git) DeleteBranch(repoPath string, branch string, opts ...BranchDeleteO
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &branchDeleteOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"branch"}
 	if options.force {
 		args = append(args, "-D")
@@ -1185,16 +1193,16 @@ func (g *Git) DeleteBranch(repoPath string, branch string, opts ...BranchDeleteO
 		args = append(args, "-d")
 	}
 	args = append(args, branch)
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("branch", result)
 	}
-	
+
 	return nil
 }
 
@@ -1244,6 +1252,7 @@ func WithRemoteAddTimeout(timeoutMs int) RemoteAddOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1252,20 +1261,20 @@ func (g *Git) RemoteAdd(repoPath string, name string, url string, opts ...Remote
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &remoteAddOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	addArgs := []string{"remote", "add"}
 	if options.fetch {
 		addArgs = append(addArgs, "-f")
 	}
 	addArgs = append(addArgs, name, url)
-	
+
 	if !options.overwrite {
 		// Simple mode: direct git remote add
 		result, err := g.runGit(addArgs, repoPath, options.timeoutMs)
@@ -1292,7 +1301,7 @@ func (g *Git) RemoteAdd(repoPath string, name string, url string, opts ...Remote
 			return classifyError("remote", result)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -1326,6 +1335,7 @@ func WithRemoteGetTimeout(timeoutMs int) RemoteGetOption {
 //   - error: error if the operation fails (excluding "not found" case)
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1334,21 +1344,21 @@ func (g *Git) RemoteGet(repoPath string, name string, opts ...RemoteGetOption) (
 	if err := g.ensureGitAvailable(); err != nil {
 		return "", err
 	}
-	
+
 	options := &remoteGetOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"remote", "get-url", name}
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return "", err
 	}
-	
+
 	if !result.Success {
 		stderr := strings.ToLower(result.Stderr)
 		if strings.Contains(stderr, "no such remote") {
@@ -1356,7 +1366,7 @@ func (g *Git) RemoteGet(repoPath string, name string, opts ...RemoteGetOption) (
 		}
 		return "", classifyError("remote_get", result)
 	}
-	
+
 	return strings.TrimSpace(result.Stdout), nil
 }
 
@@ -1424,6 +1434,7 @@ func WithResetTimeout(timeoutMs int) ResetOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1432,7 +1443,7 @@ func (g *Git) Reset(repoPath string, opts ...ResetOption) error {
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &resetOptions{
 		mode:      "",
 		commit:    "",
@@ -1441,7 +1452,7 @@ func (g *Git) Reset(repoPath string, opts ...ResetOption) error {
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"reset"}
 	if len(options.paths) > 0 {
 		// Pathspec mode: git reset [<commit>] -- <paths>
@@ -1464,16 +1475,16 @@ func (g *Git) Reset(repoPath string, opts ...ResetOption) error {
 		}
 		args = append(args, commit)
 	}
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("reset", result)
 	}
-	
+
 	return nil
 }
 
@@ -1528,6 +1539,7 @@ func WithRestoreTimeout(timeoutMs int) RestoreOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1536,26 +1548,26 @@ func (g *Git) Restore(repoPath string, paths []string, opts ...RestoreOption) er
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &restoreOptions{
 		timeoutMs: defaultGitTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	// Validate: at least one path must be specified
 	if len(paths) == 0 {
 		return fmt.Errorf("git restore requires at least one path")
 	}
-	
+
 	// Default worktree logic: when neither staged nor worktree is set, default to --worktree
 	resolvedStaged := options.staged
 	resolvedWorktree := options.worktree
 	if !resolvedStaged && !resolvedWorktree {
 		resolvedWorktree = true
 	}
-	
+
 	args := []string{"restore"}
 	if resolvedWorktree {
 		args = append(args, "--worktree")
@@ -1568,16 +1580,16 @@ func (g *Git) Restore(repoPath string, paths []string, opts ...RestoreOption) er
 	}
 	args = append(args, "--")
 	args = append(args, paths...)
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("restore", result)
 	}
-	
+
 	return nil
 }
 
@@ -1623,6 +1635,7 @@ func WithPullTimeout(timeoutMs int) PullOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1631,14 +1644,14 @@ func (g *Git) Pull(repoPath string, opts ...PullOption) error {
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &pullOptions{
 		timeoutMs: defaultPullTimeoutMs,
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"pull"}
 	if options.remote != "" {
 		args = append(args, options.remote)
@@ -1646,16 +1659,16 @@ func (g *Git) Pull(repoPath string, opts ...PullOption) error {
 			args = append(args, options.branch)
 		}
 	}
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("pull", result)
 	}
-	
+
 	return nil
 }
 
@@ -1702,6 +1715,7 @@ func WithConfigTimeout(timeoutMs int) ConfigOption {
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1710,7 +1724,7 @@ func (g *Git) ConfigureUser(repoPath string, name string, email string, opts ...
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &configOptions{
 		scope:     "global",
 		timeoutMs: defaultGitTimeoutMs,
@@ -1718,14 +1732,14 @@ func (g *Git) ConfigureUser(repoPath string, name string, email string, opts ...
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	// Set user name
 	nameArgs := []string{"config"}
 	if options.scope != "" {
 		nameArgs = append(nameArgs, "--"+options.scope)
 	}
 	nameArgs = append(nameArgs, "user.name", name)
-	
+
 	nameResult, err := g.runGit(nameArgs, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
@@ -1733,14 +1747,14 @@ func (g *Git) ConfigureUser(repoPath string, name string, email string, opts ...
 	if !nameResult.Success {
 		return classifyError("config", nameResult)
 	}
-	
+
 	// Set user email
 	emailArgs := []string{"config"}
 	if options.scope != "" {
 		emailArgs = append(emailArgs, "--"+options.scope)
 	}
 	emailArgs = append(emailArgs, "user.email", email)
-	
+
 	emailResult, err := g.runGit(emailArgs, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
@@ -1748,7 +1762,7 @@ func (g *Git) ConfigureUser(repoPath string, name string, email string, opts ...
 	if !emailResult.Success {
 		return classifyError("config", emailResult)
 	}
-	
+
 	return nil
 }
 
@@ -1764,6 +1778,7 @@ func (g *Git) ConfigureUser(repoPath string, name string, email string, opts ...
 //   - error: error if the operation fails
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1772,7 +1787,7 @@ func (g *Git) SetConfig(repoPath string, key string, value string, opts ...Confi
 	if err := g.ensureGitAvailable(); err != nil {
 		return err
 	}
-	
+
 	options := &configOptions{
 		scope:     "global",
 		timeoutMs: defaultGitTimeoutMs,
@@ -1780,22 +1795,22 @@ func (g *Git) SetConfig(repoPath string, key string, value string, opts ...Confi
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"config"}
 	if options.scope != "" {
 		args = append(args, "--"+options.scope)
 	}
 	args = append(args, key, value)
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return err
 	}
-	
+
 	if !result.Success {
 		return classifyError("config", result)
 	}
-	
+
 	return nil
 }
 
@@ -1813,6 +1828,7 @@ func (g *Git) SetConfig(repoPath string, key string, value string, opts ...Confi
 //   - error: error if the operation fails (excluding "not found" case)
 //
 // Example:
+//
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	result, _ := client.Create(nil)
 //	defer result.Session.Delete()
@@ -1821,7 +1837,7 @@ func (g *Git) GetConfig(repoPath string, key string, opts ...ConfigOption) (stri
 	if err := g.ensureGitAvailable(); err != nil {
 		return "", err
 	}
-	
+
 	options := &configOptions{
 		scope:     "global",
 		timeoutMs: defaultGitTimeoutMs,
@@ -1829,18 +1845,18 @@ func (g *Git) GetConfig(repoPath string, key string, opts ...ConfigOption) (stri
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	args := []string{"config"}
 	if options.scope != "" {
 		args = append(args, "--"+options.scope)
 	}
 	args = append(args, "--get", key)
-	
+
 	result, err := g.runGit(args, repoPath, options.timeoutMs)
 	if err != nil {
 		return "", err
 	}
-	
+
 	if !result.Success {
 		stderr := strings.TrimSpace(strings.ToLower(result.Stderr))
 		if result.ExitCode == 1 && (stderr == "" || strings.Contains(stderr, "key does not contain")) {
@@ -1848,6 +1864,6 @@ func (g *Git) GetConfig(repoPath string, key string, opts ...ConfigOption) (stri
 		}
 		return "", classifyError("get_config", result)
 	}
-	
+
 	return strings.TrimSpace(result.Stdout), nil
 }

@@ -2,6 +2,28 @@
 
 All notable changes to the Wuying AgentBay SDK will be documented in this file.
 
+## [0.19.0] - 2026-04-16
+
+### Added
+
+- **Git module** (All SDKs): Clone, init, commit, status, log, branch management, diff, and remote operations. Dedicated error types (`GitAuthError`, `GitConflictError`, etc.).
+- **Session `appInstanceId`** (All SDKs): Exposed on Session class for tracking cloud instance identity.
+- **FileSystem `watch_directory` push mode** (Go, Java, Python): Real-time file monitoring via WebSocket push instead of polling.
+- **BrowserOperator** (Go): Added Go BrowserOperator, aligned with other SDKs.
+
+### Changed
+
+- **Deprecated `getLinkUrl` / `getToken`** (All SDKs): Use `linkUrl` / `token` properties instead.
+- **FileSystem read/write optimization**: Skip chunking for HTTP LinkUrl channel for better performance.
+- **`sync()` exponential backoff** (All SDKs): Polling now uses exponential backoff for more efficient synchronization.
+
+### Fixed
+
+- **Java POP API**: Added automatic retry for transient failures.
+- **Java ApiKey**: Fixed null value under concurrent multi-thread access.
+- **Java call-for-user**: Fixed platform agent notification not working.
+- **FileSystem binary read**: Fixed missing `size` field in `BinaryFileContentResult` for LinkUrl reads.
+
 ## [0.18.0] - 2026-03-19
 
 ### Added

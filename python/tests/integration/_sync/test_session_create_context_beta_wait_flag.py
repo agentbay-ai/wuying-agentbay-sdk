@@ -7,28 +7,15 @@ import tempfile
 import time
 
 import pytest
-import pytest
 import httpx
 
 from agentbay import AgentBay, Context, ContextSync, CreateSessionParams, SyncPolicy
-
-
-def _get_test_api_key() -> str:
-    return os.environ.get("AGENTBAY_API_KEY") or ""
 
 
 def _generate_unique_id() -> str:
     timestamp = int(time.time() * 1000000) + random.randint(0, 999)
     random_part = random.randint(0, 9999)
     return f"{timestamp}-{random_part}"
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = _get_test_api_key()
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
 
 
 def _create_temp_file(size_mb: int) -> str:
@@ -111,7 +98,8 @@ def _wait_context_download_terminal_success(session, context_id: str, timeout_s:
 
 
 @pytest.mark.sync
-def test_create_session_beta_wait_for_completion_flag(agent_bay: AgentBay):
+def test_create_session_beta_wait_for_completion_flag(agent_bay_client: AgentBay):
+    agent_bay = agent_bay_client
     unique_id = _generate_unique_id()
     context_name_1 = f"test-beta-wait-flag-1-{unique_id}"
     context_name_2 = f"test-beta-wait-flag-2-{unique_id}"

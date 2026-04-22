@@ -214,5 +214,5 @@ func TestContextSyncWithMappingPolicyIntegration(t *testing.T) {
 	}
 
 	t.Log("========== Cross-platform mapping policy test completed successfully ==========")
-	t.Log("âœ?Data created in Windows session was successfully accessed in Linux session via MappingPolicy")
+	t.Log("Data created in Windows session was successfully accessed in Linux session via MappingPolicy")
 }

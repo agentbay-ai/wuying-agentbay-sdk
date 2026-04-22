@@ -557,4 +557,29 @@ class SessionMetricsResult(ApiResponse):
         self.raw = raw or {}
 
 
+class EnvResult(ApiResponse):
+    """Result of environment variable operations (get)."""
+
+    def __init__(
+        self,
+        request_id: str = "",
+        success: bool = False,
+        envs: Optional[Dict[str, str]] = None,
+        error_message: str = "",
+    ):
+        """
+        Initialize an EnvResult.
+
+        Args:
+            request_id: Unique identifier for the API request.
+            success: Whether the operation was successful.
+            envs: Dictionary of environment variable key-value pairs.
+            error_message: Error message if the operation failed.
+        """
+        super().__init__(request_id)
+        self.success = success
+        self.envs = envs if envs is not None else {}
+        self.error_message = error_message
+
+
 Response = ApiResponse

@@ -44,11 +44,14 @@ async def main():
     try:
         # Archive Upload Mode Context Sync Example
         await archive_upload_mode_example(agent_bay, unique_id)
-        
+
+        # Archive Exclude Paths Example (hybrid storage)
+        await archive_exclude_paths_example(agent_bay, unique_id)
+
     except Exception as e:
         print(f"❌ Example execution failed: {e}")
-    
-    print("✅ Archive upload mode example completed")
+
+    print("✅ Archive upload mode examples completed")
 
 async def archive_upload_mode_example(agent_bay, unique_id):
     """Archive Upload Mode Context Sync Example"""
@@ -218,6 +221,98 @@ async def archive_upload_mode_example(agent_bay, unique_id):
                 print(f"   Request ID: {delete_result.request_id}")
             except Exception as delete_error:
                 print(f"❌ Failed to delete session: {delete_error}")
+
+
+async def archive_exclude_paths_example(agent_bay, unique_id):
+    """Demonstrate Archive mode with archiveExcludePaths for hybrid storage."""
+    print("\n📦 === Archive Exclude Paths Example ===")
+
+    session = None
+
+    try:
+        context_name = f"archive-exclude-context-{unique_id}"
+        context_result = await agent_bay.context.get(context_name, create=True)
+
+        if not context_result.success:
+            raise Exception(f"Context creation failed: {context_result.error_message}")
+
+        print(f"✅ Context created: {context_result.context_id}")
+
+        upload_policy = UploadPolicy(
+            upload_mode=UploadMode.ARCHIVE,
+            archive_exclude_paths=["important/", "config.json"]
+        )
+        sync_policy = SyncPolicy(upload_policy=upload_policy)
+
+        print(f"✅ Policy configured: Archive mode with exclude paths {upload_policy.archive_exclude_paths}")
+
+        context_sync = ContextSync(
+            context_id=context_result.context_id,
+            path="/tmp/archive-exclude-test",
+            policy=sync_policy
+        )
+
+        session_params = CreateSessionParams(
+            labels={
+                "example": f"archive-exclude-{unique_id}",
+                "type": "hybrid-storage-demo",
+            },
+            context_syncs=[context_sync]
+        )
+
+        session_result = await agent_bay.create(session_params)
+        if not session_result.success:
+            raise Exception(f"Session creation failed: {session_result.error_message}")
+
+        session = session_result.session
+        print(f"✅ Session created: {session.session_id}")
+
+        sync_path = "/tmp/archive-exclude-test"
+        await session.file_system.create_directory(f"{sync_path}/important")
+        await session.file_system.create_directory(f"{sync_path}/regular")
+
+        await session.file_system.write_file(
+            f"{sync_path}/important/data.txt",
+            "This file is excluded from archive, stored individually",
+            mode="overwrite"
+        )
+        await session.file_system.write_file(
+            f"{sync_path}/config.json",
+            '{"key": "value", "setting": true}',
+            mode="overwrite"
+        )
+        await session.file_system.write_file(
+            f"{sync_path}/regular/data.txt",
+            "This file will be archived with the rest",
+            mode="overwrite"
+        )
+
+        print("✅ Files written to excluded and non-excluded paths")
+
+        sync_result = await session.context.sync()
+        if sync_result.success:
+            print("✅ Context sync completed")
+
+        list_result = await agent_bay.context.list_files(
+            context_result.context_id, sync_path, page_number=1, page_size=20
+        )
+
+        if list_result.success:
+            print(f"📋 Files in context ({len(list_result.entries)} entries):")
+            for entry in list_result.entries:
+                print(f"   {entry.file_name} ({entry.file_type}, {entry.size} bytes)")
+
+        print("\n🎉 Archive exclude paths example completed!")
+
+    except Exception as error:
+        print(f"\n❌ Error: {error}")
+    finally:
+        if session:
+            try:
+                await agent_bay.delete(session, sync_context=True)
+                print("✅ Session cleaned up")
+            except Exception as e:
+                print(f"❌ Cleanup failed: {e}")
 
 
 if __name__ == "__main__":

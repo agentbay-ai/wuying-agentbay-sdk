@@ -216,11 +216,7 @@ export class Git {
    * @returns A specific GitError subclass instance
    */
   private classifyError(operation: string, result: CommandResult): GitError {
-    const stderr = (
-      result.stderr ||
-      result.errorMessage ||
-      ""
-    ).toLowerCase();
+    const stderr = (result.stderr || result.errorMessage || "").toLowerCase();
     const exitCode = result.exitCode || 1;
     const rawStderr = result.stderr || result.errorMessage || "";
 
@@ -819,7 +815,10 @@ export class Git {
     } else {
       // Idempotent mode: add fails, fallback to set-url
       const addCmd = this.buildGitCommand(addArgs, repoPath);
-      const setUrlCmd = this.buildGitCommand(["remote", "set-url", name, url], repoPath);
+      const setUrlCmd = this.buildGitCommand(
+        ["remote", "set-url", name, url],
+        repoPath
+      );
       let cmd = `${addCmd} || ${setUrlCmd}`;
       if (fetch) {
         const fetchCmd = this.buildGitCommand(["fetch", name], repoPath);
@@ -861,11 +860,9 @@ export class Git {
   ): Promise<string | undefined> {
     await this.ensureGitAvailable();
 
-    const result = await this.runGit(
-      ["remote", "get-url", name],
-      repoPath,
-      { timeoutMs: opts?.timeoutMs }
-    );
+    const result = await this.runGit(["remote", "get-url", name], repoPath, {
+      timeoutMs: opts?.timeoutMs,
+    });
     if (!result.success) {
       const stderr = (result.stderr || "").toLowerCase();
       if (stderr.includes("no such remote")) {
@@ -1037,11 +1034,19 @@ export class Git {
     const scopeFlag = scope === "local" ? "--local" : "--global";
     const baseArgs = ["config", scopeFlag];
 
-    const nameResult = await this.runGit([...baseArgs, "user.name", name], repoPath, { timeoutMs });
+    const nameResult = await this.runGit(
+      [...baseArgs, "user.name", name],
+      repoPath,
+      { timeoutMs }
+    );
     if (!nameResult.success) {
       throw this.classifyError("configureUser", nameResult);
     }
-    const emailResult = await this.runGit([...baseArgs, "user.email", email], repoPath, { timeoutMs });
+    const emailResult = await this.runGit(
+      [...baseArgs, "user.email", email],
+      repoPath,
+      { timeoutMs }
+    );
     if (!emailResult.success) {
       throw this.classifyError("configureUser", emailResult);
     }
@@ -1168,11 +1173,9 @@ export class Git {
     await this.ensureGitAvailable();
 
     const deleteFlag = opts?.force ? "-D" : "-d";
-    const result = await this.runGit(
-      ["branch", deleteFlag, branch],
-      repoPath,
-      { timeoutMs: opts?.timeoutMs }
-    );
+    const result = await this.runGit(["branch", deleteFlag, branch], repoPath, {
+      timeoutMs: opts?.timeoutMs,
+    });
 
     if (!result.success) {
       throw this.classifyError("deleteBranch", result);
@@ -1185,40 +1188,40 @@ export class Git {
 
   /**
    * Derive a human-readable status string from porcelain status characters.
-   * 
+   *
    * @param indexStatus - The index status character (first character in porcelain output)
    * @param workTreeStatus - The worktree status character (second character in porcelain output)
    * @returns A human-readable status string
    */
   private deriveStatus(indexStatus: string, workTreeStatus: string): string {
     const combined = indexStatus + workTreeStatus;
-    
-    if (combined.includes('U')) {
-      return 'conflict';
+
+    if (combined.includes("U")) {
+      return "conflict";
     }
-    if (combined.includes('R')) {
-      return 'renamed';
+    if (combined.includes("R")) {
+      return "renamed";
     }
-    if (combined.includes('C')) {
-      return 'copied';
+    if (combined.includes("C")) {
+      return "copied";
     }
-    if (combined.includes('D')) {
-      return 'deleted';
+    if (combined.includes("D")) {
+      return "deleted";
     }
-    if (combined.includes('A')) {
-      return 'added';
+    if (combined.includes("A")) {
+      return "added";
     }
-    if (combined.includes('M')) {
-      return 'modified';
+    if (combined.includes("M")) {
+      return "modified";
     }
-    if (combined.includes('T')) {
-      return 'typechange';
+    if (combined.includes("T")) {
+      return "typechange";
     }
-    if (combined.includes('?')) {
-      return 'untracked';
+    if (combined.includes("?")) {
+      return "untracked";
     }
-    
-    return 'unknown';
+
+    return "unknown";
   }
 
   /**
@@ -1244,7 +1247,7 @@ export class Git {
       if (line.startsWith("## ")) {
         // Branch line: "## main...origin/main [ahead 1, behind 2]" or similar
         const branchInfo = line.substring(3);
-        
+
         // Handle "No commits yet on <branch>" format
         const noCommitsMatch = branchInfo.match(/No commits yet on (.+)/);
         if (noCommitsMatch) {
@@ -1252,19 +1255,25 @@ export class Git {
         } else {
           // Parse ahead/behind info
           const aheadStart = branchInfo.indexOf(" [");
-          const branchPart = aheadStart === -1 ? branchInfo : branchInfo.substring(0, aheadStart);
-          
+          const branchPart =
+            aheadStart === -1
+              ? branchInfo
+              : branchInfo.substring(0, aheadStart);
+
           // Extract branch and upstream
           const parts = branchPart.split("...");
           currentBranch = parts[0];
           upstream = parts[1];
-          
+
           // Parse ahead/behind from [ahead N, behind M] format
           if (aheadStart !== -1) {
-            const aheadPart = branchInfo.substring(aheadStart + 2, branchInfo.length - 1);
+            const aheadPart = branchInfo.substring(
+              aheadStart + 2,
+              branchInfo.length - 1
+            );
             const aheadMatch = aheadPart.match(/ahead (\d+)/);
             const behindMatch = aheadPart.match(/behind (\d+)/);
-            
+
             if (aheadMatch) {
               ahead = parseInt(aheadMatch[1], 10);
             }
@@ -1272,9 +1281,12 @@ export class Git {
               behind = parseInt(behindMatch[1], 10);
             }
           }
-          
+
           // Detect detached HEAD
-          if (currentBranch.includes("HEAD (detached") || currentBranch === "HEAD (no branch)") {
+          if (
+            currentBranch.includes("HEAD (detached") ||
+            currentBranch === "HEAD (no branch)"
+          ) {
             detached = true;
           }
         }
@@ -1282,7 +1294,7 @@ export class Git {
         const indexStatus = line[0];
         const workTreeStatus = line[1];
         const path = line.substring(3);
-        
+
         // Handle renamed files (path contains " -> ")
         let renamedFrom: string | undefined;
         let actualPath = path;
@@ -1291,27 +1303,29 @@ export class Git {
           renamedFrom = renameMatch[1];
           actualPath = renameMatch[2];
         }
-        
+
         // Determine if staged (index status is not space and not '?')
-        const staged = indexStatus !== ' ' && indexStatus !== '?';
-        
+        const staged = indexStatus !== " " && indexStatus !== "?";
+
         files.push({
           path: actualPath,
           indexStatus,
           workTreeStatus,
           status: this.deriveStatus(indexStatus, workTreeStatus),
           staged,
-          renamedFrom
+          renamedFrom,
         });
       }
     }
 
     // Calculate statistics
     const totalCount = files.length;
-    const stagedCount = files.filter(f => f.staged).length;
-    const untrackedCount = files.filter(f => f.status === 'untracked').length;
-    const conflictCount = files.filter(f => f.status === 'conflict').length;
-    const unstagedCount = files.filter(f => !f.staged && f.status !== 'untracked').length;
+    const stagedCount = files.filter((f) => f.staged).length;
+    const untrackedCount = files.filter((f) => f.status === "untracked").length;
+    const conflictCount = files.filter((f) => f.status === "conflict").length;
+    const unstagedCount = files.filter(
+      (f) => !f.staged && f.status !== "untracked"
+    ).length;
     const hasChanges = totalCount > 0;
     const hasStaged = stagedCount > 0;
     const hasUntracked = untrackedCount > 0;
@@ -1334,7 +1348,7 @@ export class Git {
       stagedCount,
       unstagedCount,
       untrackedCount,
-      conflictCount
+      conflictCount,
     };
   }
 
@@ -1384,12 +1398,12 @@ export class Git {
     for (const line of lines) {
       const parts = line.split("\t");
       const name = parts[0].trim();
-      
+
       // Skip detached HEAD state (matches E2B behavior)
       if (name.startsWith("(HEAD detached")) {
         continue;
       }
-      
+
       const isCurrent = parts[1]?.trim() === "*";
 
       if (name) {

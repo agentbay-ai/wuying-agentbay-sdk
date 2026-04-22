@@ -17,7 +17,11 @@ function makeMockController() {
     // Invoke all registered abort listeners
     for (const call of ctrl.signal.addEventListener.mock.calls) {
       if (call[0] === "abort" && typeof call[1] === "function") {
-        try { call[1](); } catch (_e) { /* */ }
+        try {
+          call[1]();
+        } catch (_e) {
+          /* */
+        }
       }
     }
   });
@@ -43,9 +47,11 @@ function makeMockSession(opts?: {
     token: opts?.token ?? "test-token",
     linkUrl: "",
     mcpTools: [],
-    getMcpServerForTool: sandbox.stub().returns(
-      opts?.serverName === undefined ? "wuying_filesystem" : opts.serverName
-    ),
+    getMcpServerForTool: sandbox
+      .stub()
+      .returns(
+        opts?.serverName === undefined ? "wuying_filesystem" : opts.serverName
+      ),
     _isExpired: sandbox.stub().returns(false),
     getWsClient: sandbox.stub(),
   };

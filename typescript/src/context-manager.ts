@@ -484,14 +484,20 @@ export class ContextManager {
           }/${maxRetries}, next interval: ${currentInterval}ms`
         );
         await this.sleep(currentInterval);
-        currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+        currentInterval = Math.min(
+          currentInterval * backoffFactor,
+          maxInterval
+        );
       } catch (error) {
         logError(
           `Error checking context status on attempt ${retry + 1}:`,
           error
         );
         await this.sleep(currentInterval);
-        currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+        currentInterval = Math.min(
+          currentInterval * backoffFactor,
+          maxInterval
+        );
       }
     }
 
@@ -562,14 +568,20 @@ export class ContextManager {
           }/${maxRetries}, next interval: ${currentInterval}ms`
         );
         await this.sleep(currentInterval);
-        currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+        currentInterval = Math.min(
+          currentInterval * backoffFactor,
+          maxInterval
+        );
       } catch (error) {
         logError(
           `Error checking context status on attempt ${retry + 1}:`,
           error
         );
         await this.sleep(currentInterval);
-        currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+        currentInterval = Math.min(
+          currentInterval * backoffFactor,
+          maxInterval
+        );
       }
     }
 

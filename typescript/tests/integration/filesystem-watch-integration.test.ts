@@ -69,7 +69,9 @@ describe("FileSystem Watch Directory Integration Tests", () => {
 
     let shouldStop = false;
     const stopSignal = {
-      get aborted() { return shouldStop; },
+      get aborted() {
+        return shouldStop;
+      },
       addEventListener: () => {},
       removeEventListener: () => {},
       dispatchEvent: () => false,
@@ -83,7 +85,7 @@ describe("FileSystem Watch Directory Integration Tests", () => {
       testDir,
       fileChangeCallback,
       500,
-      stopSignal,
+      stopSignal
     );
     await ready;
     log("✅ Monitoring started");

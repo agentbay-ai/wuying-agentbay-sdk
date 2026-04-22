@@ -192,6 +192,7 @@ Attributes:
     uploadStrategy: Defines the upload strategy
     uploadMode: Defines the upload mode (UploadMode.FILE or UploadMode.ARCHIVE)
     period: Upload period in seconds (default: 30)
+    archiveExcludePaths: When uploadMode is ARCHIVE, paths to upload as individual files
 
 ### Constructor
 
@@ -261,6 +262,18 @@ public UploadMode getUploadMode()
 
 ```java
 public void setUploadMode(UploadMode uploadMode)
+```
+
+### getArchiveExcludePaths
+
+```java
+public List<String> getArchiveExcludePaths()
+```
+
+### setArchiveExcludePaths
+
+```java
+public void setArchiveExcludePaths(List<String> archiveExcludePaths)
 ```
 
 

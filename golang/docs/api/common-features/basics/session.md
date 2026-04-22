@@ -17,6 +17,9 @@ type Session struct {
 	ImageId		string	// ImageId used when creating this session
 	McpTools	[]McpTool
 
+	// Application instance ID
+	AppInstanceId	string
+
 	// Resource URL for accessing the session
 	ResourceUrl	string
 
@@ -54,8 +57,13 @@ type Session struct {
 	// Agent for task execution
 	Agent	*agent.Agent
 
+	Env	*env.Env
+
 	// Context management
 	Context	*ContextManager
+
+	// PTY for interactive terminal sessions
+	Pty	*pty.Pty
 }
 ```
 
@@ -65,6 +73,14 @@ Session represents a session in the AgentBay cloud environment.
 MobileUseAgent), we do not provide services for overseas users registered with **alibabacloud.com**.
 
 ### Methods
+
+### AppendMcpTool
+
+```go
+func (s *Session) AppendMcpTool(name, server string)
+```
+
+AppendMcpTool adds an MCP tool entry to the session's tool list.
 
 ### BetaPause
 

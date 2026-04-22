@@ -8,13 +8,11 @@ Integration tests for SyncMobile beta screenshot APIs.
 These tests use real backend resources (no mocks).
 """
 
-import os
 
 import pytest
 import pytest
 
-from agentbay import AgentBay, CreateSessionParams
-from agentbay import AgentBayError
+from agentbay import CreateSessionParams
 
 
 def _set_low_android_resolution(session) -> None:
@@ -37,25 +35,15 @@ def _prepare_for_screenshot_tests(session) -> None:
     time.sleep(2)
 
 
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
 @pytest.fixture
-def session(agent_bay):
+def session(make_session):
     params = CreateSessionParams(image_id="mobile-use-android-12-gw")
-    result = agent_bay.create(params)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    assert result.session is not None
+    lc = make_session(params=params)
+    session = lc._result.session
     # Force API-based MCP tool calls (no LinkUrl direct calls) for test stability.
     # Some environments cannot reach the sandbox LinkUrl network path from CI/dev machines.
-    result.session.mcpTools = []
-    yield result.session
-    result.session.delete()
+    session.mcpTools = []
+    return session
 
 
 @pytest.mark.sync

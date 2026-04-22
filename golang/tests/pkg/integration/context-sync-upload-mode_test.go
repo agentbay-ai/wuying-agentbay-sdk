@@ -4,10 +4,12 @@ package integration
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay"
+	"github.com/stretchr/testify/require"
 )
 
 func getTestAPIKey() string {
@@ -421,4 +423,117 @@ func testInvalidUploadModeValidation(t *testing.T, client *agentbay.AgentBay, un
 	} else {
 		t.Log("✅ 'Archive' uploadMode accepted successfully")
 	}
+}
+
+func TestArchiveModeWithExcludePaths(t *testing.T) {
+	apiKey := getTestAPIKey()
+	uniqueId := generateUniqueId()
+
+	client, err := agentbay.NewAgentBay(apiKey, nil)
+	require.NoError(t, err)
+
+	contextName := fmt.Sprintf("archive-exclude-context-%s", uniqueId)
+	contextResult, err := client.Context.Get(contextName, true)
+	require.NoError(t, err)
+	require.True(t, contextResult.Success, contextResult.ErrorMessage)
+	require.NotNil(t, contextResult.Context)
+
+	contextID := contextResult.Context.ID
+	syncPath := fmt.Sprintf("/tmp/archive-exclude-test-%s", uniqueId)
+	t.Logf("contextId=%s syncPath=%s", contextID, syncPath)
+
+	uploadPolicy := agentbay.NewUploadPolicy()
+	uploadPolicy.UploadMode = agentbay.UploadModeArchive
+	uploadPolicy.ArchiveExcludePaths = []string{"important/", "config.json"}
+
+	syncPolicy := agentbay.NewSyncPolicy()
+	syncPolicy.UploadPolicy = uploadPolicy
+
+	contextSync, err := agentbay.NewContextSync(contextID, syncPath, syncPolicy)
+	require.NoError(t, err)
+
+	sessionParams := &agentbay.CreateSessionParams{
+		Labels: map[string]string{
+			"test": fmt.Sprintf("archive-exclude-%s", uniqueId),
+			"type": "archive-exclude-paths",
+		},
+		ContextSync: []*agentbay.ContextSync{contextSync},
+	}
+
+	sessionResult, err := client.Create(sessionParams)
+	require.NoError(t, err)
+	require.NotNil(t, sessionResult)
+	require.NotNil(t, sessionResult.Session)
+
+	session := sessionResult.Session
+
+	_, err = session.FileSystem.CreateDirectory(syncPath + "/important")
+	require.NoError(t, err)
+	_, err = session.FileSystem.CreateDirectory(syncPath + "/regular")
+	require.NoError(t, err)
+
+	writeImportant, err := session.FileSystem.WriteFile(syncPath+"/important/data.txt", "excluded-important-content", "overwrite")
+	require.NoError(t, err)
+	require.True(t, writeImportant.Success)
+
+	writeConfig, err := session.FileSystem.WriteFile(syncPath+"/config.json", "{\"exclude\":true}", "overwrite")
+	require.NoError(t, err)
+	require.True(t, writeConfig.Success)
+
+	writeRegular, err := session.FileSystem.WriteFile(syncPath+"/regular/data.txt", "regular-content", "overwrite")
+	require.NoError(t, err)
+	require.True(t, writeRegular.Success)
+
+	delResult, err := client.Delete(session, true)
+	require.NoError(t, err)
+	require.NotNil(t, delResult)
+	require.True(t, delResult.Success, delResult.ErrorMessage)
+
+	listRoot, err := client.Context.ListFiles(contextID, syncPath, 1, 20)
+	require.NoError(t, err)
+	require.True(t, listRoot.Success, listRoot.ErrorMessage)
+	for i, entry := range listRoot.Entries {
+		t.Logf("root[%d] FilePath=%s FileName=%s FileType=%s Size=%d",
+			i, entry.FilePath, entry.FileName, entry.FileType, entry.Size)
+	}
+
+	listImportant, err := client.Context.ListFiles(contextID, syncPath+"/important", 1, 20)
+	require.NoError(t, err)
+	require.True(t, listImportant.Success, listImportant.ErrorMessage)
+	for i, entry := range listImportant.Entries {
+		t.Logf("important[%d] FilePath=%s FileName=%s FileType=%s Size=%d",
+			i, entry.FilePath, entry.FileName, entry.FileType, entry.Size)
+	}
+
+	listRegular, err := client.Context.ListFiles(contextID, syncPath+"/regular", 1, 20)
+	require.NoError(t, err)
+	require.True(t, listRegular.Success, listRegular.ErrorMessage)
+	for i, entry := range listRegular.Entries {
+		t.Logf("regular[%d] FilePath=%s FileName=%s FileType=%s Size=%d",
+			i, entry.FilePath, entry.FileName, entry.FileType, entry.Size)
+	}
+
+	hasFile := func(entries []*agentbay.ContextFileEntry, needle string) bool {
+		for _, e := range entries {
+			if e == nil {
+				continue
+			}
+			if e.FileName == needle {
+				return true
+			}
+			if strings.HasSuffix(e.FilePath, needle) || strings.Contains(e.FilePath, "/"+needle) {
+				return true
+			}
+		}
+		return false
+	}
+
+	t.Logf("config.json in root: %v, data.txt in important: %v, data.txt in regular: %v",
+		hasFile(listRoot.Entries, "config.json"),
+		hasFile(listImportant.Entries, "data.txt"),
+		hasFile(listRegular.Entries, "data.txt"))
+
+	require.True(t, hasFile(listRoot.Entries, "config.json"), "expected config.json under context root listing as individual file (archiveExcludePaths)")
+	require.True(t, hasFile(listImportant.Entries, "data.txt"), "expected important/data.txt as individual file (archiveExcludePaths)")
+	require.True(t, hasFile(listRegular.Entries, "data.txt"), "expected regular/data.txt after sync")
 }

@@ -118,3 +118,24 @@ class GitNotARepoError(GitError):
     """
     def __init__(self, message="Not a git repository", exit_code=128, stderr="", *args, **kwargs):
         super().__init__(message, exit_code, stderr, *args, **kwargs)
+
+
+class PtyError(AgentBayError):
+    """Base exception for all PTY operations."""
+
+    def __init__(self, message="PTY operation error", *args, **kwargs):
+        super().__init__(message, *args, **kwargs)
+
+
+class PtySessionNotFoundError(PtyError):
+    """Raised when a PTY session does not exist or has been terminated."""
+
+    def __init__(self, message="PTY session not found", *args, **kwargs):
+        super().__init__(message, *args, **kwargs)
+
+
+class PtyNotConnectedError(PtyError):
+    """Raised when attempting to use a PTY handle that is not connected."""
+
+    def __init__(self, message="PTY handle is not connected", *args, **kwargs):
+        super().__init__(message, *args, **kwargs)

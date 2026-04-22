@@ -193,9 +193,7 @@ describe("Session List by Labels", () => {
           2,
           5
         );
-        log(
-          `Next page sessions count: ${nextPageResponse.sessionIds.length}`
-        );
+        log(`Next page sessions count: ${nextPageResponse.sessionIds.length}`);
         log(`Next page RequestId: ${nextPageResponse.requestId}`);
 
         expect(nextPageResponse.success).toBe(true);

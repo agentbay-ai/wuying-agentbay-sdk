@@ -29,7 +29,6 @@ from urllib.parse import urlparse
 
 import pytest
 import pytest
-from agentbay import AgentBay
 from agentbay import (
     Extension,
     ExtensionOption,
@@ -49,15 +48,6 @@ except ImportError:
     print(
         "Warning: Playwright not available. Browser interaction tests will be skipped."
     )
-
-
-def get_test_api_key():
-    """Get API key for testing"""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    print(f"Get API key for testing {api_key}")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return api_key
 
 
 def list_loaded_extensions(cdp_ws_url: str):
@@ -108,14 +98,12 @@ class TestExtensionBrowserIntegration:
     """Integration tests for browser extension management using ExtensionsService public API."""
 
     @pytest.fixture(autouse=True)
-    def setup_teardown(self):
+    def setup_teardown(self, agent_bay_client):
         """Set up test environment with AgentBay client and create test extensions."""
-        # Skip if no API key or in CI
-        api_key = get_test_api_key()
-        if not api_key or os.environ.get("CI"):
-            pytest.skip("Skipping integration test: No API key or running in CI")
+        if os.environ.get("CI"):
+            pytest.skip("Skipping integration test: running in CI")
 
-        self.agent_bay = AgentBay(api_key)
+        self.agent_bay = agent_bay_client
 
         # Initialize ExtensionsService with auto-detected context
         self.context_name = f"test-extensions-{int(time.time())}"

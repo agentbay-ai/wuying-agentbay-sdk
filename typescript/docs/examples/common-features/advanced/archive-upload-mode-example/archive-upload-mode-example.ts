@@ -195,9 +195,126 @@ async function archiveUploadModeExample(): Promise<void> {
 async function main(): Promise<void> {
   try {
     await archiveUploadModeExample();
+    await archiveExcludePathsExample();
   } catch (error) {
     console.error("❌ Example execution failed:", error);
     process.exit(1);
+  }
+}
+
+/**
+ * Archive upload mode with archiveExcludePaths: bulk archive plus individually uploaded paths.
+ */
+async function archiveExcludePathsExample(): Promise<void> {
+  console.log("\n📂 === Archive Upload Mode with archiveExcludePaths Example ===");
+
+  const agentBay = new AgentBay({ apiKey: getAPIKey() });
+  const uniqueId = generateUniqueId();
+  let session: Session | null = null;
+
+  try {
+    console.log("\n📦 Step 1: Creating context...");
+    const contextName = `archive-exclude-context-${uniqueId}`;
+    const contextResult = await agentBay.context.get(contextName, true);
+    if (!contextResult.success) {
+      throw new Error(`Context creation failed: ${contextResult.errorMessage}`);
+    }
+    console.log(`✅ Context ID: ${contextResult.contextId}`);
+
+    console.log("\n⚙️  Step 2: Sync policy — ARCHIVE + archiveExcludePaths...");
+    const syncPolicy = newSyncPolicy();
+    syncPolicy.uploadPolicy!.uploadMode = UploadMode.Archive;
+    syncPolicy.uploadPolicy!.archiveExcludePaths = ["important/", "config.json"];
+    console.log(`   archiveExcludePaths: ${JSON.stringify(syncPolicy.uploadPolicy!.archiveExcludePaths)}`);
+
+    const syncBase = "/tmp/archive-exclude-test";
+    console.log("\n🔧 Step 3: Context sync configuration...");
+    const contextSync = newContextSync(contextResult.contextId, syncBase, syncPolicy);
+
+    console.log("\n🏗️  Step 4: Creating session...");
+    const sessionParams = {
+      labels: {
+        example: `archive-exclude-${uniqueId}`,
+        type: "archive-exclude-demo",
+        uploadMode: "Archive",
+      },
+      contextSync: [contextSync],
+    };
+
+    const sessionResult = await agentBay.create(sessionParams);
+    if (!sessionResult.success) {
+      throw new Error(`Session creation failed: ${sessionResult.errorMessage}`);
+    }
+
+    session = sessionResult.session!;
+    console.log(`✅ Session ID: ${session!.sessionId}`);
+
+    const fileSystem = new FileSystem(session!);
+
+    console.log("\n📝 Step 5: Writing excluded and non-excluded files...");
+    const dirImportant = await fileSystem.createDirectory(`${syncBase}/important`);
+    if (!dirImportant.success) {
+      throw new Error(`create_directory important failed: ${dirImportant.errorMessage}`);
+    }
+    const dirRegular = await fileSystem.createDirectory(`${syncBase}/regular`);
+    if (!dirRegular.success) {
+      throw new Error(`create_directory regular failed: ${dirRegular.errorMessage}`);
+    }
+
+    const w1 = await fileSystem.writeFile(
+      `${syncBase}/important/data.txt`,
+      "Excluded path: stored individually when possible.",
+      "overwrite"
+    );
+    if (!w1.success) {
+      throw new Error(`write important/data.txt failed: ${w1.errorMessage}`);
+    }
+
+    const w2 = await fileSystem.writeFile(`${syncBase}/config.json`, '{"key":"value"}', "overwrite");
+    if (!w2.success) {
+      throw new Error(`write config.json failed: ${w2.errorMessage}`);
+    }
+
+    const w3 = await fileSystem.writeFile(
+      `${syncBase}/regular/data.txt`,
+      "Regular path: eligible for bulk archive packaging.",
+      "overwrite"
+    );
+    if (!w3.success) {
+      throw new Error(`write regular/data.txt failed: ${w3.errorMessage}`);
+    }
+
+    console.log("\n🔄 Step 6: Syncing context...");
+    const syncResult = await session!.context.sync();
+    if (!syncResult.success) {
+      throw new Error(`Context sync failed: ${syncResult.errorMessage}`);
+    }
+    console.log(`✅ Context sync OK (request ${syncResult.requestId})`);
+
+    console.log("\n🔍 Step 7: Listing files...");
+    const listResult = await agentBay.context.listFiles(contextResult.contextId, syncBase, 1, 20);
+    if (!listResult.success) {
+      throw new Error(`listFiles failed: ${listResult.errorMessage}`);
+    }
+    console.log(`✅ Listed ${listResult.entries.length} entries`);
+    listResult.entries.forEach((entry, index) => {
+      console.log(`   [${index}] ${entry.filePath} (${entry.fileName}, ${entry.size} bytes)`);
+    });
+
+    console.log("\n🎉 archiveExcludePaths example completed successfully!");
+  } catch (error) {
+    console.error("\n❌ Error in archiveExcludePaths example:");
+    console.error(error);
+  } finally {
+    if (session) {
+      console.log("\n🧹 Cleaning up exclude-paths session...");
+      try {
+        const deleteResult = await agentBay.delete(session, true);
+        console.log(`✅ Session deleted (success=${deleteResult.success}, request=${deleteResult.requestId})`);
+      } catch (deleteError) {
+        console.error(`❌ Failed to delete session: ${deleteError}`);
+      }
+    }
   }
 }
 
@@ -209,4 +326,4 @@ if (require.main === module) {
   });
 }
 
-export { archiveUploadModeExample };
+export { archiveExcludePathsExample, archiveUploadModeExample };

@@ -48,11 +48,16 @@ class UploadPolicy:
         auto_upload: Enables automatic upload
         upload_strategy: Defines the upload strategy
         upload_mode: Defines the upload mode (UploadMode.FILE or UploadMode.ARCHIVE)
+        archive_exclude_paths: Paths excluded from Archive packaging, stored as individual
+            files (FILE mode). Only applicable when upload_mode=ARCHIVE. Each entry is a
+            relative path prefix (no wildcards). Matching files support Presigned URL
+            direct access.
     """
 
     auto_upload: bool = True
     upload_strategy: UploadStrategy = UploadStrategy.UPLOAD_BEFORE_RESOURCE_RELEASE
     upload_mode: UploadMode = UploadMode.FILE
+    archive_exclude_paths: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         """Validate upload_mode value"""
@@ -74,16 +79,20 @@ class UploadPolicy:
             auto_upload=self.auto_upload,
             upload_strategy=self.upload_strategy,
             upload_mode=self.upload_mode,
+            archive_exclude_paths=copy.deepcopy(self.archive_exclude_paths, memo),
         )
 
     def __dict__(self):
-        return {
+        result = {
             "autoUpload": self.auto_upload,
             "uploadStrategy": (
                 self.upload_strategy.value if self.upload_strategy else None
             ),
             "uploadMode": self.upload_mode.value if self.upload_mode else None,
         }
+        if self.archive_exclude_paths and self.upload_mode == UploadMode.ARCHIVE:
+            result["archiveExcludePaths"] = self.archive_exclude_paths
+        return result
 
 
 @dataclass
