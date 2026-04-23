@@ -28,7 +28,6 @@ from typing import List, Optional
 from urllib.parse import urlparse
 
 import pytest
-import pytest
 from agentbay import (
     Extension,
     ExtensionOption,

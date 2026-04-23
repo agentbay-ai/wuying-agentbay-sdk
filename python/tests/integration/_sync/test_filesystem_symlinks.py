@@ -6,7 +6,6 @@ ci-stable
 """
 
 import pytest
-import pytest
 
 
 @pytest.fixture

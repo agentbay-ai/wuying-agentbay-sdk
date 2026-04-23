@@ -5,7 +5,6 @@ import time
 """Integration tests for Mobile Agent functionality."""
 
 import pytest
-import pytest
 
 from agentbay import get_logger
 from agentbay import CreateSessionParams

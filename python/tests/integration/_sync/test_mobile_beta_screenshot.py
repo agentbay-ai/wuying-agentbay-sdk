@@ -10,7 +10,6 @@ These tests use real backend resources (no mocks).
 
 
 import pytest
-import pytest
 
 from agentbay import CreateSessionParams
 

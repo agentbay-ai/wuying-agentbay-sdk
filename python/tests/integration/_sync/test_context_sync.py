@@ -8,7 +8,6 @@ ci-stable
 import time
 
 import pytest
-import pytest
 
 from agentbay import (
     BWList,

@@ -4,7 +4,6 @@
 import typing
 
 import pytest
-import pytest
 
 from agentbay import AdbUrlResult
 from agentbay import CreateSessionParams

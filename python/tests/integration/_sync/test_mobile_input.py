@@ -4,7 +4,6 @@
 """Integration tests for Mobile input operations functionality."""
 
 import pytest
-import pytest
 
 from agentbay import KeyCode
 

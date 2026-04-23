@@ -5,7 +5,6 @@
 import time
 
 import pytest
-import pytest
 
 
 class TestGetFileTransferContext:

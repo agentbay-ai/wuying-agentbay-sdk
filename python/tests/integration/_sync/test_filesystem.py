@@ -4,7 +4,6 @@
 # ci-stable
 
 import pytest
-import pytest
 
 
 # Define fixtures for session management

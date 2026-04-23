@@ -9,7 +9,6 @@ These tests validate that operations actually work by checking their effects.
 import json
 import time
 import pytest
-import pytest
 
 from agentbay import CreateSessionParams
 from .._common.functional_helpers import (

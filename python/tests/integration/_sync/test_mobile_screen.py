@@ -4,7 +4,6 @@
 """Integration tests for Mobile screen operations functionality."""
 
 import pytest
-import pytest
 
 
 @pytest.fixture

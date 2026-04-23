@@ -4,7 +4,6 @@
 """Integration test for get_all_ui_elements XML format (no mocks)."""
 
 import pytest
-import pytest
 
 from agentbay import CreateSessionParams
 

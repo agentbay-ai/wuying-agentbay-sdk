@@ -12,7 +12,6 @@ Verifies that:
 """
 
 import pytest
-import pytest
 
 
 @pytest.fixture

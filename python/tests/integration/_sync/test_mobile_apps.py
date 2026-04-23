@@ -4,7 +4,6 @@
 """Integration tests for Mobile application management functionality."""
 
 import pytest
-import pytest
 
 
 @pytest.fixture

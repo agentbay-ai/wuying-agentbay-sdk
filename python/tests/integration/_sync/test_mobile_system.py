@@ -4,7 +4,6 @@
 """Integration tests for Mobile system functionality."""
 
 import pytest
-import pytest
 
 from agentbay import AgentBayError
 from agentbay import BoolResult, OperationResult

@@ -9,7 +9,6 @@ import re
 from typing import Any, Optional, Tuple
 
 import pytest
-import pytest
 
 
 def _parse_bounds_rect(bounds: Any) -> Optional[Tuple[int, int, int, int]]:

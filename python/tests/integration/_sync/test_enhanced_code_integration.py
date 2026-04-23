@@ -4,7 +4,6 @@
 # ci-stable
 
 import pytest
-import pytest
 
 from agentbay import EnhancedCodeExecutionResult
 

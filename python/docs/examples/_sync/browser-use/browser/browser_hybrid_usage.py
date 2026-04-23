@@ -13,7 +13,6 @@ import time
 import os, asyncio
 
 import pytest
-import pytest
 
 from agentbay import AgentBay
 from agentbay import get_logger

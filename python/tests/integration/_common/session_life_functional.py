@@ -401,6 +401,7 @@ class SyncSessionLifecycle:
             yield mgr
             mgr.delete()
 
+        @pytest.mark.asyncio
         def test_something(lifecycle):
             result = lifecycle.default_create("linux_latest")
             assert result.success
@@ -426,6 +427,15 @@ class SyncSessionLifecycle:
         self._sync_context = False
         # Tracks all contexts created via create_context(); deleted by delete_all_contexts()
         self._owned_contexts: list = []
+
+    @property
+    def agent_bay(self) -> AgentBay:
+        """Public accessor for the underlying AgentBay client.
+
+        Useful when a test needs to call AgentBay-level APIs (e.g. list, get,
+        delete, context.*) alongside the session managed by this lifecycle.
+        """
+        return self._agent_bay
 
     # ------------------------------------------------------------------
     # Context helpers
@@ -477,10 +487,6 @@ class SyncSessionLifecycle:
             except Exception as e:
                 print(f"Warning: Failed to delete context {context.id}: {e}")
         self._owned_contexts.clear()
-
-    # ------------------------------------------------------------------
-    # Session creation
-    # ------------------------------------------------------------------
 
     def default_create(
         self,
@@ -598,8 +604,8 @@ class SyncSessionLifecycle:
 
         Internally calls ``agent_bay.context.get(context_name, create=True)`` to
         resolve the context ID, then assembles a :class:`BrowserContext` using the
-        resolved ID and any extra keyword arguments, and creates the session.
-        Everything uses the same ``self._agent_bay`` instance.
+        resolved ID and any extra keyword arguments, and delegates to the standard
+        session-create path.  Everything uses the same ``self._agent_bay`` instance.
 
         Args:
             image_id: The image ID to create the session with (e.g. ``"browser_latest"``).
@@ -661,6 +667,7 @@ class SyncSessionLifecycle:
             )
         try:
             status_result = self._result.session.get_status()
+            print(f"Session status: {status_result.status}")
         except SessionError:
             raise
         except Exception as exc:
@@ -716,3 +723,5 @@ class SyncSessionLifecycle:
         self._result = None
         self._sync_context = False
         return result
+
+

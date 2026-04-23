@@ -8,7 +8,6 @@ ci-stable
 import os
 
 import pytest
-import pytest
 
 from agentbay._common.models.filesystem import BinaryFileContentResult
 

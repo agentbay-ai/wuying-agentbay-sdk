@@ -8,7 +8,6 @@ ci-stable
 from uuid import uuid4
 
 import pytest
-import pytest
 
 from agentbay import CreateSessionParams, ContextSync
 
