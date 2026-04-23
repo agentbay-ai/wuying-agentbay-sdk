@@ -14,6 +14,7 @@ SYNC_DIR = os.path.join(AGENTBAY_DIR, "_sync")
 TEST_DIR = os.path.join(ROOT, "tests", "integration")
 TEST_ASYNC_DIR = os.path.join(TEST_DIR, "_async")
 TEST_SYNC_DIR = os.path.join(TEST_DIR, "_sync")
+TEST_COMMON_DIR = os.path.join(TEST_DIR, "_common")
 
 # Unit test directories
 UNIT_TEST_DIR = os.path.join(ROOT, "tests", "unit")
@@ -145,6 +146,104 @@ def _build_client_api_method_replacements() -> dict:
     return replacements
 
 
+def _sync_session_life_functional() -> None:
+    """
+    Auto-generate the SyncSessionLifecycle class in _common/session_life_functional.py
+    from the AsyncSessionLifecycle class in the same file.
+
+    Strategy:
+      1. Read the source file.
+      2. Extract the AsyncSessionLifecycle class block.
+      3. Apply async→sync text replacements.
+      4. Replace the SyncSessionLifecycle block (between the sync-variant
+         separator comment and EOF) with the newly generated code.
+      5. Write back.
+    """
+    src_path = os.path.join(TEST_COMMON_DIR, "session_life_functional.py")
+    if not os.path.exists(src_path):
+        print(f"  [session_life_functional] skipped – file not found: {src_path}")
+        return
+
+    with open(src_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # ---- locate AsyncSessionLifecycle class block ----
+    async_class_start = content.find("class AsyncSessionLifecycle:")
+    if async_class_start == -1:
+        print("  [session_life_functional] skipped – AsyncSessionLifecycle not found")
+        return
+
+    # The sync-variant separator comment marks where async ends / sync begins
+    sync_separator = "# ---------------------------------------------------------------------------\n# Sync variant\n# ---------------------------------------------------------------------------"
+    sync_section_start = content.find(sync_separator)
+    if sync_section_start == -1:
+        print("  [session_life_functional] skipped – sync-variant separator not found")
+        return
+
+    async_block = content[async_class_start:sync_section_start]
+
+    # ---- apply replacements to convert async → sync ----
+    # Order matters: longer / more specific patterns first.
+    replacements_ordered = [
+        # Docstring references
+        ("Manages a single AsyncAgentBay session lifecycle.", "Manages a single AgentBay (sync) session lifecycle."),
+        ("AsyncAgentBay.create raised an exception", "AgentBay.create raised an exception"),
+        ("AsyncAgentBay.create (with context_name) raised an exception", "AgentBay.create (with context_name) raised an exception"),
+        ("AsyncAgentBay.create (with browser_name) raised an exception", "AgentBay.create (with browser_name) raised an exception"),
+        ("AsyncAgentBay.delete raised an exception", "AgentBay.delete raised an exception"),
+        # Class / type names
+        ("AsyncSessionLifecycle", "SyncSessionLifecycle"),
+        ("AsyncAgentBay", "AgentBay"),
+        # async def → def
+        ("async def ", "def "),
+        # await calls
+        ("await self._agent_bay.", "self._agent_bay."),
+        ("await self._result.session.", "self._result.session."),
+        ("await lc.", "lc."),
+        ("await ", ""),
+        # Usage example in docstring
+        ("    async def test_something(lifecycle):", "    def test_something(lifecycle):"),
+        ("        result = await lifecycle.default_create", "        result = lifecycle.default_create"),
+        ("        status = await lifecycle.get_status()", "        status = lifecycle.get_status()"),
+        # Instance creation
+        ("self._agent_bay = AsyncAgentBay", "self._agent_bay = AgentBay"),
+        # Type annotation in __init__ return type comments if any
+        ("AsyncAgentBay", "AgentBay"),
+    ]
+
+    sync_block = async_block
+    for old, new in replacements_ordered:
+        sync_block = sync_block.replace(old, new)
+
+    # Fix the agent_bay property return type annotation
+    sync_block = re.sub(
+        r'def agent_bay\(self\) -> AsyncAgentBay:',
+        'def agent_bay(self) -> AgentBay:',
+        sync_block,
+    )
+    # Fix Public accessor docstring
+    sync_block = sync_block.replace(
+        "Public accessor for the underlying AsyncAgentBay client.",
+        "Public accessor for the underlying AgentBay client.",
+    )
+
+    # ---- reconstruct file ----
+    # Keep everything up to (and including) the sync separator + blank lines,
+    # then append the generated SyncSessionLifecycle block.
+    prefix = content[:sync_section_start]
+    new_content = (
+        prefix
+        + sync_separator
+        + "\n\n\n"
+        + sync_block
+    )
+
+    with open(src_path, "w", encoding="utf-8") as f:
+        f.write(new_content)
+
+    print(f"  [session_life_functional] SyncSessionLifecycle regenerated from AsyncSessionLifecycle")
+
+
 def _apply_custom_replacements(content: str, file_path: str) -> str:
     """Apply custom replacements that unasync doesn't handle."""
     # Fix asyncio.wait_for with stop_event.wait() - this is a common pattern in filesystem.py
@@ -209,11 +308,45 @@ def _remove_unused_import_asyncio(content: str) -> str:
         flags=re.MULTILINE,
     )
 
-def generate_sync():
+def generate_sync(modules: list = None):
+    """
+    Generate sync code from async sources.
+
+    Args:
+        modules: Optional list of modules to sync. Valid values:
+                 'sdk'        – agentbay/_async  →  agentbay/_sync
+                 'integration'– tests/integration/_async  →  tests/integration/_sync
+                                + _common/session_life_functional.py
+                 'unit'       – tests/unit/async  →  tests/unit/sync
+                 'examples'   – docs/examples/_async  →  docs/examples/_sync
+                 When None (default), all modules are synced.
+    """
+    # Normalise: None means all
+    ALL_MODULES = {"sdk", "integration", "unit", "examples"}
+    if modules is None:
+        active = ALL_MODULES
+    else:
+        active = set(m.lower() for m in modules)
+        unknown = active - ALL_MODULES
+        if unknown:
+            raise ValueError(f"Unknown module(s): {unknown}. Valid: {ALL_MODULES}")
+
     _init_skip_sync_generation_files()
-    # Clean target directories to avoid stale generated files drifting over time.
-    # Sync outputs must be fully derived from async sources.
-    for d in [SYNC_DIR, TEST_SYNC_DIR, EXAMPLES_SYNC_DIR, UNIT_TEST_SYNC_DIR]:
+
+    # Determine which (src, dst) directory pairs are active
+    dir_pairs = []
+    if "sdk" in active:
+        dir_pairs.append((ASYNC_DIR, SYNC_DIR))
+    if "integration" in active:
+        dir_pairs.append((TEST_ASYNC_DIR, TEST_SYNC_DIR))
+    if "unit" in active:
+        dir_pairs.append((UNIT_TEST_ASYNC_DIR, UNIT_TEST_SYNC_DIR))
+    if "examples" in active:
+        dir_pairs.append((EXAMPLES_ASYNC_DIR, EXAMPLES_SYNC_DIR))
+
+    # Clean only the active target directories
+    clean_dirs = [dst for _, dst in dir_pairs]
+    for d in clean_dirs:
         if os.path.exists(d):
             shutil.rmtree(d, ignore_errors=True)
         os.makedirs(d, exist_ok=True)
@@ -317,62 +450,21 @@ def generate_sync():
     # (reduces manual maintenance for newly added client methods).
     common_replacements.update(_build_client_api_method_replacements())
 
-    rules = [
-        unasync.Rule(
-            fromdir=ASYNC_DIR,
-            todir=SYNC_DIR,
+    # Build unasync rules only for active modules
+    rules = []
+    for src_dir, dst_dir in dir_pairs:
+        rules.append(unasync.Rule(
+            fromdir=src_dir,
+            todir=dst_dir,
             additional_replacements=common_replacements
-        ),
-        unasync.Rule(
-            fromdir=TEST_ASYNC_DIR,
-            todir=TEST_SYNC_DIR,
-            additional_replacements=common_replacements
-        ),
-        unasync.Rule(
-            fromdir=EXAMPLES_ASYNC_DIR,
-            todir=EXAMPLES_SYNC_DIR,
-            additional_replacements=common_replacements
-        ),
-        unasync.Rule(
-            fromdir=UNIT_TEST_ASYNC_DIR,
-            todir=UNIT_TEST_SYNC_DIR,
-            additional_replacements=common_replacements
-        )
-    ]
+        ))
 
+    # Collect filepaths for active source dirs only
     filepaths = []
-    # Walk _async dir
-    for root, dirs, files in os.walk(ASYNC_DIR):
-        for file in files:
-            if file.endswith(".py"):
-                path = os.path.join(root, file)
-                if _should_skip_sync_generation(path):
-                    continue
-                filepaths.append(path)
-
-    # Walk tests/_async dir
-    if os.path.exists(TEST_ASYNC_DIR):
-        for root, dirs, files in os.walk(TEST_ASYNC_DIR):
-            for file in files:
-                if file.endswith(".py"):
-                    path = os.path.join(root, file)
-                    if _should_skip_sync_generation(path):
-                        continue
-                    filepaths.append(path)
-
-    # Walk examples/_async dir
-    if os.path.exists(EXAMPLES_ASYNC_DIR):
-        for root, dirs, files in os.walk(EXAMPLES_ASYNC_DIR):
-            for file in files:
-                if file.endswith(".py"):
-                    path = os.path.join(root, file)
-                    if _should_skip_sync_generation(path):
-                        continue
-                    filepaths.append(path)
-
-    # Walk unit tests/_async dir
-    if os.path.exists(UNIT_TEST_ASYNC_DIR):
-        for root, dirs, files in os.walk(UNIT_TEST_ASYNC_DIR):
+    for src_dir, _ in dir_pairs:
+        if not os.path.exists(src_dir):
+            continue
+        for root, dirs, files in os.walk(src_dir):
             for file in files:
                 if file.endswith(".py"):
                     path = os.path.join(root, file)
@@ -383,11 +475,24 @@ def generate_sync():
     # Unasync logic
     unasync.unasync_files(filepaths, rules)
 
-    # Copy sync-only templates for skipped async-only modules
-    _write_sync_extra_templates()
+    # Copy sync-only templates for skipped async-only modules (per-module precise control)
+    # sdk template (ws_client.py) is copied when sdk is active
+    # unit templates (ws_streaming, agent_streaming) are copied when unit is active
+    if "sdk" in active or "unit" in active:
+        for dst, src in SYNC_EXTRA_TEMPLATES.items():
+            dst_norm = os.path.normpath(dst)
+            is_sdk_template = dst_norm.startswith(os.path.normpath(SYNC_DIR))
+            is_unit_template = dst_norm.startswith(os.path.normpath(UNIT_TEST_SYNC_DIR))
+            if (is_sdk_template and "sdk" in active) or (is_unit_template and "unit" in active):
+                _copy_template_file(src, dst)
 
-    # Post-process
-    process_dirs = [SYNC_DIR, TEST_SYNC_DIR, EXAMPLES_SYNC_DIR, UNIT_TEST_SYNC_DIR]
+    # Sync _common/session_life_functional.py when integration module is active
+    if "integration" in active:
+        print("Syncing _common/session_life_functional.py...")
+        _sync_session_life_functional()
+
+    # Post-process only active target directories
+    process_dirs = [dst for _, dst in dir_pairs]
 
     for directory in process_dirs:
         if not os.path.exists(directory):
@@ -397,7 +502,7 @@ def generate_sync():
             for file in files:
                 if file.endswith(".py"):
                     path = os.path.join(root, file)
-                    with open(path, "r") as f:
+                    with open(path, "r", encoding="utf-8") as f:
                         content = f.read()
 
                     is_sync_ws_client = path.endswith(
@@ -452,6 +557,13 @@ def generate_sync():
                     else:
                         # For other cases, use sequential execution
                         if not is_sync_ws_client:
+                            # Handle asyncio.gather with generator expression: asyncio.gather(*(f(x) for x in items))
+                            # -> [f(x) for x in items]
+                            content = re.sub(
+                                r'asyncio\.gather\(\*\(([^)]+) for ([^)]+) in ([^)]+)\)\)',
+                                r'[\1 for \2 in \3]',
+                                content
+                            )
                             content = re.sub(r'asyncio\.gather\(\*([^)]+)\)', r'[task for task in \1]', content)
                     # Handle asyncio.run calls - use a more robust approach
                     # This will match asyncio.run( and find the matching closing parenthesis
@@ -789,6 +901,36 @@ def generate_sync():
                     content = content.replace("@pytest.mark.asyncio", "@pytest.mark.sync")
                     content = content.replace("@pytest_asyncio.fixture", "@pytest.fixture")
                     content = content.replace("import pytest_asyncio", "import pytest")
+                    # Fix duplicate pytest import produced by replacing import pytest_asyncio -> import pytest
+                    content = re.sub(r'^import pytest\nimport pytest\n', 'import pytest\n', content, flags=re.MULTILINE)
+
+                    # Fix conftest.py teardown: asyncio.gather with generator expression -> list comprehension
+                    # Pattern: await asyncio.gather(*(func(x) for x in iterable))
+                    # ->        [func(x) for x in iterable]
+                    # This handles the single-line case
+                    content = re.sub(
+                        r'asyncio\.gather\(\*\(([^)]+)\(([^)]+)\) for (\w+) in (\w+)\)\)',
+                        r'[\1(\2) for \3 in \4]',
+                        content,
+                    )
+
+                    # For conftest.py: also remove leftover import asyncio (it's only referenced in
+                    # docstring/comments after sync conversion, not in actual code)
+                    if file == "conftest.py":
+                        # Force-remove import asyncio – conftest never needs it after sync conversion
+                        content = re.sub(
+                            r'^[ \t]*import asyncio(?:[ \t]+as[ \t]+\w+)?[ \t]*\n',
+                            '',
+                            content,
+                            flags=re.MULTILINE,
+                        )
+                        # Fix the broken asyncio.gather remnant from sync generation:
+                        # [task for task in (_delete_one(lc] for lc in created))
+                        # -> [_delete_one(lc) for lc in created]
+                        content = content.replace(
+                            "[task for task in (_delete_one(lc] for lc in created))",
+                            "[_delete_one(lc) for lc in created]",
+                        )
 
                     # Fix patch paths in unit tests
                     content = content.replace('"agentbay._async', '"agentbay._sync')
@@ -847,7 +989,7 @@ def generate_sync():
                     # replacements may remove asyncio usages (e.g. filesystem monitor helpers).
                     content = _remove_unused_import_asyncio(content)
 
-                    with open(path, "w") as f:
+                    with open(path, "w", encoding="utf-8") as f:
                         f.write(content)
 
 def process_examples_non_python_files():
@@ -906,8 +1048,37 @@ def convert_markdown_file(src_path: str, dest_path: str):
         f.write(content)
 
 if __name__ == "__main__":
-    print(f"Generating sync code from {ASYNC_DIR} to {SYNC_DIR}...")
-    print(f"Generating sync tests from {TEST_ASYNC_DIR} to {TEST_SYNC_DIR}...")
-    generate_sync()
-    process_examples_non_python_files()
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Generate sync code from async sources."
+    )
+    parser.add_argument(
+        "--module",
+        metavar="MODULE",
+        nargs="+",
+        choices=["sdk", "integration", "unit", "examples", "all"],
+        default=["all"],
+        help=(
+            "Which module(s) to sync. Choices: sdk | integration | unit | examples | all. "
+            "Defaults to 'all'. Example: --module integration unit"
+        ),
+    )
+    args = parser.parse_args()
+
+    # 'all' → pass None so generate_sync() handles all modules
+    selected = None if "all" in args.module else args.module
+
+    if selected is None:
+        print(f"Generating sync code from {ASYNC_DIR} to {SYNC_DIR}...")
+        print(f"Generating sync tests from {TEST_ASYNC_DIR} to {TEST_SYNC_DIR}...")
+    else:
+        print(f"Generating sync code for module(s): {selected}")
+
+    generate_sync(modules=selected)
+
+    # process_examples_non_python_files only when examples is included
+    if selected is None or "examples" in selected:
+        process_examples_non_python_files()
+
     print("Done.")

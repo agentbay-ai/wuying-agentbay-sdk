@@ -44,10 +44,8 @@ Usage::
         assert lc._result.session.session_id
 """
 
-import asyncio
 import os
 
-import pytest
 import pytest
 
 from agentbay import AgentBay
@@ -128,4 +126,4 @@ def make_session():
             print(f"Warning: teardown delete failed: {e}")
         lc.delete_all_contexts()
 
-    [task for task in (_delete_one(lc] for lc in created))
+    [_delete_one(lc) for lc in created]
