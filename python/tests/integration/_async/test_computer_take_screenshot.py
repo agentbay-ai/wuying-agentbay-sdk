@@ -5,30 +5,15 @@ Integration test for AsyncComputer.beta_take_screenshot().
 This test uses real backend resources (no mocks).
 """
 
-import os
-
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay, CreateSessionParams
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
+from agentbay import CreateSessionParams
 
 
-@pytest_asyncio.fixture
-async def session(agent_bay):
-    params = CreateSessionParams(image_id="linux_latest")
-    result = await agent_bay.create(params)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    assert result.session is not None
-    yield result.session
-    await result.session.delete()
+@pytest.fixture
+async def session(make_session):
+    lc = await make_session(params=CreateSessionParams(image_id="linux_latest"))
+    return lc._result.session
 
 
 @pytest.mark.asyncio
@@ -48,4 +33,3 @@ async def test_take_screenshot_jpg_returns_jpeg_bytes(session):
     assert isinstance(result.data, (bytes, bytearray))
     assert len(result.data) > 0
     assert bytes(result.data[:3]) == b"\xff\xd8\xff"
-

@@ -440,8 +440,8 @@ func TestBrowserOperator_ExtractOptions(t *testing.T) {
 // mockSessionForBrowserOperator returns canned responses for act/observe/extract polling
 type mockSessionForBrowserOperatorActResult struct{}
 
-func (m *mockSessionForBrowserOperatorActResult) GetAPIKey() string    { return "test-api-key" }
-func (m *mockSessionForBrowserOperatorActResult) GetSessionID() string { return "test-session-id" }
+func (m *mockSessionForBrowserOperatorActResult) GetAPIKey() string         { return "test-api-key" }
+func (m *mockSessionForBrowserOperatorActResult) GetSessionID() string      { return "test-session-id" }
 func (m *mockSessionForBrowserOperatorActResult) GetClient() *client.Client { return nil }
 func (m *mockSessionForBrowserOperatorActResult) GetLinkForBrowser(protocolType *string, port *int32, options *string) (*browser.LinkResult, error) {
 	return &browser.LinkResult{Link: "ws://localhost:9222"}, nil

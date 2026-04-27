@@ -165,11 +165,18 @@ class SyncGit(BaseService):
             The CommandResult from executing the git command.
         """
         cmd = self._build_git_command(args, repo_path)
-        return self.session.command.execute_command(
+        _logger.debug("Executing git command: %s", cmd)
+        result = self.session.command.execute_command(
             cmd,
             timeout_ms=timeout_ms or _DEFAULT_GIT_TIMEOUT_MS,
             envs=_DEFAULT_GIT_ENV,
         )
+        if not result.success:
+            _logger.debug(
+                "Git command failed: cmd=%s, exit_code=%s, stderr=%s",
+                cmd, result.exit_code, self._get_stderr(result)[:500],
+            )
+        return result
 
     def _run_shell(self, cmd: str, timeout_ms: Optional[int] = None) -> CommandResult:
         """
@@ -557,6 +564,11 @@ class SyncGit(BaseService):
         """
         self._ensure_git_available()
 
+        _logger.info(
+            "Cloning repository: url=%s, branch=%s, depth=%s, path=%s",
+            url, branch, depth, path,
+        )
+
         args: List[str] = ["clone"]
 
         if branch:
@@ -570,14 +582,21 @@ class SyncGit(BaseService):
         target_path = path or self._derive_repo_dir_from_url(url)
         args.append(target_path)
 
-        result = self._run_git(
-            args, timeout_ms=timeout_ms or _DEFAULT_CLONE_TIMEOUT_MS
-        )
+        effective_timeout = timeout_ms or _DEFAULT_CLONE_TIMEOUT_MS
+        _logger.debug("Clone timeout: %d ms", effective_timeout)
+
+        result = self._run_git(args, timeout_ms=effective_timeout)
 
         if not result.success:
+            stderr = self._get_stderr(result)
+            stdout = self._get_stdout(result)
+            _logger.error(
+                "Clone failed: url=%s, exit_code=%s, stderr=%s, stdout=%s",
+                url, result.exit_code, stderr[:1000], stdout[:500],
+            )
             raise self._classify_error("clone", result)
 
-        _logger.debug("Cloned repository to %s", target_path)
+        _logger.info("Clone succeeded: url=%s -> %s", url, target_path)
         return GitCloneResult(path=target_path)
 
     def init(
@@ -623,6 +642,7 @@ class SyncGit(BaseService):
         result = self._run_git(args, timeout_ms=timeout_ms)
 
         if not result.success:
+            _logger.error("Init failed: path=%s, exit_code=%s", path, result.exit_code)
             raise self._classify_error("init", result)
 
         _logger.debug("Initialized repository at %s", path)
@@ -671,6 +691,7 @@ class SyncGit(BaseService):
         result = self._run_git(args, repo_path, timeout_ms=timeout_ms)
 
         if not result.success:
+            _logger.error("Add failed: repo=%s, files=%s, exit_code=%s", repo_path, files, result.exit_code)
             raise self._classify_error("add", result)
 
     def commit(
@@ -728,6 +749,7 @@ class SyncGit(BaseService):
         result = self._run_git(args, repo_path, timeout_ms=timeout_ms)
 
         if not result.success:
+            _logger.error("Commit failed: repo=%s, exit_code=%s", repo_path, result.exit_code)
             raise self._classify_error("commit", result)
 
         # Parse commit hash from output
@@ -1193,6 +1215,11 @@ class SyncGit(BaseService):
         """
         self._ensure_git_available()
 
+        _logger.info(
+            "Pulling from remote: repo=%s, remote=%s, branch=%s",
+            repo_path, remote, branch,
+        )
+
         args: List[str] = ["pull"]
         if remote:
             args.append(remote)
@@ -1203,6 +1230,11 @@ class SyncGit(BaseService):
             args, repo_path, timeout_ms=timeout_ms or _DEFAULT_PULL_TIMEOUT_MS
         )
         if not result.success:
+            stderr = self._get_stderr(result)
+            _logger.error(
+                "Pull failed: repo=%s, remote=%s, branch=%s, exit_code=%s, stderr=%s",
+                repo_path, remote, branch, result.exit_code, stderr[:1000],
+            )
             raise self._classify_error("pull", result)
 
     def configure_user(

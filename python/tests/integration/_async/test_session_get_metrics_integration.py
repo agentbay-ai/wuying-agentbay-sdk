@@ -1,50 +1,26 @@
 # ci-stable
-import os
-import unittest
+"""Integration tests for session get_metrics API."""
+
 import pytest
 
-from agentbay import AsyncAgentBay, CreateSessionParams
+from agentbay import CreateSessionParams
 
 
-def get_test_api_key():
-    return os.environ.get("AGENTBAY_API_KEY")
+@pytest.mark.asyncio
+async def test_get_metrics_returns_structured_data(make_session):
+    """Test that get_metrics returns valid structured data."""
+    lc = await make_session()
+    session = lc._result.session
+    assert session is not None
 
+    metrics_result = await session.get_metrics()
+    assert metrics_result.success, f"get_metrics failed: {metrics_result.error_message}"
+    assert metrics_result.metrics is not None
 
-class TestSessionGetMetricsIntegration(unittest.IsolatedAsyncioTestCase):
-    @classmethod
-    def setUpClass(cls):
-        api_key = get_test_api_key()
-        if not api_key:
-            raise unittest.SkipTest("AGENTBAY_API_KEY environment variable not set")
-        cls.agent_bay = AsyncAgentBay(api_key=api_key)
-
-    @pytest.mark.asyncio
-    async def test_get_metrics_returns_structured_data(self):
-        result = await self.agent_bay.create()
-        self.assertTrue(result.success)
-        session = result.session
-        self.assertIsNotNone(session)
-
-        try:
-            metrics_result = await session.get_metrics()
-            self.assertTrue(
-                metrics_result.success,
-                f"get_metrics failed: {metrics_result.error_message}",
-            )
-            self.assertIsNotNone(metrics_result.metrics)
-
-            m = metrics_result.metrics
-            self.assertGreaterEqual(m.cpu_count, 1)
-            self.assertGreater(m.mem_total, 0)
-            self.assertGreater(m.disk_total, 0)
-            self.assertGreaterEqual(m.cpu_used_pct, 0.0)
-            self.assertLessEqual(m.cpu_used_pct, 100.0)
-            self.assertTrue(len(m.timestamp) > 0)
-        finally:
-            await session.delete()
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-
+    m = metrics_result.metrics
+    assert m.cpu_count >= 1
+    assert m.mem_total > 0
+    assert m.disk_total > 0
+    assert m.cpu_used_pct >= 0.0
+    assert m.cpu_used_pct <= 100.0
+    assert len(m.timestamp) > 0

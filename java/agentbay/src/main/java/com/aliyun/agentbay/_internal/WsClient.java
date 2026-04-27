@@ -95,12 +95,18 @@ public class WsClient {
         final OnEnd onEnd;
         final OnError onError;
         final CompletableFuture<Map<String, Object>> endFuture;
+        final boolean isCall;
 
         PendingStream(OnEvent onEvent, OnEnd onEnd, OnError onError) {
+            this(onEvent, onEnd, onError, false);
+        }
+
+        PendingStream(OnEvent onEvent, OnEnd onEnd, OnError onError, boolean isCall) {
             this.onEvent = onEvent;
             this.onEnd = onEnd;
             this.onError = onError;
             this.endFuture = new CompletableFuture<>();
+            this.isCall = isCall;
         }
     }
 
@@ -483,6 +489,17 @@ public class WsClient {
         lf.put("data", data);
         logFrame("<<", lf);
 
+        if (pending.isCall) {
+            Object callErr = data.get("error");
+            if (callErr instanceof String && !((String) callErr).isEmpty()) {
+                pending.endFuture.completeExceptionally(new RuntimeException((String) callErr));
+            } else {
+                pending.endFuture.complete(data);
+            }
+            pendingById.remove(invocationId);
+            return;
+        }
+
         Object errObj = data.get("error");
         if (errObj instanceof String && !((String) errObj).isEmpty()) {
             Exception err = new RuntimeException((String) errObj);
@@ -531,9 +548,55 @@ public class WsClient {
     }
 
     /**
+     * Send a request and wait for a single response (no phase semantics).
+     * Expects data.result or data.error from the server.
+     *
+     * @param target    The target service
+     * @param data      The request data
+     * @param timeoutMs Timeout in milliseconds (0 defaults to 30 000)
+     * @return The response data map
+     * @throws Exception on timeout, connection failure, or server error
+     */
+    public Map<String, Object> call(String target, Map<String, Object> data, long timeoutMs) throws Exception {
+        if (timeoutMs <= 0) timeoutMs = 30000;
+        connect().get(timeoutMs, TimeUnit.MILLISECONDS);
+
+        WebSocket ws = webSocket;
+        if (ws == null) {
+            throw new RuntimeException("WS is not connected");
+        }
+
+        String invocationId = newInvocationId();
+        PendingStream pending = new PendingStream(null, null, null, true);
+        pendingById.put(invocationId, pending);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("invocationId", invocationId);
+        payload.put("source", "SDK");
+        payload.put("target", target);
+        payload.put("data", data);
+        logFrame(">>", payload);
+
+        try {
+            String raw = objectMapper.writeValueAsString(payload);
+            ws.send(raw);
+        } catch (Exception e) {
+            pendingById.remove(invocationId);
+            throw e;
+        }
+
+        try {
+            return pending.endFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+        } catch (java.util.concurrent.TimeoutException e) {
+            pendingById.remove(invocationId);
+            throw new RuntimeException("call() timed out after " + timeoutMs + "ms");
+        }
+    }
+
+    /**
      * Send a message to the specified target without expecting a response.
      * This is a fire-and-forget operation.
-     * 
+     *
      * @param target The target service to send the message to
      * @param data The data to send
      */

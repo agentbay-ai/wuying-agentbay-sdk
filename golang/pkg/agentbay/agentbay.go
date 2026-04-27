@@ -439,7 +439,10 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	session := NewSession(a, *response.Body.Data.SessionId)
 	session.ImageId = params.ImageId
 
-	// Set ResourceUrl
+	// Set AppInstanceId and ResourceUrl
+	if response.Body.Data.GetAppInstanceId() != nil {
+		session.AppInstanceId = *response.Body.Data.GetAppInstanceId()
+	}
 	if response.Body.Data.ResourceUrl != nil {
 		session.ResourceUrl = *response.Body.Data.ResourceUrl
 	}
@@ -1285,6 +1288,7 @@ func (a *AgentBay) Get(sessionID string) (*SessionResult, error) {
 
 	// Set VPC-related information and ResourceUrl from GetSession response
 	if getResult.Data != nil {
+		session.AppInstanceId = getResult.Data.AppInstanceID
 		session.ResourceUrl = getResult.Data.ResourceUrl
 		session.McpTools = parseToolListToMcpTools(getResult.Data.ToolList)
 		session.Token = getResult.Data.Token

@@ -8,71 +8,51 @@ across sessions using the same ContextId.
 # ci-stable
 
 import asyncio
-import os
 import time
 
 import pytest
 from playwright.async_api import async_playwright
 
-from agentbay import AsyncAgentBay
-from agentbay import BrowserContext, CreateSessionParams
 from agentbay import BrowserOption
 
+from tests.integration._common.session_life_functional import (
+    AsyncSessionLifecycle,
+    SessionLifecycleError,
+)
 
-def get_test_api_key():
-    """Get API key for testing"""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return api_key
-
-
-@pytest.fixture(scope="module")
-async def agent_bay():
-    """Create AsyncAgentBay client for the test module."""
-    # Skip if no API key is available or in CI environment
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key or os.environ.get("CI"):
-        pytest.skip("Skipping integration test: No API key available or running in CI")
-    
-    # Initialize AsyncAgentBay client
-    return AsyncAgentBay(api_key)
+# agent_bay_client fixture (AsyncAgentBay, scope="module") is provided by conftest.py
 
 
 @pytest.fixture(scope="module")
-async def browser_context_fixture(agent_bay):
+async def browser_context_fixture():
     """Create and cleanup a browser context for the test module."""
-    # Create a unique context name for this test
-    context_name = f"test-browser-context-{int(time.time())}"
-    
-    # Create a context
-    context_result = await agent_bay.context.get(context_name, True)
-    if not context_result.success or not context_result.context:
-        pytest.skip("Failed to create context")
-    
-    context = context_result.context
-    print(f"Created context: {context.name} (ID: {context.id})")
-    
-    yield context
-    
-    # Clean up context
     try:
-        await agent_bay.context.delete(context)
-        print(f"Context deleted: {context.id}")
-    except Exception as e:
-        print(f"Warning: Failed to delete context: {e}")
+        lc = AsyncSessionLifecycle()
+    except SessionLifecycleError as e:
+        pytest.skip(str(e))
+
+    context_name = f"test-browser-context-{int(time.time())}"
+    try:
+        context = await lc.create_context(context_name)
+    except SessionLifecycleError as e:
+        pytest.skip(f"Failed to create context: {e}")
+
+    print(f"Created context: {context.name} (ID: {context.id})")
+
+    yield lc, context
+
+    await lc.delete_all_contexts()
 
 
 @pytest.mark.asyncio
-async def test_browser_context_cookie_persistence(agent_bay, browser_context_fixture):
+async def test_browser_context_cookie_persistence(browser_context_fixture, make_session):
     """Test that manually set cookies persist across sessions with the same browser context."""
-    context = browser_context_fixture
-    
+    lc, context = browser_context_fixture
+
     # Test data
     test_url = "https://www.baidu.com"
     test_domain = "baidu.com"
 
-    # Helper function to add one hour to current time
     def add_hour():
         return int(time.time()) + 3600  # 1 hour from now
 
@@ -97,33 +77,22 @@ async def test_browser_context_cookie_persistence(agent_bay, browser_context_fix
         },
     ]
 
-    # Step 1 & 2: Create ContextId and create session with BrowserContext
-    print(f"Step 1-2: Creating session with browser context ID: {context.id}")
-    browser_context = BrowserContext(context.id, auto_upload=True)
-    params = CreateSessionParams(
-        image_id="browser_latest", browser_context=browser_context
+    # Step 1 & 2: Create first session with BrowserContext via make_session
+    print(f"Step 1-2: Creating first session with browser context ID: {context.id}")
+    lc1 = await make_session(
+        "browser_latest",
+        browser_name=context.name,
+        browser_kwargs={"auto_upload": True},
     )
-
-    session_result = await agent_bay.create(params)
-    if not session_result.success:
-        print(f"Session creation failed!")
-        print(f"Error message: {session_result.error_message}")
-        print(f"Request ID: {session_result.request_id}")
-    assert session_result.success, f"Failed to create first session: {session_result.error_message}"
-    assert session_result.session is not None, "Session should not be None"
-
-    session1 = session_result.session
+    session1 = lc1._result.session
     print(f"First session created with ID: {session1.session_id}")
 
-    # Step 3: Get browser object through initialize and get_endpoint_url
+    # Step 3: Initialize browser and get endpoint URL
     print("Step 3: Initializing browser and getting browser object...")
-
-    # Initialize browser
     init_success = await session1.browser.initialize(BrowserOption())
     assert init_success, "Failed to initialize browser"
     print("Browser initialized successfully")
 
-    # Get endpoint URL
     endpoint_url = await session1.browser.get_endpoint_url()
     assert endpoint_url is not None, "Endpoint URL should not be None"
     print(f"Browser endpoint URL: {endpoint_url}")
@@ -151,9 +120,7 @@ async def test_browser_context_cookie_persistence(agent_bay, browser_context_fix
 
         # Add test cookies after navigating to the page
         await pw_context.add_cookies(test_cookies)  # type: ignore
-        print(
-            f"Added {len(test_cookies)} test cookies after navigating to {test_url}"
-        )
+        print(f"Added {len(test_cookies)} test cookies after navigating to {test_url}")
 
         # Read cookies to verify they were set correctly
         cookies = await pw_context.cookies()
@@ -161,13 +128,8 @@ async def test_browser_context_cookie_persistence(agent_bay, browser_context_fix
             cookie.get("name", ""): cookie.get("value", "")
             for cookie in cookies
         }
-
         print(f"Cookies found in first session: {list(cookie_dict.keys())}")
         print(f"Total cookies count: {len(cookies)}")
-
-        # Store cookies for later verification
-        first_session_cookies = cookies
-        first_session_cookie_dict = cookie_dict
 
         await cdp_session.send("Browser.close")
         print("First session browser operations completed")
@@ -177,44 +139,37 @@ async def test_browser_context_cookie_persistence(agent_bay, browser_context_fix
         await asyncio.sleep(2)
         print("Wait completed")
 
-    # Step 5: Release session with syncContext=True
+    # Step 5: make_session teardown will handle deletion with sync_context=True
+    # (browser_name session automatically sets _sync_context=True in lifecycle)
+    # We trigger it manually here so session2 can reuse the same context
     print("Step 5: Releasing first session with syncContext=True...")
-    delete_result = await agent_bay.delete(session1, sync_context=True)
+    delete_result = await lc1.delete()
     assert delete_result.success, "Failed to delete first session"
-    print(
-        f"First session deleted successfully (RequestID: {delete_result.request_id})"
-    )
+    print(f"First session deleted successfully")
 
     # Wait for context sync to complete
     await asyncio.sleep(3)
 
-    # Step 6: Create second session with same ContextId
-    print(
-        f"Step 6: Creating second session with same context ID: {context.id}"
+    # Step 6: Create second session with same context via make_session
+    print(f"Step 6: Creating second session with same context ID: {context.id}")
+    lc2 = await make_session(
+        "browser_latest",
+        browser_name=context.name,
+        browser_kwargs={"auto_upload": True},
     )
-    session_result2 = await agent_bay.create(params)
-    assert session_result2.success, "Failed to create second session"
-    assert session_result2.session is not None, "Second session should not be None"
-
-    session2 = session_result2.session
+    session2 = lc2._result.session
     print(f"Second session created with ID: {session2.session_id}")
 
-    # Step 7: Get browser object and check if test cookies exist without opening any page
-    print(
-        "Step 7: Getting browser object and checking test cookie persistence without opening any page..."
-    )
-
-    # Initialize browser
+    # Step 7: Initialize browser and check cookie persistence
+    print("Step 7: Getting browser object and checking test cookie persistence...")
     init_success = await session2.browser.initialize(BrowserOption())
     assert init_success, "Failed to initialize browser in second session"
     print("Second session browser initialized successfully")
 
-    # Get endpoint URL
     endpoint_url = await session2.browser.get_endpoint_url()
     assert endpoint_url is not None, "Endpoint URL should not be None"
     print(f"Second session browser endpoint URL: {endpoint_url}")
 
-    # Connect with playwright and read cookies directly from context without opening any page
     async with async_playwright() as p:
         browser = await p.chromium.connect_over_cdp(endpoint_url)
         assert browser is not None, "Failed to connect to browser in second session"
@@ -232,9 +187,7 @@ async def test_browser_context_cookie_persistence(agent_bay, browser_context_fix
             for cookie in cookies
         }
 
-        print(
-            f"Cookies found in second session (without opening page): {list(cookie_dict.keys())}"
-        )
+        print(f"Cookies found in second session (without opening page): {list(cookie_dict.keys())}")
         print(f"Total cookies count in second session: {len(cookies)}")
 
         # Check if our test cookies exist in the second session
@@ -244,13 +197,11 @@ async def test_browser_context_cookie_persistence(agent_bay, browser_context_fix
         print(f"Expected test cookies: {expected_cookie_names}")
         print(f"Found cookies: {found_cookie_names}")
 
-        # Check if all expected test cookies are present
         missing_cookies = expected_cookie_names - found_cookie_names
         assert not missing_cookies, (
             f"Missing expected test cookies in second session: {missing_cookies}"
         )
 
-        # Check if test cookie values match what we set
         for cookie_name in expected_cookie_names:
             if cookie_name in cookie_dict:
                 expected_value = next(
@@ -263,21 +214,15 @@ async def test_browser_context_cookie_persistence(agent_bay, browser_context_fix
                     f"Test cookie '{cookie_name}' value should match. "
                     f"Expected: {expected_value}, Actual: {actual_value}"
                 )
-                print(
-                    f"✓ Test cookie '{cookie_name}' value matches: {actual_value}"
-                )
+                print(f"✓ Test cookie '{cookie_name}' value matches: {actual_value}")
 
-        print(
-            f"SUCCESS: All {len(expected_cookie_names)} test cookies persisted correctly!"
-        )
-        print(f"Test cookies found: {list(expected_cookie_names)}")
+        print(f"SUCCESS: All {len(expected_cookie_names)} test cookies persisted correctly!")
 
-        print("Step 8: Releasing second session with syncContext=True...")
-        delete_result = await agent_bay.delete(session2, sync_context=True)
-        assert delete_result.success, "Failed to delete second session"
-        print(
-            f"Second session deleted successfully (RequestID: {delete_result.request_id})"
-        )
-        print("Second session browser operations completed")
+    # Step 8: Delete second session (make_session teardown also handles this,
+    # but we do it explicitly to ensure sync_context=True ordering)
+    print("Step 8: Releasing second session with syncContext=True...")
+    delete_result = await lc2.delete()
+    assert delete_result.success, "Failed to delete second session"
+    print(f"Second session deleted successfully")
 
     print("Browser context manual cookie persistence test completed successfully!")

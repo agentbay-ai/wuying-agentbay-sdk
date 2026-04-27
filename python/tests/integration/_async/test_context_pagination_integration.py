@@ -5,43 +5,24 @@ Integration test for context pagination functionality.
 Based on golang/tests/pkg/integration/context_pagination_integration_test.go
 """
 
-import os
 import time
 import pytest
 from typing import List
 
-from agentbay import AsyncAgentBay
 from agentbay import Context, ContextListParams
 
 
-# Global variables for test data
-created_contexts: List[Context] = []
-agent_bay = None
-
-
 @pytest.fixture(scope="module")
-async def setup_contexts():
-    """Setup contexts for all tests"""
-    global created_contexts, agent_bay
-    
-    # Skip if no API key is available or in CI environment
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key or os.environ.get("CI"):
-        pytest.skip("Skipping integration test: No API key available or running in CI")
-
-    # Initialize AgentBay client
-    agent_bay = AsyncAgentBay(api_key)
+async def setup_contexts(agent_bay_client):
+    """Setup contexts for all tests and yield the agent_bay_client."""
+    created_contexts: List[Context] = []
 
     # Create multiple contexts for testing pagination
-    context_names = []
-    created_contexts = []
-
     # Create 15 test contexts
     for i in range(15):
         context_name = f"test-pagination-py-{int(time.time())}-{i}"
-        context_result = await agent_bay.context.create(context_name)
+        context_result = await agent_bay_client.context.create(context_name)
         if context_result.success and context_result.context:
-            context_names.append(context_name)
             created_contexts.append(context_result.context)
             print(
                 f"Created context: {context_name} (ID: {context_result.context.id})"
@@ -51,13 +32,13 @@ async def setup_contexts():
 
     # Wait a moment for all contexts to be fully created
     time.sleep(2)
-    
-    yield
-    
+
+    yield agent_bay_client
+
     # Cleanup
     for context in created_contexts:
         try:
-            await agent_bay.context.delete(context)
+            await agent_bay_client.context.delete(context)
             print(f"Deleted context: {context.name} (ID: {context.id})")
         except Exception as e:
             print(f"Warning: Failed to delete context {context.name}: {e}")
@@ -66,11 +47,12 @@ async def setup_contexts():
 @pytest.mark.asyncio
 async def test_context_pagination_default(setup_contexts):
     """Test 1: List contexts with default pagination (should get first 10)"""
+    agent_bay_client = setup_contexts
     print("Test 1: Listing contexts with default pagination (first page)")
     params = ContextListParams()
     params.max_results = 10
 
-    list_result = await agent_bay.context.list(params)
+    list_result = await agent_bay_client.context.list(params)
 
     assert list_result.success, "List contexts should be successful"
     assert len(list_result.contexts) == 10, "Expected 10 contexts in first page"
@@ -82,14 +64,16 @@ async def test_context_pagination_default(setup_contexts):
         f"NextToken: {list_result.next_token}, MaxResults: {list_result.max_results}, TotalCount: {list_result.total_count}"
     )
 
+
 @pytest.mark.asyncio
 async def test_context_pagination_custom_page_size(setup_contexts):
     """Test 2: List contexts with custom page size"""
+    agent_bay_client = setup_contexts
     print("Test 2: Listing contexts with custom page size (5 per page)")
     params = ContextListParams()
     params.max_results = 5
 
-    list_result = await agent_bay.context.list(params)
+    list_result = await agent_bay_client.context.list(params)
 
     assert list_result.success, "List contexts should be successful"
     assert len(list_result.contexts) == 5, "Expected 5 contexts with custom page size"
@@ -101,15 +85,17 @@ async def test_context_pagination_custom_page_size(setup_contexts):
         f"NextToken: {list_result.next_token}, MaxResults: {list_result.max_results}, TotalCount: {list_result.total_count}"
     )
 
+
 @pytest.mark.asyncio
 async def test_context_pagination_second_page(setup_contexts):
     """Test 3: Get second page using NextToken"""
+    agent_bay_client = setup_contexts
     print("Test 3: Getting second page using NextToken")
 
     # First, get the first page to obtain the NextToken
     params = ContextListParams()
     params.max_results = 5
-    first_page_result = await agent_bay.context.list(params)
+    first_page_result = await agent_bay_client.context.list(params)
 
     if first_page_result.next_token:
         # Get second page using NextToken
@@ -117,7 +103,7 @@ async def test_context_pagination_second_page(setup_contexts):
         params.max_results = 5
         params.next_token = first_page_result.next_token
 
-        second_page_result = await agent_bay.context.list(params)
+        second_page_result = await agent_bay_client.context.list(params)
 
         assert second_page_result.success, "List contexts second page should be successful"
 
@@ -130,14 +116,16 @@ async def test_context_pagination_second_page(setup_contexts):
     else:
         print("No NextToken available for second page test")
 
+
 @pytest.mark.asyncio
 async def test_context_pagination_large_page_size(setup_contexts):
     """Test 4: List contexts with larger page size"""
+    agent_bay_client = setup_contexts
     print("Test 4: Listing contexts with larger page size (20 per page)")
     params = ContextListParams()
     params.max_results = 20
 
-    list_result = await agent_bay.context.list(params)
+    list_result = await agent_bay_client.context.list(params)
 
     assert list_result.success, "List contexts should be successful"
     # Should get all contexts (up to 15) since we only created 15
@@ -150,11 +138,13 @@ async def test_context_pagination_large_page_size(setup_contexts):
         f"NextToken: {list_result.next_token}, MaxResults: {list_result.max_results}, TotalCount: {list_result.total_count}"
     )
 
+
 @pytest.mark.asyncio
 async def test_context_pagination_nil_params(setup_contexts):
     """Test 5: Test with empty parameters (should use defaults)"""
+    agent_bay_client = setup_contexts
     print("Test 5: Listing contexts with nil parameters (should use defaults)")
-    list_result = await agent_bay.context.list(None)
+    list_result = await agent_bay_client.context.list(None)
 
     assert list_result.success, "List contexts should be successful"
     # Note: We're not checking for a specific number of contexts since the API behavior

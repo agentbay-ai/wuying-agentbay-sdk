@@ -1,30 +1,18 @@
 # ci-stable
 """Integration test for GetSession API"""
 
-import os
-
 import pytest
-
-from agentbay import AsyncAgentBay
 
 
 @pytest.mark.asyncio
-async def test_get_session_api():
+async def test_get_session_api(agent_bay_client):
     """
     Integration test for GetSession API.
     Tests that the API correctly retrieves session information.
     """
-    # Get API Key from environment
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.fail("AGENTBAY_API_KEY environment variable is not set")
-
-    # Initialize AgentBay client
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
     # Create a session first
     print("Creating a new session for GetSession testing...")
-    create_result = await agent_bay.create()
+    create_result = await agent_bay_client.create()
     assert (
         create_result.success
     ), f"Failed to create session: {create_result.error_message}"
@@ -35,7 +23,7 @@ async def test_get_session_api():
     try:
         # Test GetSession API
         print("Testing GetSession API...")
-        get_session_result = await agent_bay._get_session(session_id)
+        get_session_result = await agent_bay_client._get_session(session_id)
 
         # Validate response
         assert get_session_result.request_id, "RequestID should not be empty"
@@ -84,7 +72,7 @@ async def test_get_session_api():
 
         # Test get() method which should populate session fields from GetSession
         print("\nTesting AsyncAgentBay.get() method...")
-        get_result = await agent_bay.get(session_id)
+        get_result = await agent_bay_client.get(session_id)
         assert get_result.success, f"get() should succeed: {get_result.error_message}"
         assert get_result.request_id, "get() should return request_id"
         print(f"get() RequestID: {get_result.request_id}")
@@ -106,13 +94,10 @@ async def test_get_session_api():
     finally:
         # Clean up: Delete the session
         print("Cleaning up: Deleting the session...")
-        delete_result = await session.delete()
+        delete_result = await agent_bay_client.delete(session)
         if delete_result.success:
             print(f"Session {session_id} deleted successfully")
         else:
             print(f"Warning: Failed to delete session: {delete_result.error_message}")
 
 
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(test_get_session_api())

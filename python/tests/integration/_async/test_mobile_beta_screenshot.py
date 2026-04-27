@@ -5,13 +5,11 @@ These tests use real backend resources (no mocks).
 """
 
 import asyncio
-import os
 
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay, CreateSessionParams
-from agentbay import AgentBayError
+from agentbay import CreateSessionParams
 
 
 async def _set_low_android_resolution(session) -> None:
@@ -34,27 +32,15 @@ async def _prepare_for_screenshot_tests(session) -> None:
     await asyncio.sleep(2)
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
 @pytest_asyncio.fixture
-async def session(agent_bay):
+async def session(make_session):
     params = CreateSessionParams(image_id="mobile-use-android-12-gw")
-    result = await agent_bay.create(params)
-    if "no authorized app" in result.error_message and not result.success:
-        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
-    assert result.success, f"Failed to create session: {result.error_message}"
-    assert result.session is not None
+    lc = await make_session(params=params)
+    session = lc._result.session
     # Force API-based MCP tool calls (no LinkUrl direct calls) for test stability.
     # Some environments cannot reach the sandbox LinkUrl network path from CI/dev machines.
-    result.session.mcpTools = []
-    yield result.session
-    await result.session.delete()
+    session.mcpTools = []
+    return session
 
 
 @pytest.mark.asyncio

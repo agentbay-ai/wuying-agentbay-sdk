@@ -7,34 +7,15 @@ import os
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay
-from agentbay import CreateSessionParams
 from agentbay._common.models.filesystem import BinaryFileContentResult
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
 @pytest_asyncio.fixture
-async def test_session(agent_bay):
+async def test_session(make_session):
     """Create a session for binary file testing."""
     print("Creating a new session for binary file testing...")
-    params = CreateSessionParams(image_id="linux_latest")
-    result = await agent_bay.create(params)
-    if not result.success:
-        error_msg = getattr(result, 'error_message', 'Unknown error')
-        request_id = getattr(result, 'request_id', 'N/A')
-        print(f"Failed to create session:")
-        print(f"  Error message: {error_msg}")
-        print(f"  Request ID: {request_id}")
-        pytest.fail(f"Session creation failed: {error_msg} (Request ID: {request_id})")
-    assert result.session is not None, "Session object is None"
-    session = result.session
+    lc = await make_session("linux_latest")
+    session = lc._result.session
     print(f"Session created successfully: {session.session_id}")
     
     # Get and print resource URL for accessing mobile page
@@ -54,15 +35,7 @@ async def test_session(agent_bay):
         except Exception as e:
             print(f"Warning: Failed to get resource URL via info(): {e}")
     
-    yield session
-    
-    # Clean up
-    print("Cleaning up: Deleting the session...")
-    try:
-        await session.delete()
-        print(f"Session deleted: {session.session_id}")
-    except Exception as e:
-        print(f"Warning: Failed to delete session: {e}")
+    return session
 
 
 @pytest.mark.asyncio

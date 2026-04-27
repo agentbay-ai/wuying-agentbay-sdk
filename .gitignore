@@ -28,6 +28,16 @@ MANIFEST
 venv/
 .venv/
 env/
+!python/agentbay/_async/env/
+!python/agentbay/_sync/env/
+!typescript/src/env/
+!golang/pkg/agentbay/env/
+!java/agentbay/src/main/java/com/aliyun/agentbay/env/
+!java/agentbay/src/integration-test/java/com/aliyun/agentbay/env/
+!python/docs/examples/**/env_management/
+!golang/docs/examples/**/env_management/
+!java/docs/examples/**/env_management/
+!typescript/docs/examples/**/env-management/
 .env/
 venv_*/
 !venv_bailian_test/
@@ -70,6 +80,7 @@ vendor/
 *.mod
 *.sum
 golang/.cache/
+golang/.gomodcache/
 # Golang compiled binaries
 start_app
 */start_app

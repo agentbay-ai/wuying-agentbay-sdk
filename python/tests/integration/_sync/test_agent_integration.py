@@ -7,7 +7,6 @@ import time
 import os
 
 import pytest
-import pytest
 
 from agentbay import AgentBay
 from agentbay import get_logger

@@ -1,173 +1,127 @@
 # ci-stable
-import os
-import sys
-import typing
-from unittest import result
+"""Integration tests for session info and get_link APIs."""
+
 import pytest
 
-from agentbay import AsyncAgentBay
-from agentbay import SessionError
 from agentbay import CreateSessionParams
+from agentbay import SessionError
 from agentbay import AsyncSession
-
-# Add the parent directory to the path so we can import the agentbay package
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import typing
 
 
-def get_test_api_key():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        api_key = "akm-xxx"  # Replace with your test API key
-        print(
-            "Warning: Using default API key. Set AGENTBAY_API_KEY environment variable for testing."
-        )
-    return api_key
-
-
-@pytest.fixture(scope="class")
-async def session_fixture():
-    """Create a session for the test class and clean up after."""
-    api_key = get_test_api_key()
-    agent_bay = AsyncAgentBay(api_key=api_key)
-    print("Creating a new session for info/link testing...")
-    # Use browser_latest image for get_link compatibility
+@pytest.mark.asyncio
+async def test_info(make_session):
+    """Test session.info() returns expected fields."""
     params = CreateSessionParams(image_id="browser_latest")
-    result = await agent_bay.create(params=params)
-    session = getattr(result, "session", None)
-    print(f"Session created with ID: {getattr(session, 'session_id', None)}")
-    print(f"Request ID: {getattr(result, 'request_id', None)}")
-    
-    yield session
-    
-    print("Cleaning up: Deleting the session...")
-    try:
-        if session is not None:
-            result = await agent_bay.delete(session)
-            print(
-                f"Session deleted. Success: {getattr(result, 'success', None)}, Request ID: {getattr(result, 'request_id', None)}"
-            )
-        else:
-            print("No session to delete.")
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    lc = await make_session(params=params)
+    session: AsyncSession = typing.cast(AsyncSession, lc._result.session)
+
+    print("Calling session.info()...")
+    result = await session.info()
+    assert result.success, "session.info() did not succeed"
+    info = result.data
+    print(f"SessionInfo: {info.__dict__}")
+    assert hasattr(info, "session_id")
+    assert info.session_id
+    assert hasattr(info, "resource_url")
+    assert info.resource_url
+    assert hasattr(info, "ticket")
+    # ticket may be empty depending on backend, but should exist
+    assert hasattr(info, "app_id")
+    assert hasattr(info, "auth_code")
+    assert hasattr(info, "connection_properties")
+    assert hasattr(info, "resource_id")
+    assert hasattr(info, "resource_type")
 
 
-class TestSessionInfoAndLink:
-    """Integration test for session info and get_link APIs."""
+@pytest.mark.asyncio
+async def test_get_link(make_session):
+    """Test session.get_link() returns a valid URL."""
+    params = CreateSessionParams(image_id="browser_latest")
+    lc = await make_session(params=params)
+    session: AsyncSession = typing.cast(AsyncSession, lc._result.session)
 
-    @pytest.mark.asyncio
-    async def test_info(self, session_fixture):
-        """Test session.info() returns expected fields."""
-        assert session_fixture is not None, "Session was not created successfully."
-        session: AsyncSession = typing.cast(AsyncSession, session_fixture)
-        print("Calling session.info()...")
-        result = await session.info()
-        assert result.success, "session.info() did not succeed"
-        info = result.data
-        print(f"SessionInfo: {info.__dict__}")
-        assert hasattr(info, "session_id")
-        assert info.session_id
-        assert hasattr(info, "resource_url")
-        assert info.resource_url
-        assert hasattr(info, "ticket")
-        # ticket may be empty depending on backend, but should exist
-        assert hasattr(info, "app_id")
-        assert hasattr(info, "auth_code")
-        assert hasattr(info, "connection_properties")
-        assert hasattr(info, "resource_id")
-        assert hasattr(info, "resource_type")
+    print("Calling session.get_link()...")
+    result = await session.get_link()
+    assert result.success, "session.get_link() did not succeed"
+    url = result.data
+    print(f"Session link URL: {url}")
+    assert isinstance(url, str)
+    assert (
+        url.startswith("http") or url.startswith("wss") or url.startswith("ws")
+    ), "Returned link does not look like a URL"
 
-    @pytest.mark.asyncio
-    async def test_get_link(self, session_fixture):
-        """Test session.get_link() returns a valid URL."""
-        assert session_fixture is not None, "Session was not created successfully."
-        session: AsyncSession = typing.cast(AsyncSession, session_fixture)
-        print("Calling session.get_link()...")
-        result = await session.get_link()
-        assert result.success, "session.get_link() did not succeed"
+
+@pytest.mark.asyncio
+async def test_get_link_with_valid_port(make_session):
+    """Test session.get_link() with valid port returns a valid URL."""
+    params = CreateSessionParams(image_id="browser_latest")
+    lc = await make_session(params=params)
+    session: AsyncSession = typing.cast(AsyncSession, lc._result.session)
+
+    print("Calling session.get_link()...")
+    result = await session.get_link()
+    assert result.success, "session.get_link() did not succeed"
+    url = result.data
+    print(f"Session link URL: {url}")
+    assert isinstance(url, str)
+    assert (
+        url.startswith("http") or url.startswith("wss") or url.startswith("ws")
+    ), "Returned link does not look like a URL"
+
+    # Test with port in valid range [30100, 30199]
+    valid_ports = [30100, 30150, 30199]
+    for port in valid_ports:
+        print(f"Calling session.get_link() with port {port}...")
+        result = await session.get_link(port=port)
+        assert result.success, f"session.get_link(port={port}) did not succeed"
         url = result.data
-        print(f"Session link URL: {url}")
+        print(f"Session link URL with port {port}: {url}")
         assert isinstance(url, str)
         assert (
-            url.startswith("http") or url.startswith("wss") or url.startswith("ws")
-        ), "Returned link does not look like a URL"
+            url.startswith("http")
+            or url.startswith("wss")
+            or url.startswith("ws")
+        ), f"Returned link with port {port} does not look like a URL"
 
-    @pytest.mark.asyncio
-    async def test_get_link_with_valid_port(self, session_fixture):
-        """Test session.get_link() with valid port returns a valid URL."""
-        assert session_fixture is not None, "Session was not created successfully."
-        session: AsyncSession = typing.cast(AsyncSession, session_fixture)
-        print("Calling session.get_link()...")
-        result = await session.get_link()
-        assert result.success, "session.get_link() did not succeed"
-        url = result.data
-        print(f"Session link URL: {url}")
-        assert isinstance(url, str)
-        assert (
-            url.startswith("http") or url.startswith("wss") or url.startswith("ws")
-        ), "Returned link does not look like a URL"
 
-        # Test with port in valid range [30100, 30199]
-        valid_ports = [30100, 30150, 30199]
+@pytest.mark.asyncio
+async def test_get_link_with_invalid_port_below_range(make_session):
+    """Test session.get_link() with port below valid range raises SessionError."""
+    params = CreateSessionParams(image_id="browser_latest")
+    lc = await make_session(params=params)
+    session: AsyncSession = typing.cast(AsyncSession, lc._result.session)
 
-        for port in valid_ports:
-            print(f"Calling session.get_link() with port {port}...")
-            result = await session.get_link(port=port)
-            assert result.success, f"session.get_link(port={port}) did not succeed"
-            url = result.data
-            print(f"Session link URL with port {port}: {url}")
-            assert isinstance(url, str)
-            assert (
-                url.startswith("http")
-                or url.startswith("wss")
-                or url.startswith("ws")
-            ), f"Returned link with port {port} does not look like a URL"
+    invalid_port = 30099
+    print(f"Calling session.get_link() with invalid port {invalid_port}...")
+    with pytest.raises(SessionError):
+        await session.get_link(port=invalid_port)
+    print(f"Expected SessionError raised for port {invalid_port}")
 
-    @pytest.mark.asyncio
-    async def test_get_link_with_invalid_port_below_range(self, session_fixture):
-        """Test session.get_link() with port below valid range raises SessionError."""
-        assert session_fixture is not None, "Session was not created successfully."
-        session: AsyncSession = typing.cast(AsyncSession, session_fixture)
 
-        # Test with port below valid range
-        invalid_port = 30099
-        print(f"Calling session.get_link() with invalid port {invalid_port}...")
-        with pytest.raises(SessionError) as exc_info:
-            result = await session.get_link(port=invalid_port)
-            assert not result.success
-            error_message = str(exc_info.value)
-            assert error_message
-            print(f"Expected SessionError raised: {error_message}")
+@pytest.mark.asyncio
+async def test_get_link_with_invalid_port_above_range(make_session):
+    """Test session.get_link() with port above valid range raises SessionError."""
+    params = CreateSessionParams(image_id="browser_latest")
+    lc = await make_session(params=params)
+    session: AsyncSession = typing.cast(AsyncSession, lc._result.session)
 
-    @pytest.mark.asyncio
-    async def test_get_link_with_invalid_port_above_range(self, session_fixture):
-        """Test session.get_link() with port above valid range raises SessionError."""
-        assert session_fixture is not None, "Session was not created successfully."
-        session: AsyncSession = typing.cast(AsyncSession, session_fixture)
+    invalid_port = 30200
+    print(f"Calling session.get_link() with invalid port {invalid_port}...")
+    with pytest.raises(SessionError):
+        await session.get_link(port=invalid_port)
+    print(f"Expected SessionError raised for port {invalid_port}")
 
-        # Test with port above valid range
-        invalid_port = 30200
-        print(f"Calling session.get_link() with invalid port {invalid_port}...")
 
-        with pytest.raises(SessionError) as exc_info:
-            result = await session.get_link(port=invalid_port)
-            assert not result.success
-            error_message = str(exc_info.value)
-            assert error_message
-            print(f"Expected SessionError raised: {error_message}")
+@pytest.mark.asyncio
+async def test_get_link_with_invalid_port_non_integer(make_session):
+    """Test session.get_link() with non-integer port raises SessionError."""
+    params = CreateSessionParams(image_id="browser_latest")
+    lc = await make_session(params=params)
+    session: AsyncSession = typing.cast(AsyncSession, lc._result.session)
 
-    @pytest.mark.asyncio
-    async def test_get_link_with_invalid_port_non_integer(self, session_fixture):
-        """Test session.get_link() with non-integer port raises SessionError."""
-        assert session_fixture is not None, "Session was not created successfully."
-        session: AsyncSession = typing.cast(AsyncSession, session_fixture)
-
-        # Test with non-integer port
-        invalid_port = 30150.5
-        print(f"Calling session.get_link() with non-integer port {invalid_port}...")
-        with pytest.raises(SessionError) as exc_info:
-            result = await session.get_link(port=invalid_port)
-            assert not result.success
-            error_message = str(exc_info.value)
-            assert error_message
-            print(f"Expected SessionError raised: {error_message}")
+    invalid_port = 30150.5
+    print(f"Calling session.get_link() with non-integer port {invalid_port}...")
+    with pytest.raises(SessionError):
+        await session.get_link(port=invalid_port)
+    print(f"Expected SessionError raised for port {invalid_port}")

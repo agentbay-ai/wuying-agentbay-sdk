@@ -943,6 +943,41 @@ if sync_result.success:
 agent_bay.delete(session, sync_context=True)
 ```
 
+#### Hybrid Storage with Archive Exclude Paths
+
+When using Archive mode, you may have files that need to be individually accessible via Presigned URLs (e.g., for direct download or preview). The `archiveExcludePaths` option lets you exclude specific paths from the archive — these files are uploaded individually in FILE mode while the rest are bundled into an archive.
+
+**Use cases:**
+- Configuration files that agents need to read directly
+- Output files that users need to download via URL
+- Log files that monitoring systems need to access in real-time
+
+**Performance impact:** Minimal — excluded files are uploaded in parallel with the archive, and the archive is smaller. The upload/download speedup of Archive mode is preserved for the bulk of files.
+
+```python
+from agentbay import UploadPolicy, UploadMode, SyncPolicy, ContextSync
+
+# Configure Archive mode with specific paths excluded from archiving
+upload_policy = UploadPolicy(
+    upload_mode=UploadMode.ARCHIVE,
+    archive_exclude_paths=["output/", "config.json", "logs/"]
+)
+sync_policy = SyncPolicy(upload_policy=upload_policy)
+
+context_sync = ContextSync(
+    context_id=context.id,
+    path="/tmp/workspace",
+    policy=sync_policy
+)
+```
+
+**Path matching rules:**
+- Each entry is a **relative path prefix** (relative to the sync path)
+- No wildcards — use exact directory or file prefixes
+- Directory prefixes should end with `/` (e.g., `output/`)
+- Files matching any prefix are uploaded as individual files in FILE mode
+- All other files are compressed into the archive
+
 ####  Data Lifecycle Management (RecyclePolicy)
 
 `RecyclePolicy` controls how long your context data is retained in the cloud before automatic cleanup. This is useful for managing storage costs and automatically removing temporary data.

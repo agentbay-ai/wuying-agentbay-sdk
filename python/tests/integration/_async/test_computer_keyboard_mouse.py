@@ -1,37 +1,21 @@
 """Integration tests for Computer keyboard and mouse operations functionality."""
 # ci-stable
 
-import os
-
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import CreateSessionParams
 from agentbay import MouseButton
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    """Create AsyncAgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
+@pytest.fixture
+async def session(make_session):
+    """Create a session with windows_latest image.
 
-
-@pytest_asyncio.fixture
-async def session(agent_bay):
-    """Create a session with windows_latest image."""
-    print("\nCreating session for computer keyboard/mouse testing...")
-    session_param = CreateSessionParams(image_id="linux_latest")
-    result = await agent_bay.create(session_param)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-    yield session
-    print("\nCleaning up: Deleting the session...")
-    await session.delete()
+    Note: Computer module requires a desktop environment.
+    Uses windows_latest (computer use image with Windows desktop).
+    """
+    lc = await make_session(params=CreateSessionParams(image_id="windows_latest"))
+    return lc._result.session
 
 
 @pytest.mark.asyncio

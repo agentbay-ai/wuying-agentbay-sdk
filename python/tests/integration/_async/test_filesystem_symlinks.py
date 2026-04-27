@@ -2,28 +2,14 @@
 ci-stable
 """
 
-import os
-
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
 
 @pytest_asyncio.fixture
-async def test_session(agent_bay):
-    result = await agent_bay.create()
-    assert result.success
-    yield result.session
-    await result.session.delete()
+async def test_session(make_session):
+    lc = await make_session("linux_latest")
+    return lc._result.session
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,6 @@
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.18.0",
+    "version": "0.19.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",

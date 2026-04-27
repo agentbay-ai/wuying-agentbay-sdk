@@ -4,31 +4,16 @@
 """Integration tests for command environment variables and advanced features (cwd, envs, new return format)."""
 # ci-stable
 
-import os
-
-import pytest
 import pytest
 
-from agentbay import AgentBay
 from agentbay import CreateSessionParams
 
 
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
 @pytest.fixture
-def test_session(agent_bay):
+def test_session(make_session):
     """Create a test session."""
-    result = agent_bay.create(CreateSessionParams(image_id="linux_latest"))
-    if not result.success:
-        pytest.skip(f"Failed to create session: {result.error_message}")
-    yield result.session
-    result.session.delete()
+    lc = make_session(params=CreateSessionParams(image_id="linux_latest"))
+    return lc._result.session
 
 
 @pytest.mark.sync
@@ -172,7 +157,7 @@ def test_command_custom_timeout(test_session):
 @pytest.mark.sync
 def test_command_cwd_with_spaces(test_session):
     """Test command execution with cwd containing spaces (security test for parameter passing)."""
-    cmd = test_session.command    
+    cmd = test_session.command
     # Create a directory with spaces in the path
     test_dir = "/tmp/test dir with spaces"
 
@@ -215,7 +200,6 @@ def test_command_envs_with_special_characters(test_session):
     )
     assert result.success, "Command should succeed with env containing single quotes"
     assert result.exit_code == 0, "Exit code should be 0"
-    # The value should be properly escaped and passed
     output = result.stdout.strip()
     if "value with" in output and "single quotes" in output:
         print(f"✓ Envs with single quotes test passed: {output}")
@@ -308,4 +292,3 @@ def test_command_cwd_and_envs_with_special_chars(test_session):
 
     # Cleanup
     cmd.execute_command(f"rm -rf '{test_dir}'")
-

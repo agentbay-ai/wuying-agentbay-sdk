@@ -257,9 +257,7 @@ print(x)
 
           // Just check that we got a content array back
           expect(executeResponse.output).toBeDefined();
-          expect(executeResponse.output.includes("not found")).toBe(
-            true
-          );
+          expect(executeResponse.output.includes("not found")).toBe(true);
 
           // For invalid commands, the output may contain error information, which is fine
         } catch (error) {

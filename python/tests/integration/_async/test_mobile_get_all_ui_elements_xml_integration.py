@@ -1,45 +1,19 @@
 """Integration test for get_all_ui_elements XML format (no mocks)."""
 
-import os
-import asyncio
-
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay, CreateSessionParams
+from agentbay import CreateSessionParams
 
 
 IMAGE_ID = "mobile-use-android-12-gw"
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
 @pytest_asyncio.fixture
-async def session(agent_bay):
-    last_error = ""
-    for attempt in range(3):
-        result = await agent_bay.create(CreateSessionParams(image_id=IMAGE_ID))
-        if not result.success and "no authorized app" in result.error_message:
-            pytest.skip(f"The user has no authorized app instance: {result.error_message}")
-        if result.success and result.session:
-            s = result.session
-            try:
-                yield s
-            finally:
-                await s.delete()
-            return
-
-        last_error = result.error_message or "unknown error"
-        if attempt < 2:
-            await asyncio.sleep(2 + attempt * 2)
-
-    pytest.fail(f"Failed to create session after retries: {last_error}")
+async def session(make_session):
+    params = CreateSessionParams(image_id=IMAGE_ID)
+    lc = await make_session(params=params)
+    return lc._result.session
 
 
 @pytest.mark.asyncio

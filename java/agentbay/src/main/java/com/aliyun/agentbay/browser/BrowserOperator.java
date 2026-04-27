@@ -222,6 +222,19 @@ public class BrowserOperator extends BaseService {
     }
 
     /**
+     * Perform an action on a web page without explicit Playwright Page.
+     * This overload allows using the agent independently of Playwright.
+     * Uses the default context (index 0) and currently focused page.
+     *
+     * @param actionInput The action to perform (either ActOptions or ObserveResult)
+     * @return The result of the action
+     * @throws BrowserException if browser is not initialized
+     */
+    public ActResult act(Object actionInput) throws BrowserException {
+        return act(null, actionInput);
+    }
+
+    /**
      * Perform an action on the page asynchronously - matches Python act_async method
      * Uses asynchronous execution with task polling for long-running operations
      *
@@ -259,9 +272,44 @@ public class BrowserOperator extends BaseService {
     }
 
     /**
-     * Execute act with task polling mechanism - matches Python _execute_act.
-     * Uses synchronous page_use_act tool.
-     * 
+     * Build common act arguments from actionInput.
+     */
+    private Map<String, Object> buildActArgs(Object actionInput, int contextId, String pageId) throws BrowserException {
+        Map<String, Object> args = new HashMap<>();
+        args.put("context_id", contextId);
+        if (pageId != null) args.put("page_id", pageId);
+
+        if (actionInput instanceof ActOptions) {
+            ActOptions options = (ActOptions) actionInput;
+            args.put("action", options.getAction());
+            if (options.getVariables() != null) args.put("variables", options.getVariables());
+            if (options.getTimeout() != null) args.put("timeout", options.getTimeout());
+            if (options.getUseVision() != null) args.put("use_vision", options.getUseVision());
+        } else if (actionInput instanceof ObserveResult) {
+            ObserveResult result = (ObserveResult) actionInput;
+            try {
+                Map<String, Object> actionDict = new HashMap<>();
+                actionDict.put("method", result.getMethod());
+                actionDict.put("arguments", result.getArguments());
+                args.put("action", objectMapper.writeValueAsString(actionDict));
+            } catch (Exception e) {
+                throw new BrowserException("Failed to serialize action: " + e.getMessage());
+            }
+        }
+        args.values().removeIf(java.util.Objects::isNull);
+        return args;
+    }
+
+    private String getActTaskName(Object actionInput) {
+        if (actionInput instanceof ActOptions) {
+            return ((ActOptions) actionInput).getAction();
+        } else if (actionInput instanceof ObserveResult) {
+            return ((ObserveResult) actionInput).getMethod();
+        }
+        return "act";
+    }
+
+    /**
      * @param actionInput Either ActOptions or ObserveResult
      * @param contextId Browser context ID
      * @param pageId Page ID
@@ -269,12 +317,34 @@ public class BrowserOperator extends BaseService {
      * @throws BrowserException if the action fails
      */
     private ActResult executeAct(Object actionInput, int contextId, String pageId) throws BrowserException {
-        return executeActInternal(actionInput, contextId, pageId, false);
+        Map<String, Object> args = buildActArgs(actionInput, contextId, pageId);
+        String taskName = getActTaskName(actionInput);
+
+        OperationResult response = callMcpToolTimeout("page_use_act", args);
+        if (!response.isSuccess()) {
+            throw new BrowserException("Act failed: " + response.getErrorMessage());
+        }
+
+        try {
+            // page_use_act returns steps directly (JSON array) or error object (JSON map)
+            // parseJsonResponse wraps arrays as {steps: [...], is_done: true, success: true}
+            Map<String, Object> responseData = parseJsonResponse(response.getData());
+            Object steps = responseData.get("steps");
+            boolean success = Boolean.TRUE.equals(responseData.get("success"));
+            String taskStatus;
+            if (steps != null) {
+                taskStatus = steps instanceof String ? (String) steps : objectMapper.writeValueAsString(steps);
+            } else {
+                taskStatus = "No actions have been executed.";
+            }
+            return new ActResult(success, taskStatus, taskName);
+        } catch (Exception e) {
+            throw new BrowserException("Failed to parse act response: " + e.getMessage());
+        }
     }
 
     /**
-     * Execute act with async task mechanism - matches Python _execute_act_async
-     * Uses asynchronous page_use_act_async tool for long-running tasks
+     * Returns the result synchronously to the caller (simulated sync via polling).
      *
      * @param actionInput Either ActOptions or ObserveResult
      * @param contextId Browser context ID
@@ -283,84 +353,38 @@ public class BrowserOperator extends BaseService {
      * @throws BrowserException if the action fails
      */
     private ActResult executeActAsync(Object actionInput, int contextId, String pageId) throws BrowserException {
-        return executeActInternal(actionInput, contextId, pageId, true);
-    }
+        Map<String, Object> args = buildActArgs(actionInput, contextId, pageId);
+        String taskName = getActTaskName(actionInput);
 
-    /**
-     * Internal method to execute act with either sync or async tool.
-     * 
-     * @param actionInput Either ActOptions or ObserveResult
-     * @param contextId Browser context ID
-     * @param pageId Page ID
-     * @param useAsync Whether to use async execution
-     * @return ActResult containing success status and execution details
-     * @throws BrowserException if the action fails
-     */
-    private ActResult executeActInternal(Object actionInput, int contextId, String pageId, boolean useAsync) throws BrowserException {
-        Map<String, Object> args = new HashMap<>();
-        args.put("context_id", contextId);
-        if (pageId != null) args.put("page_id", pageId);
-
-        String taskName = "act";
-        if (actionInput instanceof ActOptions) {
-            ActOptions options = (ActOptions) actionInput;
-            args.put("action", options.getAction());
-            if (options.getVariables() != null) args.put("variables", options.getVariables());
-            if (options.getTimeout() != null) args.put("timeout", options.getTimeout());
-            if (options.getUseVision() != null) args.put("use_vision", options.getUseVision());
-            taskName = options.getAction();
-        } else if (actionInput instanceof ObserveResult) {
-            ObserveResult result = (ObserveResult) actionInput;
-            try {
-                Map<String, Object> actionDict = new HashMap<>();
-                actionDict.put("method", result.getMethod());
-                actionDict.put("arguments", result.getArguments());
-                args.put("action", objectMapper.writeValueAsString(actionDict));
-                taskName = result.getMethod();
-            } catch (Exception e) {
-                throw new BrowserException("Failed to serialize action: " + e.getMessage());
-            }
-        }
-
-        // Remove null values
-        args.values().removeIf(java.util.Objects::isNull);
-        String toolName = useAsync ? "page_use_act_async" : "page_use_act";
-        OperationResult response = callMcpToolTimeout(toolName, args);
+        System.out.println("actAsync: " + taskName);
+        OperationResult response = callMcpToolTimeout("page_use_act_async", args);
         if (!response.isSuccess()) {
             throw new BrowserException("Failed to start act task: " + response.getErrorMessage());
         }
 
-        // Parse task_id from response
         try {
             Map<String, Object> responseData = parseJsonResponse(response.getData());
             String taskId = (String) responseData.get("task_id");
-
             if (taskId == null) {
-                // Task completed immediately
-                if (responseData.containsKey("steps") || responseData.containsKey("is_done")) {
-                    Object steps = responseData.get("steps");
-                    boolean success = Boolean.TRUE.equals(responseData.get("success"));
-                    String taskStatus = steps instanceof String ? (String) steps : objectMapper.writeValueAsString(steps);
-                    return new ActResult(success, taskStatus, taskName);
-                }
-                throw new BrowserException("No task_id in response: " + responseData);
+                throw new BrowserException("No task_id in async act response: " + responseData);
             }
 
-            // Task polling loop
-            int maxRetries = 30;
-            while (maxRetries > 0) {
-                Thread.sleep(3000); // 3 seconds
+            int timeoutSec = 300;
+            if (actionInput instanceof ActOptions) {
+                Integer t = ((ActOptions) actionInput).getTimeout();
+                if (t != null) timeoutSec = t;
+            }
+            long startTs = System.currentTimeMillis();
+
+            while (true) {
+                Thread.sleep(3000);
 
                 Map<String, Object> params = new HashMap<>();
                 params.put("task_id", taskId);
                 OperationResult result = callMcpToolTimeout("page_use_get_act_result", params);
 
-                if (result.isSuccess() && result.getData() != null) {
+                if (result.isSuccess() && result.getData() != null && !result.getData().isEmpty()) {
                     Map<String, Object> data = parseJsonResponse(result.getData());
-                    if (!(data instanceof Map)) {
-                        maxRetries--;
-                        continue;
-                    }
 
                     Object steps = data.get("steps");
                     boolean isDone = Boolean.TRUE.equals(data.get("is_done"));
@@ -374,17 +398,24 @@ public class BrowserOperator extends BaseService {
                         } else {
                             taskStatus = noActionMsg;
                         }
+                        System.out.println("Task " + taskId + ":" + taskName + " is done. Success: " + success + ". " + taskStatus);
                         return new ActResult(success, taskStatus, taskName);
                     }
 
-                    String taskStatus = steps != null ? "steps done. Details: " + steps : noActionMsg;
+                    String taskStatus = steps != null ? steps.toString() : noActionMsg;
+                    System.out.println("Task " + taskId + ":" + taskName + " in progress. " + taskStatus);
                 }
-                maxRetries--;
+
+                long elapsed = (System.currentTimeMillis() - startTs) / 1000;
+                if (elapsed >= timeoutSec) {
+                    throw new BrowserException("Task " + taskId + ":" + taskName + " Act timeout after " + timeoutSec + "s");
+                }
             }
-            throw new BrowserException("Task " + taskId + ":" + taskName + " Act timed out");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BrowserException("Act task interrupted: " + e.getMessage());
+        } catch (BrowserException e) {
+            throw e;
         } catch (Exception e) {
             throw new BrowserException("Failed to parse act response: " + e.getMessage());
         }
@@ -402,7 +433,17 @@ public class BrowserOperator extends BaseService {
         if (data == null || data.isEmpty()) {
             return new HashMap<>();
         }
-        return objectMapper.readValue(data, new TypeReference<Map<String, Object>>(){});
+        String trimmed = data.trim();
+        if (trimmed.startsWith("[")) {
+            // Response is a JSON Array - wrap it in a Map with "steps" key
+            List<Object> list = objectMapper.readValue(trimmed, new TypeReference<List<Object>>(){});
+            Map<String, Object> result = new HashMap<>();
+            result.put("steps", list);
+            result.put("is_done", true);
+            result.put("success", true);
+            return result;
+        }
+        return objectMapper.readValue(trimmed, new TypeReference<Map<String, Object>>(){});
     }
 
     /**
@@ -431,6 +472,19 @@ public class BrowserOperator extends BaseService {
         } catch (Exception e) {
             return new ObserveResultTuple(false, new ArrayList<>());
         }
+    }
+
+    /**
+     * Observe elements or state on a web page without explicit Playwright Page.
+     * This overload allows using the agent independently of Playwright.
+     * Uses the default context (index 0) and currently focused page.
+     *
+     * @param options Options to configure the observation behavior
+     * @return ObserveResultTuple containing success status and list of observation results
+     * @throws BrowserException if browser is not initialized or observation fails
+     */
+    public ObserveResultTuple observe(ObserveOptions options) throws BrowserException {
+        return observe(null, options);
     }
 
     private ObserveResultTuple parseObserveResult(OperationResult result) {
@@ -509,6 +563,20 @@ public class BrowserOperator extends BaseService {
     }
 
     /**
+     * Extract structured data from the page without explicit Playwright Page.
+     * This overload allows using the agent independently of Playwright.
+     * Uses the default context (index 0) and currently focused page.
+     *
+     * @param options ExtractOptions containing instruction, schema, and extraction parameters
+     * @param <T> The type of data to extract (must match the schema class)
+     * @return ExtractResultTuple containing success status and extracted data of type T
+     * @throws BrowserException if browser is not initialized or extraction fails
+     */
+    public <T> ExtractResultTuple<T> extract(ExtractOptions<T> options) throws BrowserException {
+        return extract(null, options);
+    }
+
+    /**
      * Extract structured data from the page asynchronously - matches Python extract_async method
      * Uses asynchronous execution with task polling for complex extraction operations
      *
@@ -548,9 +616,9 @@ public class BrowserOperator extends BaseService {
     }
 
     /**
-     * Execute extract with task polling mechanism - matches Python _execute_extract.
-     * Uses synchronous page_use_extract tool.
-     * 
+     * Execute extract synchronously - calls page_use_extract which waits for completion
+     * on the server side and returns the result directly. No client-side polling needed.
+     *
      * @param options ExtractOptions containing instruction and schema
      * @param contextId Browser context ID
      * @param pageId Page ID
@@ -559,45 +627,46 @@ public class BrowserOperator extends BaseService {
      * @throws BrowserException if extraction fails
      */
     private <T> ExtractResultTuple<T> executeExtract(ExtractOptions<T> options, int contextId, String pageId) throws BrowserException {
-        return executeExtractInternal(options, contextId, pageId, false);
-    }
-
-    /**
-     * Execute extract with async task mechanism - matches Python _execute_extract_async
-     * Uses asynchronous page_use_extract_async tool for complex extraction tasks
-     *
-     * @param options ExtractOptions containing instruction and schema
-     * @param contextId Browser context ID
-     * @param pageId Page ID
-     * @return ExtractResultTuple containing success status and extracted data
-     * @throws BrowserException if extraction fails
-     */
-    private <T> ExtractResultTuple<T> executeExtractAsync(ExtractOptions<T> options, int contextId, String pageId) throws BrowserException {
-        return executeExtractInternal(options, contextId, pageId, true);
-    }
-
-    /**
-     * Internal method to execute extract with either sync or async tool.
-     * 
-     * @param options ExtractOptions containing instruction and schema
-     * @param contextId Browser context ID
-     * @param pageId Page ID
-     * @param useAsync Whether to use async execution
-     * @param <T> The type of data to extract
-     * @return ExtractResultTuple containing success status and extracted data
-     * @throws BrowserException if extraction fails
-     */
-    private <T> ExtractResultTuple<T> executeExtractInternal(ExtractOptions<T> options, int contextId, String pageId, boolean useAsync) throws BrowserException {
         Map<String, Object> args = new HashMap<>();
         args.put("context_id", contextId);
         if (pageId != null) args.put("page_id", pageId);
         args.putAll(options.toMap());
-
-        // Remove null values
         args.values().removeIf(java.util.Objects::isNull);
 
-        String toolName = useAsync ? "page_use_extract_async" : "page_use_extract";
-        OperationResult response = callMcpToolTimeout(toolName, args);
+        OperationResult response = callMcpToolTimeout("page_use_extract", args);
+        if (!response.isSuccess()) {
+            throw new BrowserException("Extract failed: " + response.getErrorMessage());
+        }
+
+        try {
+            // page_use_extract returns the extracted data directly
+            Map<String, Object> responseData = parseJsonResponse(response.getData());
+            T extractedObject = objectMapper.convertValue(responseData, options.getSchema());
+            return new ExtractResultTuple<>(true, extractedObject);
+        } catch (Exception e) {
+            throw new BrowserException("Failed to parse extract response: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Returns the result synchronously to the caller (simulated sync via polling).
+     *
+     * @param options ExtractOptions containing instruction and schema
+     * @param contextId Browser context ID
+     * @param pageId Page ID
+     * @param <T> The type of data to extract
+     * @return ExtractResultTuple containing success status and extracted data
+     * @throws BrowserException if extraction fails
+     */
+    private <T> ExtractResultTuple<T> executeExtractAsync(ExtractOptions<T> options, int contextId, String pageId) throws BrowserException {
+        Map<String, Object> args = new HashMap<>();
+        args.put("context_id", contextId);
+        if (pageId != null) args.put("page_id", pageId);
+        args.putAll(options.toMap());
+        args.values().removeIf(java.util.Objects::isNull);
+
+        System.out.println("extractAsync: " + options.getInstruction());
+        OperationResult response = callMcpToolTimeout("page_use_extract_async", args);
         if (!response.isSuccess()) {
             throw new BrowserException("Failed to start extraction task");
         }
@@ -617,30 +686,66 @@ public class BrowserOperator extends BaseService {
                 }
             }
 
-            // Task polling loop
-            int maxRetries = 20;
-            while (maxRetries > 0) {
-                Thread.sleep(3000); // 3 seconds
+            Integer clientTimeout = options.getTimeout();
+            int timeoutSec = (clientTimeout != null) ? clientTimeout : 300;
+            long startTs = System.currentTimeMillis();
+
+            while (true) {
+                Thread.sleep(3000);
 
                 Map<String, Object> extractParams = new HashMap<>();
                 extractParams.put("task_id", taskId);
                 OperationResult result = callMcpToolTimeout("page_use_get_extract_result", extractParams);
 
-                if (result.isSuccess() && result.getData() != null) {
+                if (result.isSuccess() && result.getData() != null && !result.getData().trim().isEmpty()) {
+                    if (isPendingMcpResponse(result.getData())) {
+                        long elapsed = (System.currentTimeMillis() - startTs) / 1000;
+                        System.out.println("Task " + taskId + ": No extract result yet (elapsed=" + elapsed + "s)");
+                        continue;
+                    }
                     Map<String, Object> extractResult = parseJsonResponse(result.getData());
+                    System.out.println("Task " + taskId + ": Extract completed (result length=" + result.getData().length() + ")");
                     T extractedObject = objectMapper.convertValue(extractResult, options.getSchema());
                     return new ExtractResultTuple<>(true, extractedObject);
                 }
-                maxRetries--;
+
+                long elapsed = (System.currentTimeMillis() - startTs) / 1000;
+                System.out.println("Task " + taskId + ": No extract result yet (elapsed=" + elapsed + "s)");
+                if (elapsed >= timeoutSec) {
+                    throw new BrowserException("Task " + taskId + ": Extract timeout after " + timeoutSec + "s");
+                }
             }
-            throw new BrowserException("Task " + taskId + ": Extract timed out");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BrowserException("Extract task interrupted: " + e.getMessage());
+        } catch (BrowserException e) {
+            throw e;
         } catch (Exception e) {
             throw new BrowserException("Failed to parse extract response: " + e.getMessage());
         }
     }
+
+    /**
+     * Check if a poll response is the "pending" fallback from Session.extractTextContentFromData.
+     * When MCP response has content=[], Session serializes the entire wrapper map as fallback,
+     * returning something like '{"isError":false,"content":[]}'.
+     */
+    private boolean isPendingMcpResponse(String data) {
+        if (data == null || data.isEmpty()) return true;
+        try {
+            Map<String, Object> parsed = parseJsonResponse(data);
+            if (parsed.containsKey("isError") && parsed.containsKey("content")) {
+                Object content = parsed.get("content");
+                if (content instanceof List && ((List<?>) content).isEmpty()) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            // If we can't parse it, it's not a pending response
+        }
+        return false;
+    }
+
 
     /**
      * Tuple class to hold extract operation results.
@@ -709,6 +814,7 @@ public class BrowserOperator extends BaseService {
         args.putAll(options.toMap());
         args.values().removeIf(java.util.Objects::isNull);
 
+        System.out.println("observeAsync: " + options.getInstruction());
         OperationResult response = callMcpToolTimeout("page_use_observe_async", args);
         if (!response.isSuccess()) {
             throw new BrowserException("Failed to start observe task: " + response.getErrorMessage());
@@ -721,21 +827,34 @@ public class BrowserOperator extends BaseService {
                 throw new BrowserException("No task_id in observe response: " + responseData);
             }
 
-            // Task polling loop
-            int maxRetries = 100;
-            while (maxRetries > 0) {
-                Thread.sleep(3000); // 3 seconds
+            int timeoutSec = 300;
+            long startTs = System.currentTimeMillis();
+
+            while (true) {
+                Thread.sleep(3000);
 
                 Map<String, Object> params = new HashMap<>();
                 params.put("task_id", taskId);
                 OperationResult result = callMcpToolTimeout("page_use_get_observe_result", params);
 
-                if (result.isSuccess() && result.getData() != null) {
-                    return parseObserveResult(result);
+                if (result.isSuccess() && result.getData() != null && !result.getData().isEmpty()) {
+                    if (isPendingMcpResponse(result.getData())) {
+                        long elapsed = (System.currentTimeMillis() - startTs) / 1000;
+                        System.out.println("Task " + taskId + ": No observe result yet (elapsed=" + elapsed + "s)");
+                        continue;
+                    }
+                    ObserveResultTuple observeResult = parseObserveResult(result);
+                    System.out.println("Task " + taskId + ": Observe completed (" +
+                            (observeResult.getResults() != null ? observeResult.getResults().size() : 0) + " results)");
+                    return observeResult;
                 }
-                maxRetries--;
+
+                long elapsed = (System.currentTimeMillis() - startTs) / 1000;
+                System.out.println("Task " + taskId + ": No observe result yet (elapsed=" + elapsed + "s)");
+                if (elapsed >= timeoutSec) {
+                    throw new BrowserException("Task " + taskId + ": Observe timeout after " + timeoutSec + "s");
+                }
             }
-            throw new BrowserException("Task " + taskId + ": Observe timed out");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BrowserException("Observe task interrupted: " + e.getMessage());

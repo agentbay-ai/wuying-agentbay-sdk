@@ -6,24 +6,18 @@ import os
 
 import pytest
 
-from agentbay import AgentBay, CreateSessionParams
+from agentbay import CreateSessionParams
 
 
 @pytest.mark.sync
-def test_link_url_session_mcp_tools_and_call_tool():
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AgentBay(api_key=api_key)
-
+def test_link_url_session_mcp_tools_and_call_tool(agent_bay_client):
     image_id = os.getenv("AGENTBAY_IMAGE_ID") or "linux_latest"
     params = CreateSessionParams(
         image_id=image_id,
         labels={"test-type": "link-url-integration"},
     )
 
-    result = agent_bay.create(params)
+    result = agent_bay_client.create(params)
     assert result.success, result.error_message
     assert result.session is not None
 
@@ -36,7 +30,7 @@ def test_link_url_session_mcp_tools_and_call_tool():
         assert cmd_result.success, cmd_result.error_message
         assert "link-url-route-ok" in cmd_result.output
 
-        restored = agent_bay.get(session.session_id)
+        restored = agent_bay_client.get(session.session_id)
         assert restored.success, restored.error_message
         assert restored.session is not None
         restored_session = restored.session
@@ -57,23 +51,17 @@ def test_link_url_session_mcp_tools_and_call_tool():
         assert direct.success, direct.error_message
         assert "direct-link-url-route-ok" in direct.data
     finally:
-        session.delete()
+        agent_bay_client.delete(session)
 
 
 @pytest.mark.sync
-def test_link_url_session_run_code():
+def test_link_url_session_run_code(agent_bay_client):
     """
     Integration test for LinkUrl session with run_code.
     Requires environment variable: AGENTBAY_API_KEY
     """
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AgentBay(api_key=api_key)
-
     image_id = os.getenv("AGENTBAY_CODE_IMAGE_ID") or "code_latest"
-    session_result = agent_bay.create(
+    session_result = agent_bay_client.create(
         CreateSessionParams(
             image_id=image_id,
         )
@@ -98,6 +86,6 @@ def test_link_url_session_run_code():
         assert fs_result.success, f"List directory failed: {fs_result.error_message}"
         assert isinstance(fs_result.entries, list), "Entries should be a list"
     finally:
-        delete_result = session.delete()
+        delete_result = agent_bay_client.delete(session)
         assert delete_result.success, f"Delete session failed: {delete_result.error_message}"
 

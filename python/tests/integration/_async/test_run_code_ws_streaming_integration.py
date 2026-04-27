@@ -1,23 +1,17 @@
 # ci-stable
-import os
+"""Integration tests for run_code WebSocket streaming."""
+
 import time
 import pytest
 
-from agentbay import AsyncAgentBay, CreateSessionParams
+from agentbay import CreateSessionParams
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_run_code_ws_streaming_e2e():
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agentbay = AsyncAgentBay(api_key=api_key)
-
-    result = await agentbay.create(CreateSessionParams())
-    assert result.success is True, result.error_message
-    session = result.session
+async def test_run_code_ws_streaming_e2e(make_session):
+    lc = await make_session()
+    session = lc._result.session
     try:
         stdout_chunks: list[str] = []
         stdout_times: list[float] = []
@@ -72,5 +66,5 @@ async def test_run_code_ws_streaming_e2e():
             f"delta={two_t - hello_t:.3f}s, chunks={stdout_chunks!r}"
         )
     finally:
-        await session.delete()
+        pass
 

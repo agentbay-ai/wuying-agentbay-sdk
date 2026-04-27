@@ -1,51 +1,18 @@
 # ci-stable
 
-import os
-
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import CreateSessionParams
 
 
-# Define fixtures for session management
-@pytest_asyncio.fixture
-async def agent_session():
-    """
-    Fixture to create a session before all tests in this module
-    and delete it after all tests are done.
-    """
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AsyncAgentBay(api_key=api_key)
-    print("Creating a new session for Command testing...")
-
-    params = CreateSessionParams(image_id="code_latest")
-    result = await agent_bay.create(params)
-
-    if not result.success or not result.session:
-        pytest.fail(f"Failed to create session: {result.error_message}")
-
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-
-    yield session
-
-    print("Cleaning up: Deleting the session...")
-    try:
-        delete_result = await session.delete()
-        if delete_result.success:
-            print("Session successfully deleted")
-        else:
-            print(f"Warning: Error deleting session: {delete_result.error_message}")
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+@pytest.fixture
+async def agent_session(make_session):
+    """Create a session for Command testing."""
+    lc = await make_session(params=CreateSessionParams(image_id="code_latest"))
+    return lc._result.session
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def command(agent_session):
     """Fixture to get the command object from the session."""
     return agent_session.command

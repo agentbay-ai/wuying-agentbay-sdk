@@ -6,42 +6,29 @@ test suite. Requires a real AgentBay session with git support.
 
 All steps run inside a single async test function to avoid pytest-asyncio
 event-loop-scope issues with module-scoped fixtures.
-
-Set AGENTBAY_API_KEY environment variable to run these tests.
 """
-
-import os
 
 import pytest
 
-from agentbay import AsyncAgentBay, CreateSessionParams
+from agentbay import CreateSessionParams
 from agentbay._common.exceptions import GitError, GitNotARepoError
 
-IMAGE_ID = "code-space-debian-12"
+IMAGE_ID = "linux_latest"
 LOCAL_REPO = "/tmp/test-git-workflow"
 REPO_URL = "https://github.com/DingTalk-Real-AI/dingtalk-openclaw-connector.git"
 
 
 @pytest.mark.asyncio
-async def test_git_workflow():
+async def test_git_workflow(make_session):
     """Full git workflow integration test running in a single event loop.
 
     Covers: init, status, add, commit, log, branches, remote, reset, restore,
     configure_user, config, and clone.
     """
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AsyncAgentBay(api_key=api_key)
     print(f"\nCreating session (image: {IMAGE_ID}) ...")
     params = CreateSessionParams(image_id=IMAGE_ID)
-    result = await agent_bay.create(params)
-
-    if not result.success or not result.session:
-        pytest.fail(f"Failed to create session: {result.error_message}")
-
-    session = result.session
+    lc = await make_session(params=params)
+    session = lc._result.session
     print(f"Session created: {session.session_id}")
 
     try:
@@ -345,56 +332,30 @@ async def test_git_workflow():
                 raise
 
     finally:
-        print("Cleaning up session ...")
-        try:
-            delete_result = await session.delete()
-            if delete_result.success:
-                print("Session deleted")
-            else:
-                print(f"Warning: delete error: {delete_result.error_message}")
-        except Exception as cleanup_error:
-            print(f"Warning: delete error: {cleanup_error}")
+        # Session cleanup handled by make_session fixture
+        pass
 
 
 @pytest.mark.asyncio
-async def test_git_error_not_a_repo():
+async def test_git_error_not_a_repo(make_session):
     """Verify GitNotARepoError when status is called on a non-repo path."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AsyncAgentBay(api_key=api_key)
     params = CreateSessionParams(image_id=IMAGE_ID)
-    result = await agent_bay.create(params)
-    if not result.success or not result.session:
-        pytest.fail(f"Failed to create session: {result.error_message}")
-
-    session = result.session
+    lc = await make_session(params=params)
+    session = lc._result.session
     try:
         with pytest.raises(GitNotARepoError):
             await session.git.status("/tmp")
         print("GitNotARepoError raised as expected")
     finally:
-        try:
-            await session.delete()
-        except Exception:
-            pass
+        pass
 
 
 @pytest.mark.asyncio
-async def test_git_error_empty_commit():
+async def test_git_error_empty_commit(make_session):
     """Verify GitError when committing with no staged changes."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AsyncAgentBay(api_key=api_key)
     params = CreateSessionParams(image_id=IMAGE_ID)
-    result = await agent_bay.create(params)
-    if not result.success or not result.session:
-        pytest.fail(f"Failed to create session: {result.error_message}")
-
-    session = result.session
+    lc = await make_session(params=params)
+    session = lc._result.session
     try:
         repo_path = "/tmp/test-empty-commit"
         await session.command.execute_command(f"mkdir -p {repo_path}", 10000)
@@ -404,7 +365,4 @@ async def test_git_error_empty_commit():
             await session.git.commit(repo_path, "empty commit")
         print("GitError raised for empty commit as expected")
     finally:
-        try:
-            await session.delete()
-        except Exception:
-            pass
+        pass

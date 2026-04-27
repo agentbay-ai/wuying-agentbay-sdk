@@ -5,31 +5,14 @@
 ci-stable
 """
 
-import os
-
 import pytest
-import pytest
-
-from agentbay import AgentBay
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create AgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
 
 
 @pytest.fixture
-def test_session(agent_bay):
+def test_session(make_session):
     """Create a test session."""
-    result = agent_bay.create()
-    assert result.success
-    session = result.session
-    yield session
-    session.delete()
+    lc = make_session("linux_latest")
+    return lc._result.session
 
 
 @pytest.mark.sync

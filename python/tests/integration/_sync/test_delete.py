@@ -5,27 +5,13 @@
 ci-stable
 """
 
-import os
-
 import pytest
-import pytest
-
-from agentbay import AgentBay
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create AgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
 
 
 @pytest.mark.sync
-def test_delete_session_basic(agent_bay):
+def test_delete_session_basic(agent_bay_client):
     """Test basic session deletion."""
-    result = agent_bay.create()
+    result = agent_bay_client.create()
     assert result.success is True
     session = result.session
 
@@ -35,9 +21,9 @@ def test_delete_session_basic(agent_bay):
 
 
 @pytest.mark.sync
-def test_delete_session_with_sync_context(agent_bay):
+def test_delete_session_with_sync_context(agent_bay_client):
     """Test session deletion with context sync."""
-    result = agent_bay.create()
+    result = agent_bay_client.create()
     assert result.success is True
     session = result.session
 
@@ -47,11 +33,11 @@ def test_delete_session_with_sync_context(agent_bay):
 
 
 @pytest.mark.sync
-def test_delete_multiple_sessions(agent_bay):
+def test_delete_multiple_sessions(agent_bay_client):
     """Test deleting multiple sessions."""
     sessions = []
     for i in range(3):
-        result = agent_bay.create()
+        result = agent_bay_client.create()
         assert result.success is True
         sessions.append(result.session)
 
@@ -64,12 +50,12 @@ def test_delete_multiple_sessions(agent_bay):
 
 
 @pytest.mark.sync
-def test_delete_using_agent_bay(agent_bay):
+def test_delete_using_agent_bay(agent_bay_client):
     """Test deleting session using AgentBay.delete()."""
-    result = agent_bay.create()
+    result = agent_bay_client.create()
     assert result.success is True
     session = result.session
 
-    delete_result = agent_bay.delete(session)
+    delete_result = agent_bay_client.delete(session)
     assert delete_result.success is True
     print(f"Session deleted via AgentBay: {session.session_id}")

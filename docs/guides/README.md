@@ -13,6 +13,7 @@ Features available across all environments:
 - [Command Execution](common-features/basics/command-execution.md) - Execute shell commands and scripts
 - [File Operations](common-features/basics/file-operations.md) - Upload, download, and manipulate files
 - [Data Persistence](common-features/basics/data-persistence.md) - Persistent data storage and synchronization
+- [Environment Variables](common-features/basics/environment-variables.md) - Set and query global environment variables
 
 **Configuration**
 - [SDK Configuration](common-features/configuration/sdk-configuration.md) - SDK settings and environment variables

@@ -7,12 +7,9 @@ These tests validate that operations actually work by checking their effects.
 """
 
 import json
-import os
 import time
 import pytest
-import pytest
 
-from agentbay import AgentBay
 from agentbay import CreateSessionParams
 from .._common.functional_helpers import (
     FunctionalTestResult,
@@ -21,14 +18,6 @@ from .._common.functional_helpers import (
     validate_screen_size,
     validate_screenshot_changed,
 )
-
-
-def get_test_api_key():
-    """Get API key for testing"""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return api_key
 
 
 def safe_screenshot_async(computer, test_name: str):
@@ -55,30 +44,19 @@ def safe_screenshot_async(computer, test_name: str):
 
 
 @pytest.fixture
-def computer_session():
-    api_key = get_test_api_key()
-    agent_bay = AgentBay(api_key=api_key)
-
+def computer_session(make_session):
     print("Creating a new session for computer functional testing...")
-    session_params = CreateSessionParams(image_id="linux_latest")
-    result = agent_bay.create(session_params)
-    assert result.success
-    assert result.session is not None
+    lc = make_session(params=CreateSessionParams(image_id="windows_latest"))
+    session = lc._result.session
 
     print(
-        f"Created Computer functional validation session: {result.session.session_id}"
+        f"Created Computer functional validation session: {session.session_id}"
     )
 
     # Wait for session to be ready
     time.sleep(5)
 
-    yield result.session
-
-    print(f"Cleaning up session {result.session.session_id}...")
-    try:
-        result.session.delete()
-    except Exception as e:
-        print(f"Error deleting session: {e}")
+    return session
 
 
 @pytest.mark.sync

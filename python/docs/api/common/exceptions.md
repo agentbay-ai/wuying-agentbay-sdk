@@ -246,6 +246,48 @@ def __init__(self, message="Not a git repository",
              **kwargs)
 ```
 
+## PtyError
+
+```python
+class PtyError(AgentBayError)
+```
+
+Base exception for all PTY operations.
+
+### __init__
+
+```python
+def __init__(self, message="PTY operation error", *args, **kwargs)
+```
+
+## PtySessionNotFoundError
+
+```python
+class PtySessionNotFoundError(PtyError)
+```
+
+Raised when a PTY session does not exist or has been terminated.
+
+### __init__
+
+```python
+def __init__(self, message="PTY session not found", *args, **kwargs)
+```
+
+## PtyNotConnectedError
+
+```python
+class PtyNotConnectedError(PtyError)
+```
+
+Raised when attempting to use a PTY handle that is not connected.
+
+### __init__
+
+```python
+def __init__(self, message="PTY handle is not connected", *args, **kwargs)
+```
+
 ## See Also
 
 - [Synchronous vs Asynchronous API](../../../docs/guides/async-programming/sync-vs-async.md)

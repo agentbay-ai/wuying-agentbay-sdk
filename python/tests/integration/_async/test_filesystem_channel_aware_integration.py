@@ -8,27 +8,14 @@ Verifies that:
 - Append mode works on HTTP channel
 """
 
-import os
-
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
 
 @pytest_asyncio.fixture
-async def test_session(agent_bay):
-    result = await agent_bay.create()
-    assert result.success, f"Failed to create session: {result}"
-    session = result.session
+async def test_session(make_session):
+    lc = await make_session("linux_latest")
+    session = lc._result.session
 
     # Log channel type for debugging
     link_url = session._get_link_url() if hasattr(session, '_get_link_url') else ""
@@ -37,8 +24,7 @@ async def test_session(agent_bay):
     print(f"\n[Channel] Using {channel} channel")
     print(f"[Channel] link_url present: {bool(link_url)}, token present: {bool(token)}")
 
-    yield session
-    await session.delete()
+    return session
 
 
 @pytest.mark.asyncio

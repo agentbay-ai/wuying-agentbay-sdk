@@ -1,41 +1,15 @@
 # ci-stable
 
 import pytest
-import os
-from agentbay import AsyncAgentBay
+
 from agentbay import CreateSessionParams
 
 
 @pytest.fixture
-async def code_session():
+async def code_session(make_session):
     """Create a session for code execution tests."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AsyncAgentBay(api_key=api_key)
-    params = CreateSessionParams(image_id="code_latest")
-    session_result = await agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        pytest.skip(f"Failed to create session: {session_result.error_message}")
-    
-    session = session_result.session
-    code_obj = session.code
-    
-    yield code_obj
-    
-    # Cleanup
-    await session.delete()
-
-
-@pytest.fixture
-async def agent_bay_client():
-    """Create an AgentBay client for complex tests that need multiple sessions."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    
-    return AsyncAgentBay(api_key=api_key)
+    lc = await make_session(params=CreateSessionParams(image_id="code_latest"))
+    return lc._result.session.code
 
 
 @pytest.mark.asyncio
@@ -74,6 +48,7 @@ async def test_execute_alias_python_success(code_session):
     result = await code_session.execute(code, "python")
     assert result.success
     assert "Hello from alias" in result.result
+
 
 @pytest.mark.asyncio
 async def test_run_code_javascript_success(code_session):
@@ -171,17 +146,19 @@ System.out.println("CONTEXT_VALUE:" + (x + 1));
     assert use_result.success
     assert "CONTEXT_VALUE:42" in use_result.result
 
+
 @pytest.mark.asyncio
 async def test_run_code_unsupported_language(code_session):
     """Test code execution with unsupported language."""
     code = "print('Hello, world!')"
     language = "ruby"
-    
+
     result = await code_session.run_code(code, language)
 
     # Should return failure for unsupported language
     assert not result.success
     assert result.error_message is not None
+
 
 @pytest.mark.asyncio
 async def test_run_code_python_with_timeout(code_session):
@@ -201,6 +178,7 @@ print("Completed after 2 seconds")
     assert "Starting..." in result.result
     assert "Completed after 2 seconds" in result.result
 
+
 @pytest.mark.asyncio
 async def test_run_code_javascript_with_timeout(code_session):
     """Test JavaScript code execution with custom timeout."""
@@ -219,6 +197,7 @@ console.log("Immediate output");
     assert result.result is not None
     assert "Starting..." in result.result
     assert "Immediate output" in result.result
+
 
 @pytest.mark.asyncio
 async def test_run_code_python_file_operations(code_session):
@@ -247,6 +226,7 @@ print("File operations completed successfully")
     assert "Test content from Python code execution" in result.result
     assert "File operations completed successfully" in result.result
 
+
 @pytest.mark.asyncio
 async def test_run_code_python_error_handling(code_session):
     """Test Python code with error handling."""
@@ -265,6 +245,7 @@ except ZeroDivisionError as e:
     assert result.result is not None
     assert "Caught error:" in result.result
     assert "Error handled successfully" in result.result
+
 
 @pytest.mark.asyncio
 async def test_run_code_python_with_imports(code_session):
@@ -296,6 +277,7 @@ print(f"Numbers sum: {sum(parsed['numbers'])}")
     assert "Hello from Python" in result.result
     assert "Message: Hello from Python" in result.result
     assert "Numbers sum: 15" in result.result
+
 
 @pytest.mark.asyncio
 async def test_run_code_cross_language_interop(code_session):
@@ -351,6 +333,7 @@ print("Cleanup completed")
     assert "84" in result.result
     assert "Cleanup completed" in result.result
 
+
 @pytest.mark.asyncio
 async def test_3_2_complex_code_with_file_operations(agent_bay_client):
     """3.2 Complex Code with File Operations - should execute complex code with file operations"""
@@ -369,9 +352,8 @@ async def test_3_2_complex_code_with_file_operations(agent_bay_client):
 
     code1 = session1.code
     code2 = session2.code
-    
-    try:
 
+    try:
         # Step 7: Complex code test with file operations
         python_file_code = """
 import os
@@ -419,6 +401,7 @@ console.log(JSON.stringify(result));
         await session1.delete()
         await session2.delete()
 
+
 @pytest.mark.asyncio
 async def test_3_2_code_execution_error_handling(agent_bay_client):
     """3.2 Code Execution Error Handling - should handle code execution errors gracefully"""
@@ -430,7 +413,7 @@ async def test_3_2_code_execution_error_handling(agent_bay_client):
     session = session_result.session
 
     code = session.code
-    
+
     try:
         # Test Python code with syntax error
         bad_python_code = """

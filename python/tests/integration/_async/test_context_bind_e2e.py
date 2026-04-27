@@ -1,25 +1,15 @@
 """E2E test: verify dynamically bound context supports real data persistence.
 """
 
-import os
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay, CreateSessionParams, ContextSync
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
+from agentbay import CreateSessionParams, ContextSync
 
 
 @pytest.mark.asyncio
-async def test_bind_context_data_persistence(agent_bay):
+async def test_bind_context_data_persistence(agent_bay_client):
     """
     Full E2E test: dynamically bind a context, write data, sync upload,
     then bind the same context in a new session and verify data persists.
@@ -30,14 +20,14 @@ async def test_bind_context_data_persistence(agent_bay):
     test_content = f"bind-e2e-{uuid4().hex[:8]}"
 
     # Step 1: Create a fresh context
-    ctx_result = await agent_bay.context.get(name=context_name, create=True)
+    ctx_result = await agent_bay_client.context.get(name=context_name, create=True)
     assert ctx_result.success, f"Failed to create context: {ctx_result.error_message}"
     ctx = ctx_result.context
     print(f"[Step 1] Created context: {ctx.id} ({ctx.name})")
 
     try:
         # Step 2: Session A - dynamically bind and write data
-        session_a_result = await agent_bay.create(CreateSessionParams())
+        session_a_result = await agent_bay_client.create(CreateSessionParams())
         assert session_a_result.success, f"Failed to create session A: {session_a_result.error_message}"
         session_a = session_a_result.session
         print(f"[Step 2] Created session A: {session_a.session_id}")
@@ -77,7 +67,7 @@ async def test_bind_context_data_persistence(agent_bay):
             print(f"[Step 3] Deleted session A")
 
         # Step 4: Session B - bind same context and verify data persists
-        session_b_result = await agent_bay.create(CreateSessionParams())
+        session_b_result = await agent_bay_client.create(CreateSessionParams())
         assert session_b_result.success, f"Failed to create session B: {session_b_result.error_message}"
         session_b = session_b_result.session
         print(f"[Step 4] Created session B: {session_b.session_id}")
@@ -105,5 +95,5 @@ async def test_bind_context_data_persistence(agent_bay):
             print(f"[Step 4] Deleted session B")
 
     finally:
-        await agent_bay.context.delete(ctx)
+        await agent_bay_client.context.delete(ctx)
         print(f"[Cleanup] Deleted context {ctx.id}")

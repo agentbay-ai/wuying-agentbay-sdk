@@ -254,6 +254,9 @@ public class AgentBay {
             session.setToken(data.getToken());
             session.setLinkUrl(data.getLinkUrl());
             session.setWsUrl(data.getWsUrl());
+            if (data.getAppInstanceId() != null) {
+                session.setAppInstanceId(data.getAppInstanceId());
+            }
             if (data.getToolList() != null && !data.getToolList().isEmpty()) {
                 session.updateMcpTools(data.getToolList());
             }
@@ -597,6 +600,9 @@ public class AgentBay {
                 }
                 if (response.getBody().getData().getWsUrl() != null) {
                     session.setWsUrl(response.getBody().getData().getWsUrl());
+                }
+                if (response.getBody().getData().getAppInstanceId() != null) {
+                    session.setAppInstanceId(response.getBody().getData().getAppInstanceId());
                 }
                 if (response.getBody().getData().getToolList() != null) {
                     session.updateMcpTools(response.getBody().getData().getToolList());

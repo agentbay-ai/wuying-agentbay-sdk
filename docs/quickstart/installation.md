@@ -15,7 +15,7 @@
 
 ### Java
 - Java 8+
-- Maven or Gradle
+- Maven 3.6.3+ or Gradle 6+
 
 ## 🚀 Quick Installation
 
@@ -74,6 +74,8 @@ go list -m github.com/aliyun/wuying-agentbay-sdk/golang && echo "✅ Installatio
 
 ### Java
 
+> **Note:** Please check [Maven Central](https://central.sonatype.com/artifact/com.aliyun/agentbay-sdk) for the latest version number and replace `LATEST_VERSION` below.
+
 **Maven:**
 
 Add the dependency to your `pom.xml`:
@@ -81,21 +83,26 @@ Add the dependency to your `pom.xml`:
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.16.0</version>
+    <version>LATEST_VERSION</version>
 </dependency>
 ```
 
 **Gradle:**
+
+Add the dependency to your `build.gradle`:
 ```gradle
-implementation 'com.aliyun:agentbay-sdk:0.16.0'
+implementation 'com.aliyun:agentbay-sdk:LATEST_VERSION'
 ```
 
-**Verify installation:**
+Verify installation:
 ```bash
-# After adding the dependency, run:
-mvn dependency:resolve   # Maven
-# or
-gradle dependencies      # Gradle
+# Maven
+mvn dependency:tree -Dincludes=com.aliyun:agentbay-sdk
+# You should see: com.aliyun:agentbay-sdk:jar:x.x.x:compile
+
+# Gradle
+gradle dependencies --configuration compileClasspath | grep agentbay-sdk
+# You should see: com.aliyun:agentbay-sdk:x.x.x
 ```
 
 ## 🔑 API Key Setup
@@ -187,6 +194,44 @@ async function test() {
 }
 
 test();
+```
+
+### Java Test
+```java
+import com.aliyun.agentbay.*;
+
+public class AgentBayTest {
+    public static void main(String[] args) {
+        // Get API key from environment
+        String apiKey = System.getenv("AGENTBAY_API_KEY");
+        if (apiKey == null || apiKey.isEmpty()) {
+            System.out.println("⚠️  Please set AGENTBAY_API_KEY environment variable");
+            return;
+        }
+
+        try {
+            // Initialize SDK
+            AgentBay agentBay = new AgentBay(apiKey);
+            System.out.println("✅ SDK initialized successfully");
+
+            // Create a session (requires valid API key and network)
+            CreateSessionParams params = new CreateSessionParams();
+            SessionResult result = agentBay.create(params);
+            if (result.isSuccess()) {
+                Session session = result.getSession();
+                System.out.println("✅ Session created: " + session.getSessionId());
+
+                // Clean up
+                session.delete();
+                System.out.println("✅ Test completed successfully");
+            } else {
+                System.out.println("⚠️  Session creation failed");
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error: " + e.getMessage());
+        }
+    }
+}
 ```
 
 ### Golang Test
@@ -368,15 +413,26 @@ go get github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay
 
 ### Java Issues
 
+<<<<<<< HEAD
 **Dependency not found:**
 ```bash
 # Ensure Maven Central is accessible
 mvn dependency:resolve -U
 # Or add Alibaba Cloud Maven mirror to settings.xml if in China
+=======
+**Dependency resolution failures:**
+```bash
+# Verify the dependency is resolved correctly
+mvn dependency:tree -Dincludes=com.aliyun:agentbay-sdk
+# You should see: com.aliyun:agentbay-sdk:jar:x.x.x:compile
+# If not, check your pom.xml dependency configuration and ensure Maven Central is accessible
+# If behind a proxy, configure Maven settings.xml with proxy settings
+>>>>>>> aliyun/main
 ```
 
 **`ClassNotFoundException` or `NoClassDefFoundError`:**
 ```bash
+<<<<<<< HEAD
 # Verify the dependency is in classpath
 mvn dependency:tree | grep agentbay
 # Check version matches your pom.xml
@@ -387,6 +443,19 @@ mvn dependency:tree | grep agentbay
 # Ensure Java 8+ and up-to-date CA certificates
 java -version
 # Update Java if needed for TLS 1.2+ support
+=======
+# Verify the dependency is correctly added
+mvn dependency:tree | grep agentbay
+# Rebuild the project
+mvn clean install
+```
+
+**Version conflicts:**
+```bash
+# Check for dependency conflicts
+mvn dependency:tree -Dverbose
+# Use Maven's dependencyManagement to pin versions if needed
+>>>>>>> aliyun/main
 ```
 
 ### Network and API Issues

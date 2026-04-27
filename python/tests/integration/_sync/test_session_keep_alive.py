@@ -16,12 +16,9 @@ Notes:
 - Uses GetSessionDetail polling to observe lifecycle.
 """
 
-import os
 import time
-import unittest
 
 import pytest
-from dotenv import load_dotenv
 
 from agentbay import AgentBay, CreateSessionParams
 
@@ -50,112 +47,90 @@ def _is_terminal_status(status_result) -> bool:
     return getattr(status_result, "status", "") in ["FINISH", "DELETING", "DELETED"]
 
 
-class TestSessionKeepAliveIntegration(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        load_dotenv()
-        api_key = os.environ.get("AGENTBAY_API_KEY")
-        if not api_key:
-            raise unittest.SkipTest("AGENTBAY_API_KEY environment variable not set")
-        cls.api_key = api_key
-        cls.agent_bay = AgentBay(api_key=api_key)
+@pytest.mark.sync
+def test_keep_alive_resets_idle_timer(agent_bay_client: AgentBay):
+    idle_release_timeout = 30  # seconds
+    max_over_seconds = 60  # control session must be released within timeout + 60s
+    poll_interval = 15  # seconds
+    image_id = "linux_latest"
 
-    @pytest.mark.sync
-    def test_keep_alive_resets_idle_timer(self):
-        idle_release_timeout = 30  # seconds
-        max_over_seconds = 60  # control session must be released within timeout + 60s
-        poll_interval = 15  # seconds
-        image_id = "linux_latest"
+    print(
+        "Creating 2 sessions with "
+        f"image_id={image_id}, idle_release_timeout={idle_release_timeout}s"
+    )
 
-        print("api_key =", _mask_secret(self.api_key))
-        print(
-            "Creating 2 sessions with "
-            f"image_id={image_id}, idle_release_timeout={idle_release_timeout}s"
+    control_session = None
+    refreshed_session = None
+
+    start_time = time.monotonic()
+    try:
+        common_labels = {"test": "session-keep-alive", "sdk": "python-async"}
+
+        control_params = CreateSessionParams(
+            image_id=image_id,
+            idle_release_timeout=idle_release_timeout,
+            labels={**common_labels, "role": "control"},
+        )
+        refreshed_params = CreateSessionParams(
+            image_id=image_id,
+            idle_release_timeout=idle_release_timeout,
+            labels={**common_labels, "role": "refreshed"},
         )
 
-        control_session = None
-        refreshed_session = None
+        control_result = agent_bay_client.create(control_params)
+        assert control_result.success, f"Create control session failed: {control_result.error_message}"
+        assert control_result.session is not None
+        control_session = control_result.session
 
-        start_time = time.monotonic()
-        try:
-            common_labels = {"test": "session-keep-alive", "sdk": "python-async"}
+        refreshed_result = agent_bay_client.create(refreshed_params)
+        assert refreshed_result.success, f"Create refreshed session failed: {refreshed_result.error_message}"
+        assert refreshed_result.session is not None
+        refreshed_session = refreshed_result.session
 
-            control_params = CreateSessionParams(
-                image_id=image_id,
-                idle_release_timeout=idle_release_timeout,
-                labels={**common_labels, "role": "control"},
-            )
-            refreshed_params = CreateSessionParams(
-                image_id=image_id,
-                idle_release_timeout=idle_release_timeout,
-                labels={**common_labels, "role": "refreshed"},
-            )
+        print(f"✅ Control session: {control_session.session_id}")
+        print(f"✅ Refreshed session: {refreshed_session.session_id}")
 
-            control_result = self.agent_bay.create(control_params)
-            self.assertTrue(
-                control_result.success,
-                f"Create control session failed: {control_result.error_message}",
-            )
-            self.assertIsNotNone(control_result.session)
-            control_session = control_result.session
+        # Wait until halfway through, then refresh the idle timer for refreshed session.
+        time.sleep(idle_release_timeout / 2)
+        keep_alive_result = refreshed_session.keep_alive()
+        assert keep_alive_result.success, f"keep_alive failed: {getattr(keep_alive_result, 'error_message', '')}"
 
-            refreshed_result = self.agent_bay.create(refreshed_params)
-            self.assertTrue(
-                refreshed_result.success,
-                f"Create refreshed session failed: {refreshed_result.error_message}",
-            )
-            self.assertIsNotNone(refreshed_result.session)
-            refreshed_session = refreshed_result.session
+        deadline = start_time + idle_release_timeout + max_over_seconds
+        control_released_at = None
 
-            print(f"✅ Control session: {control_session.session_id}")
-            print(f"✅ Refreshed session: {refreshed_session.session_id}")
+        while time.monotonic() < deadline:
+            control_status = control_session.get_status()
+            refreshed_status = refreshed_session.get_status()
 
-            # Wait until halfway through, then refresh the idle timer for refreshed session.
-            time.sleep(idle_release_timeout / 2)
-            keep_alive_result = refreshed_session.keep_alive()
-            self.assertTrue(
-                keep_alive_result.success,
-                f"keep_alive failed: {getattr(keep_alive_result, 'error_message', '')}",
-            )
+            if _is_terminal_status(control_status):
+                control_released_at = time.monotonic()
+                assert not _is_terminal_status(refreshed_status), (
+                    "Refreshed session was released no later than control session; "
+                    "keep_alive did not extend idle timer as expected"
+                )
+                elapsed = control_released_at - start_time
+                print(
+                    "✅ Control session released while refreshed session still alive, "
+                    f"elapsed={elapsed:.2f}s"
+                )
+                return
 
-            deadline = start_time + idle_release_timeout + max_over_seconds
-            control_released_at = None
+            # Check if refreshed session was released before control session (unexpected)
+            if _is_terminal_status(refreshed_status):
+                pytest.fail(
+                    "Refreshed session was released before control session; "
+                    "keep_alive may have failed"
+                )
 
-            while time.monotonic() < deadline:
-                control_status = control_session.get_status()
-                refreshed_status = refreshed_session.get_status()
-
-                if _is_terminal_status(control_status):
-                    control_released_at = time.monotonic()
-                    self.assertFalse(
-                        _is_terminal_status(refreshed_status),
-                        "Refreshed session was released no later than control session; "
-                        "keep_alive did not extend idle timer as expected",
-                    )
-                    elapsed = control_released_at - start_time
-                    print(
-                        "✅ Control session released while refreshed session still alive, "
-                        f"elapsed={elapsed:.2f}s"
-                    )
-                    return
-
-                # Check if refreshed session was released before control session (unexpected)
-                if _is_terminal_status(refreshed_status):
-                    self.fail(
-                        "Refreshed session was released before control session; "
-                        "keep_alive may have failed"
-                    )
-
-                time.sleep(poll_interval)
-        finally:
-            # Best-effort cleanup.
-            for s in [refreshed_session, control_session]:
-                if s is None:
-                    continue
-                try:
-                    status_final = s.get_status()
-                    if not _is_terminal_status(status_final):
-                        self.agent_bay.delete(s)
-                except Exception:
-                    pass
-
+            time.sleep(poll_interval)
+    finally:
+        # Best-effort cleanup.
+        for s in [refreshed_session, control_session]:
+            if s is None:
+                continue
+            try:
+                status_final = s.get_status()
+                if not _is_terminal_status(status_final):
+                    agent_bay_client.delete(s)
+            except Exception:
+                pass

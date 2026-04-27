@@ -1,22 +1,14 @@
 # ci-stable
-import os
+"""Integration tests for network bind token API."""
 
 import pytest
 
-from agentbay import AsyncAgentBay, CreateSessionParams
+from agentbay import AsyncAgentBay
 
 
 @pytest.mark.asyncio
-async def test_network_create_describe_and_bind_session():
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
-    net_result = await agent_bay.beta_network.get_network_bind_token()
+async def test_network_create_describe_and_bind_session(agent_bay_client: AsyncAgentBay):
+    net_result = await agent_bay_client.beta_network.get_network_bind_token()
     assert net_result.success, net_result.error_message
     assert net_result.network_id != ""
     assert net_result.network_token != ""
-
-

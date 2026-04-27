@@ -5,73 +5,48 @@
 ci-stable
 """
 
-import os
-
 import pytest
-import pytest
-
-from agentbay import AgentBay
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
-@pytest.fixture
-def test_session(agent_bay):
-    result = agent_bay.create()
-    assert result.success
-    yield result.session
-    result.session.delete()
 
 
 @pytest.mark.sync
-def test_context_file_update(test_session):
+def test_context_file_update(agent_bay_client):
     """Test updating file in context using upload URLs."""
     import httpx
 
-    # Create a context
-    ctx_result = test_session.agent_bay.context.get("update_ctx", create=True)
+    ctx_result = agent_bay_client.context.get("update_ctx", create=True)
     assert ctx_result.success
 
-    # Upload initial file
-    upload_url_result = test_session.agent_bay.context.get_file_upload_url(
-        ctx_result.context_id, "/update_file.txt"
-    )
-    assert upload_url_result.success
+    try:
+        upload_url_result = agent_bay_client.context.get_file_upload_url(
+            ctx_result.context_id, "/update_file.txt"
+        )
+        assert upload_url_result.success
 
-    original_content = b"original content"
-    with httpx.Client() as client:
-        response = client.put(upload_url_result.url, content=original_content)
-        assert response.status_code == 200
+        original_content = b"original content"
+        with httpx.Client() as client:
+            response = client.put(upload_url_result.url, content=original_content)
+            assert response.status_code == 200
 
-    # Update the file with new content
-    upload_url_result2 = test_session.agent_bay.context.get_file_upload_url(
-        ctx_result.context_id, "/update_file.txt"
-    )
-    assert upload_url_result2.success
+        upload_url_result2 = agent_bay_client.context.get_file_upload_url(
+            ctx_result.context_id, "/update_file.txt"
+        )
+        assert upload_url_result2.success
 
-    updated_content = b"updated content"
-    with httpx.Client() as client:
-        response = client.put(upload_url_result2.url, content=updated_content)
-        assert response.status_code == 200
+        updated_content = b"updated content"
+        with httpx.Client() as client:
+            response = client.put(upload_url_result2.url, content=updated_content)
+            assert response.status_code == 200
 
-    # Verify the file was updated
-    download_url_result = test_session.agent_bay.context.get_file_download_url(
-        ctx_result.context_id, "/update_file.txt"
-    )
-    assert download_url_result.success
+        download_url_result = agent_bay_client.context.get_file_download_url(
+            ctx_result.context_id, "/update_file.txt"
+        )
+        assert download_url_result.success
 
-    with httpx.Client() as client:
-        response = client.get(download_url_result.url)
-        assert response.status_code == 200
-        assert response.content == updated_content
+        with httpx.Client() as client:
+            response = client.get(download_url_result.url)
+            assert response.status_code == 200
+            assert response.content == updated_content
 
-    # Clean up
-    test_session.agent_bay.context.delete(ctx_result.context)
-
-    print("Context file updated successfully")
+        print("Context file updated successfully")
+    finally:
+        agent_bay_client.context.delete(ctx_result.context)

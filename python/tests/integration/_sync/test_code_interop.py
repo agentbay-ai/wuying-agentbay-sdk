@@ -4,36 +4,16 @@
 """Integration tests for CodeSpace cross-language interoperability."""
 # ci-stable
 
-import os
-
-import pytest
 import pytest
 
-from agentbay import AgentBay
 from agentbay import CreateSessionParams
 
 
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create AgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
-
 @pytest.fixture
-def session(agent_bay):
+def session(make_session):
     """Create a session with code_latest image."""
-    print("\nCreating session for code interop testing...")
-    session_param = CreateSessionParams(image_id="code_latest")
-    result = agent_bay.create(session_param)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-    yield session
-    print("\nCleaning up: Deleting the session...")
-    session.delete()
+    lc = make_session(params=CreateSessionParams(image_id="code_latest"))
+    return lc._result.session
 
 
 @pytest.mark.sync

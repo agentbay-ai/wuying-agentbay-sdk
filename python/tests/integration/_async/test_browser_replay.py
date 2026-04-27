@@ -2,64 +2,29 @@
 # ci-stable
 
 import asyncio
-import os
-import time
 
 import pytest
-import pytest_asyncio
 from playwright.async_api import async_playwright
 
-from agentbay import AsyncAgentBay
-from agentbay import BrowserOption
-from agentbay import CreateSessionParams
+from agentbay import BrowserOption, CreateSessionParams
 
 
-def get_test_api_key():
-    """Get API key for testing"""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        api_key = "akm-xxx"  # Replace with your test API key
-        print(
-            "Warning: Using default API key. Set AGENTBAY_API_KEY environment variable for testing."
-        )
-    return api_key
-
-
-def _mask_secret(secret: str, visible: int = 4) -> str:
-    """Mask a secret value, keeping only the last `visible` characters."""
-    if not secret:
-        return ""
-    if len(secret) <= visible:
-        return "*" * len(secret)
-    return ("*" * (len(secret) - visible)) + secret[-visible:]
-
-
-@pytest_asyncio.fixture
-async def browser_replay_session():
+@pytest.fixture
+async def browser_replay_session(make_session):
     """Create a session with browser replay enabled."""
-    api_key = get_test_api_key()
-    print("api_key =", _mask_secret(api_key))
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
-    print("Creating a new session for browser replay testing...")
-    # Create session parameters with recording enabled
-    session_param = CreateSessionParams(
+    params = CreateSessionParams(
         image_id="browser_latest",
-        enable_browser_replay=True  # Enable browser recording
+        enable_browser_replay=True,  # Enable browser recording
     )
-
-    result = await agent_bay.create(session_param)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
+    lc = await make_session(params=params)
+    session = lc._result.session
     print(f"Session created with ID: {session.session_id}")
 
     # Get session info
     info_result = await session.info()
     print("=== Session Info Details ===")
-
     if info_result.success and info_result.data:
         session_info = info_result.data
-        # Print the specific fields from SessionInfo object
         info_fields = [
             "resource_url",
             "app_id",
@@ -75,25 +40,13 @@ async def browser_replay_session():
                 print(f"{field}: {value}")
             else:
                 print(f"{field}: Not available in session_info")
-
-        # Also print session_id
         if hasattr(session_info, "session_id"):
             print(f"session_id: {session_info.session_id}")
     else:
         print(f"Failed to get session info: {info_result.error_message}")
-        print(f"Info result object: {info_result}")
-
     print("=== End Session Info Details ===")
 
-    yield session
-
-    print("Cleaning up: Deleting the session...")
-    try:
-        await asyncio.sleep(30)
-        await session.delete()
-        print("Session deleted successfully")
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    return session
 
 
 @pytest.mark.asyncio
@@ -126,7 +79,6 @@ async def test_browser_replay_operations(browser_replay_session):
         try:
             print(f"Attempting to connect (attempt {attempt + 1}/{max_retries})...")
             async with async_playwright() as p:
-                # Add timeout to connect_over_cdp (30 seconds)
                 playwright_browser = await p.chromium.connect_over_cdp(
                     endpoint_url, timeout=30000  # 30 seconds timeout
                 )
@@ -160,10 +112,8 @@ async def test_browser_replay_operations(browser_replay_session):
 
                 # Try to interact with the page more safely
                 try:
-                    # Wait for page to be fully loaded
                     await page.wait_for_load_state("networkidle", timeout=10000)
 
-                    # Try to find and interact with search input
                     search_selectors = [
                         "#kw",
                         "input[name='wd']",
@@ -173,13 +123,11 @@ async def test_browser_replay_operations(browser_replay_session):
 
                     for selector in search_selectors:
                         try:
-                            search_input = await page.wait_for_selector(
-                                selector, timeout=5000
-                            )
+                            search_input = await page.wait_for_selector(selector, timeout=5000)
                             if search_input and await search_input.is_visible():
                                 print(f"Found search input with selector: {selector}")
                                 break
-                        except:
+                        except Exception:
                             continue
 
                     if search_input:
@@ -187,7 +135,6 @@ async def test_browser_replay_operations(browser_replay_session):
                         print("Filled search input")
                         await asyncio.sleep(1)
 
-                        # Try to find and click search button
                         button_selectors = [
                             "#su",
                             "input[type='submit']",
@@ -195,19 +142,16 @@ async def test_browser_replay_operations(browser_replay_session):
                         ]
                         for btn_selector in button_selectors:
                             try:
-                                search_button = await page.wait_for_selector(
-                                    btn_selector, timeout=3000
-                                )
+                                search_button = await page.wait_for_selector(btn_selector, timeout=3000)
                                 if search_button and await search_button.is_visible():
                                     await search_button.click()
                                     print("Clicked search button")
                                     await asyncio.sleep(2)
                                     break
-                            except:
+                            except Exception:
                                 continue
                     else:
                         print("Search input not found, performing simple navigation instead")
-                        # Just scroll the page to demonstrate interaction
                         await page.evaluate("window.scrollTo(0, 500)")
                         await asyncio.sleep(1)
                         await page.evaluate("window.scrollTo(0, 0)")
@@ -229,16 +173,9 @@ async def test_browser_replay_operations(browser_replay_session):
             error_msg = str(e)
             print(f"Connection attempt {attempt + 1} failed: {error_msg}")
 
-            # Check if it's a connection error that might be retryable
             is_retryable = any(
                 keyword in error_msg.lower()
-                for keyword in [
-                    "ebadf",
-                    "connection",
-                    "timeout",
-                    "network",
-                    "websocket",
-                ]
+                for keyword in ["ebadf", "connection", "timeout", "network", "websocket"]
             )
 
             if attempt < max_retries - 1 and is_retryable:
@@ -247,7 +184,6 @@ async def test_browser_replay_operations(browser_replay_session):
                 retry_delay *= 2  # Exponential backoff
             else:
                 print(f"Failed to connect after {attempt + 1} attempts")
-                # Don't fail the test for browser interaction issues
                 print("This is acceptable for a recording test - the important part is that recording is enabled")
                 break
 

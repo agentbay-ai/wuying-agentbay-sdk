@@ -1318,7 +1318,16 @@ public class GenerateApiDocs {
             "com.aliyun.agentbay.git.GitNotARepoError",
             "com.aliyun.agentbay.git.GitNotFoundError"
         ));
-        
+        moduleToClasses.put("pty", Arrays.asList(
+            "com.aliyun.agentbay.pty.Pty",
+            "com.aliyun.agentbay.pty.PtyHandle",
+            "com.aliyun.agentbay.pty.PtySession"
+        ));
+        moduleToClasses.put("env", Arrays.asList(
+            "com.aliyun.agentbay.env.Env",
+            "com.aliyun.agentbay.model.EnvResult",
+            "com.aliyun.agentbay.model.BoolResult"
+        ));
         return moduleToClasses.getOrDefault(moduleName, new ArrayList<>());
     }
 
@@ -1371,7 +1380,10 @@ public class GenerateApiDocs {
             "The Computer module provides desktop automation capabilities including screen capture and interaction."));
         modules.put("mobile", createModuleConfig("Mobile", "common-features/advanced", "\\uD83D\\uDCF1", 
             "The Mobile module provides mobile device automation and testing capabilities."));
-        
+        modules.put("pty", createModuleConfig("PTY", "common-features/basics", "\\uD83D\\uDCBB",
+            "The PTY module provides interactive terminal sessions in cloud sandbox environments with real-time streaming, resize, and session lifecycle management."));
+        modules.put("env", createModuleConfig("Env", "common-features/basics", "\\uD83C\\uDF10",
+            "The Env module provides methods for setting and querying global environment variables within a session sandbox."));
         fallbackData.put("modules", modules);
         
         // Add comprehensive global configuration

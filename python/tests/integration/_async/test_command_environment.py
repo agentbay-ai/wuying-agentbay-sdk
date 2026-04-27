@@ -1,31 +1,16 @@
 """Integration tests for command environment variables and advanced features (cwd, envs, new return format)."""
 # ci-stable
 
-import os
-
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import CreateSessionParams
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
-@pytest_asyncio.fixture
-async def test_session(agent_bay):
+@pytest.fixture
+async def test_session(make_session):
     """Create a test session."""
-    result = await agent_bay.create(CreateSessionParams(image_id="linux_latest"))
-    if not result.success:
-        pytest.skip(f"Failed to create session: {result.error_message}")
-    yield result.session
-    await result.session.delete()
+    lc = await make_session(params=CreateSessionParams(image_id="linux_latest"))
+    return lc._result.session
 
 
 @pytest.mark.asyncio
@@ -33,18 +18,18 @@ async def test_command_new_return_format(test_session):
     """Test command execution with new return format (exit_code, stdout, stderr)."""
     cmd = test_session.command
     result = await cmd.execute_command("echo 'Hello, AgentBay!'")
-    
+
     # Verify new fields exist
     assert hasattr(result, 'exit_code'), "exit_code field should exist"
     assert hasattr(result, 'stdout'), "stdout field should exist"
     assert hasattr(result, 'stderr'), "stderr field should exist"
-    
+
     # Verify success case
     assert result.success, "Command should succeed"
     assert result.exit_code == 0, "Exit code should be 0 for success"
     assert "Hello, AgentBay!" in result.stdout, "Stdout should contain expected output"
     assert result.output == result.stdout, "Output should equal stdout for success"
-    
+
     print(f"✓ New return format test passed: exit_code={result.exit_code}, stdout={result.stdout}")
 
 
@@ -53,12 +38,12 @@ async def test_command_error_with_exit_code(test_session):
     """Test error command with exit_code, stderr, and trace_id."""
     cmd = test_session.command
     result = await cmd.execute_command("ls /non_existent_directory_12345")
-    
+
     # Verify error case
     assert hasattr(result, 'exit_code'), "exit_code field should exist"
     assert hasattr(result, 'stderr'), "stderr field should exist"
     assert hasattr(result, 'trace_id'), "trace_id field should exist"
-    
+
     # Error commands should have non-zero exit code
     # Note: success field behavior depends on implementation
     if result.exit_code != 0:
@@ -78,12 +63,12 @@ async def test_command_with_cwd(test_session):
     """Test command execution with cwd parameter."""
     cmd = test_session.command
     result = await cmd.execute_command("pwd", cwd="/tmp")
-    
+
     assert result.success, "Command should succeed"
     assert result.exit_code == 0, "Exit code should be 0"
     # The output should contain /tmp or be /tmp
     assert "/tmp" in result.stdout, f"Working directory should be /tmp, got: {result.stdout}"
-    
+
     print(f"✓ CWD test passed: working directory={result.stdout.strip()}")
 
 
@@ -95,7 +80,7 @@ async def test_command_with_envs(test_session):
         "echo $TEST_VAR",
         envs={"TEST_VAR": "test_value_123"}
     )
-    
+
     assert result.success, "Command should succeed"
     assert result.exit_code == 0, "Exit code should be 0"
     # The environment variable should be set
@@ -117,11 +102,11 @@ async def test_command_with_cwd_and_envs(test_session):
         cwd="/tmp",
         envs={"CUSTOM_VAR": "custom_value"}
     )
-    
+
     assert result.success, "Command should succeed"
     assert result.exit_code == 0, "Exit code should be 0"
     assert "/tmp" in result.stdout, "Working directory should be /tmp"
-    
+
     print(f"✓ Combined cwd and envs test passed")
     print(f"  Output: {result.stdout}")
 
@@ -131,15 +116,15 @@ async def test_command_backward_compatibility(test_session):
     """Test backward compatibility: output field should still work."""
     cmd = test_session.command
     result = await cmd.execute_command("echo 'backward compatible'")
-    
+
     # Verify backward compatibility
     assert hasattr(result, 'output'), "output field should exist for backward compatibility"
     assert result.output is not None, "output should not be None"
-    
+
     # output should be stdout + stderr
     expected_output = (result.stdout or "") + (result.stderr or "")
     assert result.output == expected_output, f"output should equal stdout + stderr, got: {result.output}, expected: {expected_output}"
-    
+
     print(f"✓ Backward compatibility test passed: output={result.output}")
 
 
@@ -169,14 +154,14 @@ async def test_command_custom_timeout(test_session):
 @pytest.mark.asyncio
 async def test_command_cwd_with_spaces(test_session):
     """Test command execution with cwd containing spaces (security test for parameter passing)."""
-    cmd = test_session.command    
+    cmd = test_session.command
     # Create a directory with spaces in the path
     test_dir = "/tmp/test dir with spaces"
-    
+
     # First, create the directory
     result = await cmd.execute_command(f"mkdir -p '{test_dir}'")
     assert result.success, "Should be able to create directory with spaces"
-    
+
     # Test pwd with cwd containing spaces
     result = await cmd.execute_command("pwd", cwd=test_dir)
     assert result.success, "Command should succeed with cwd containing spaces"
@@ -184,19 +169,19 @@ async def test_command_cwd_with_spaces(test_session):
     # The output should contain the directory path (may be normalized)
     assert test_dir in result.stdout or "/tmp/test" in result.stdout, \
         f"Working directory should contain test dir, got: {result.stdout}"
-    
+
     # Test creating a file in the directory with spaces
     result = await cmd.execute_command("echo 'test content' > test_file.txt", cwd=test_dir)
     assert result.success, "Should be able to create file in directory with spaces"
-    
+
     # Verify file was created
     result = await cmd.execute_command("ls test_file.txt", cwd=test_dir)
     assert result.success, "Should be able to list file in directory with spaces"
     assert "test_file.txt" in result.stdout, "File should exist in directory with spaces"
-    
+
     # Cleanup
     await cmd.execute_command(f"rm -rf '{test_dir}'")
-    
+
     print(f"✓ CWD with spaces test passed: directory={test_dir}")
 
 
@@ -204,7 +189,7 @@ async def test_command_cwd_with_spaces(test_session):
 async def test_command_envs_with_special_characters(test_session):
     """Test command execution with environment variables containing special characters (security test)."""
     cmd = test_session.command
-    
+
     # Test environment variable with quotes
     result = await cmd.execute_command(
         "echo $TEST_VAR",
@@ -212,13 +197,12 @@ async def test_command_envs_with_special_characters(test_session):
     )
     assert result.success, "Command should succeed with env containing single quotes"
     assert result.exit_code == 0, "Exit code should be 0"
-    # The value should be properly escaped and passed
     output = result.stdout.strip()
     if "value with" in output and "single quotes" in output:
         print(f"✓ Envs with single quotes test passed: {output}")
     else:
         print(f"⚠ Envs with single quotes: output may not match exactly: {output}")
-    
+
     # Test environment variable with double quotes
     result = await cmd.execute_command(
         "echo $TEST_VAR",
@@ -231,7 +215,7 @@ async def test_command_envs_with_special_characters(test_session):
         print(f"✓ Envs with double quotes test passed: {output}")
     else:
         print(f"⚠ Envs with double quotes: output may not match exactly: {output}")
-    
+
     # Test environment variable with semicolon (potential injection attempt)
     # This should NOT execute as a separate command due to parameter passing
     result = await cmd.execute_command(
@@ -246,7 +230,7 @@ async def test_command_envs_with_special_characters(test_session):
         print(f"✓ Envs with semicolon test passed (no injection): {output}")
     else:
         print(f"⚠ Envs with semicolon: output={output}")
-    
+
     # Test environment variable with special characters
     result = await cmd.execute_command(
         "echo $TEST_VAR",
@@ -259,7 +243,7 @@ async def test_command_envs_with_special_characters(test_session):
         print(f"✓ Envs with special characters test passed: {output[:50]}...")
     else:
         print(f"⚠ Envs with special characters: output may not match: {output}")
-    
+
     # Test environment variable with newline (potential injection attempt)
     result = await cmd.execute_command(
         "echo $TEST_VAR",
@@ -278,12 +262,12 @@ async def test_command_envs_with_special_characters(test_session):
 async def test_command_cwd_and_envs_with_special_chars(test_session):
     """Test command execution with both cwd (with spaces) and envs (with special chars) together."""
     cmd = test_session.command
-    
+
     # Create a directory with spaces
     test_dir = "/tmp/test dir with spaces"
     result = await cmd.execute_command(f"mkdir -p '{test_dir}'")
     assert result.success, "Should be able to create directory with spaces"
-    
+
     # Test with both cwd (spaces) and envs (special chars)
     result = await cmd.execute_command(
         "pwd && echo $TEST_VAR",
@@ -294,7 +278,7 @@ async def test_command_cwd_and_envs_with_special_chars(test_session):
     assert result.exit_code == 0, "Exit code should be 0"
     assert test_dir in result.stdout or "/tmp/test" in result.stdout, \
         "Working directory should contain test dir"
-    
+
     # Verify environment variable was set (may be partially visible)
     output = result.stdout.strip()
     if "value" in output or "TEST_VAR" in output:
@@ -302,7 +286,6 @@ async def test_command_cwd_and_envs_with_special_chars(test_session):
         print(f"  Output: {output[:100]}...")
     else:
         print(f"⚠ Combined test: output may not show env var: {output}")
-    
+
     # Cleanup
     await cmd.execute_command(f"rm -rf '{test_dir}'")
-

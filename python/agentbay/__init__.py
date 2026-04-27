@@ -24,6 +24,9 @@ from ._common.exceptions import (
     GitNotFoundError,
     GitConflictError,
     GitNotARepoError,
+    PtyError,
+    PtySessionNotFoundError,
+    PtyNotConnectedError,
 )
 from ._common.logger import AgentBayLogger, get_logger, log, _colorize_log_message
 from ._common.params.context_sync import (
@@ -57,6 +60,7 @@ from ._common.models.response import (
     SessionListResult,
     DeleteResult,
     BoolResult,
+    EnvResult,
     McpToolResult,
     AdbUrlResult,
     McpToolsResult,
@@ -148,7 +152,9 @@ from ._sync.context import (
     ContextService,
 )
 from ._sync.beta_network import SyncBetaNetworkService as BetaNetwork
+from ._sync.env import Env
 from ._sync.code import Code, CodeExecutionResult
+from ._sync.pty import Pty
 from ._common.models.code import (
     EnhancedCodeExecutionResult,
     ExecutionResult as CodeExecutionResult,
@@ -173,8 +179,10 @@ from ._async.context_manager import AsyncContextManager
 from ._async.context import AsyncContextService
 from ._async.extension import AsyncExtensionsService
 from ._async.code import AsyncCode
+from ._async.env import AsyncEnv
 from ._async.mobile_simulate import AsyncMobileSimulateService
 from ._async.beta_network import AsyncBetaNetworkService as AsyncBetaNetwork
+from ._async.pty import AsyncPty, PtyHandle, PtySession
 
 
 
@@ -208,6 +216,7 @@ __all__ = [
     "OSSDownloadResult",
     "ContextManager",
     "AsyncContextManager",
+    "Env",
     "Code",
     "AsyncCode",
     "BetaNetwork",
@@ -291,6 +300,7 @@ __all__ = [
     "SessionListResult",
     "DeleteResult",
     "BoolResult",
+    "EnvResult",
     "McpToolResult",
     "SessionMetrics",
     "SessionMetricsResult",
@@ -326,6 +336,7 @@ __all__ = [
     "ProcessListResult",
     "AppOperationResult",
     "UIElementListResult",
+    "AsyncEnv",
     "AsyncMobileSimulateService",
     "MobileSimulateService",
     "MobileSimulateUploadResult",

@@ -8,6 +8,8 @@ Rules:
   beta_take_screenshot() must fail with a clear guidance message.
 
 These tests use real backend resources (no mocks).
+Note: Tests use custom endpoints/configs and manage session lifecycle manually,
+because make_session does not support per-test custom Config/endpoint overrides.
 """
 
 import os
@@ -77,7 +79,7 @@ async def test_computer_link_url_absent_requires_screenshot():
     agent_bay = _new_agent_bay(api_key, NO_LINK_URL_ENDPOINT)
     session = await _create_session(agent_bay, NO_LINK_URL_IMAGE_ID)
     try:
-        if(session.get_link_url()):
+        if session.get_link_url():
             pytest.skip("Skipping test_computer_link_url_absent_requires_screenshot because session.link_url is non-empty")
         assert not session.get_link_url(), "Expected session.link_url to be empty for this endpoint/image"
 
@@ -90,4 +92,3 @@ async def test_computer_link_url_absent_requires_screenshot():
             await session.computer.beta_take_screenshot(format="png")
     finally:
         await session.delete()
-

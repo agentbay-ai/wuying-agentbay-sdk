@@ -57,10 +57,10 @@ func createMockGit(t *testing.T, validator func(cmd string)) *git.Git {
 	mockSession := &GitTestMockSession{
 		callMcpToolFunc: func(toolName string, args interface{}) (*models.McpToolResult, error) {
 			assert.Equal(t, "shell", toolName)
-			
+
 			argsMap := args.(map[string]interface{})
 			cmd := argsMap["command"].(string)
-			
+
 			// First call is always git --version for ensureGitAvailable
 			if callCount == 0 {
 				callCount++
@@ -73,12 +73,12 @@ func createMockGit(t *testing.T, validator func(cmd string)) *git.Git {
 				jsonBytes, _ := json.Marshal(jsonData)
 				return &models.McpToolResult{Success: true, Data: string(jsonBytes)}, nil
 			}
-			
+
 			// Subsequent calls go through the validator
 			if validator != nil {
 				validator(cmd)
 			}
-			
+
 			// Determine appropriate stdout based on command type
 			stdout := ""
 			if strings.Contains(cmd, "'commit'") {
@@ -92,7 +92,7 @@ func createMockGit(t *testing.T, validator func(cmd string)) *git.Git {
 			} else if strings.Contains(cmd, "'branch'") && strings.Contains(cmd, "'--format") {
 				stdout = "main\t*"
 			}
-			
+
 			// Return success for subsequent calls
 			jsonData := map[string]interface{}{
 				"stdout":    stdout,
@@ -103,7 +103,7 @@ func createMockGit(t *testing.T, validator func(cmd string)) *git.Git {
 			return &models.McpToolResult{Success: true, Data: string(jsonBytes)}, nil
 		},
 	}
-	
+
 	cmd := command.NewCommand(mockSession)
 	return git.NewGit(cmd)
 }
@@ -117,9 +117,9 @@ func TestGit_Clone_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Clone("https://github.com/user/repo.git")
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "'clone'")
@@ -132,9 +132,9 @@ func TestGit_Clone_WithBranch(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Clone("https://github.com/user/repo.git", git.WithCloneBranch("main"))
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "'clone'")
@@ -149,9 +149,9 @@ func TestGit_Clone_WithDepth(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Clone("https://github.com/user/repo.git", git.WithCloneDepth(1))
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "'clone'")
@@ -165,9 +165,9 @@ func TestGit_Clone_WithPath(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Clone("https://github.com/user/repo.git", git.WithClonePath("/tmp/myrepo"))
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "'clone'")
@@ -181,11 +181,11 @@ func TestGit_Clone_WithBranchAndDepth(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
-	result, err := g.Clone("https://github.com/user/repo.git", 
-		git.WithCloneBranch("develop"), 
+
+	result, err := g.Clone("https://github.com/user/repo.git",
+		git.WithCloneBranch("develop"),
 		git.WithCloneDepth(5))
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "'clone'")
@@ -206,9 +206,9 @@ func TestGit_Init_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Init("/tmp/testrepo")
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	// Path should be an argument to init, NOT used with -C
@@ -223,9 +223,9 @@ func TestGit_Init_WithBranch(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Init("/tmp/testrepo", git.WithInitBranch("main"))
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NotContains(t, capturedCmd, "-C")
@@ -240,9 +240,9 @@ func TestGit_Init_WithBare(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Init("/tmp/testrepo", git.WithInitBare())
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NotContains(t, capturedCmd, "-C")
@@ -260,9 +260,9 @@ func TestGit_Add_WithPaths(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Add("/tmp/testrepo", git.WithAddPaths([]string{"file1.txt", "file2.txt"}))
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -277,9 +277,9 @@ func TestGit_Add_WithAll(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Add("/tmp/testrepo", git.WithAddAll())
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -292,9 +292,9 @@ func TestGit_Add_NoPaths_DefaultStageAll(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Add("/tmp/testrepo")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "'add'")
 	assert.Contains(t, capturedCmd, "'-A'")
@@ -309,9 +309,9 @@ func TestGit_Commit_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Commit("/tmp/testrepo", "Initial commit")
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "-C")
@@ -326,9 +326,9 @@ func TestGit_Commit_WithAllowEmpty(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Commit("/tmp/testrepo", "Empty commit", git.WithCommitAllowEmpty())
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "-C")
@@ -344,11 +344,11 @@ func TestGit_Commit_WithAuthorNameAndEmail(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
-	result, err := g.Commit("/tmp/testrepo", "Test commit", 
+
+	result, err := g.Commit("/tmp/testrepo", "Test commit",
 		git.WithCommitAuthorName("Test User"),
 		git.WithCommitAuthorEmail("test@example.com"))
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "-C")
@@ -372,9 +372,9 @@ func TestGit_Status_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	result, err := g.Status("/tmp/testrepo")
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, capturedCmd, "-C")
@@ -393,9 +393,9 @@ func TestGit_CreateBranch_Default(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.CreateBranch("/tmp/testrepo", "feature")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -409,9 +409,9 @@ func TestGit_CreateBranch_NoCheckout(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.CreateBranch("/tmp/testrepo", "feature", git.WithBranchCreateCheckout(false))
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -425,9 +425,9 @@ func TestGit_DeleteBranch_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.DeleteBranch("/tmp/testrepo", "feature")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -441,9 +441,9 @@ func TestGit_DeleteBranch_WithForce(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.DeleteBranch("/tmp/testrepo", "feature", git.WithBranchDeleteForce())
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -461,12 +461,12 @@ func TestGit_ConfigureUser_DefaultGlobal(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmds = append(capturedCmds, cmd)
 	})
-	
+
 	err := g.ConfigureUser("/tmp/testrepo", "Test User", "test@example.com")
-	
+
 	assert.NoError(t, err)
 	assert.Len(t, capturedCmds, 2)
-	
+
 	// First command: set user name
 	assert.Contains(t, capturedCmds[0], "-C")
 	assert.Contains(t, capturedCmds[0], "'/tmp/testrepo'")
@@ -474,7 +474,7 @@ func TestGit_ConfigureUser_DefaultGlobal(t *testing.T) {
 	assert.Contains(t, capturedCmds[0], "'--global'")
 	assert.Contains(t, capturedCmds[0], "'user.name'")
 	assert.Contains(t, capturedCmds[0], "'Test User'")
-	
+
 	// Second command: set user email
 	assert.Contains(t, capturedCmds[1], "-C")
 	assert.Contains(t, capturedCmds[1], "'/tmp/testrepo'")
@@ -489,9 +489,9 @@ func TestGit_SetConfig_DefaultGlobal(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.SetConfig("/tmp/testrepo", "core.autocrlf", "true")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -510,9 +510,9 @@ func TestGit_Reset_Default(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Reset("/tmp/testrepo")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -526,9 +526,9 @@ func TestGit_Reset_Hard(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Reset("/tmp/testrepo", git.WithResetHard())
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -546,9 +546,9 @@ func TestGit_Pull_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Pull("/tmp/testrepo")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -564,9 +564,9 @@ func TestGit_RemoteAdd_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.RemoteAdd("/tmp/testrepo", "origin", "https://github.com/user/repo.git")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -581,9 +581,9 @@ func TestGit_RemoteAdd_WithFetch(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.RemoteAdd("/tmp/testrepo", "origin", "https://github.com/user/repo.git", git.WithRemoteAddFetch())
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -599,9 +599,9 @@ func TestGit_RemoteAdd_WithOverwrite(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.RemoteAdd("/tmp/testrepo", "origin", "https://github.com/user/repo.git", git.WithRemoteAddOverwrite())
-	
+
 	assert.NoError(t, err)
 	// Idempotent mode uses "add ... || set-url ..." pattern
 	assert.Contains(t, capturedCmd, "'remote'")
@@ -619,9 +619,9 @@ func TestGit_Checkout_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.CheckoutBranch("/tmp/testrepo", "main")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -636,9 +636,9 @@ func TestGit_Log_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	_, err := g.Log("/tmp/testrepo")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -651,9 +651,9 @@ func TestGit_Log_WithMaxCount(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	_, err := g.Log("/tmp/testrepo", git.WithLogMaxCount(5))
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "'log'")
 	assert.Contains(t, capturedCmd, "'-n'")
@@ -667,9 +667,9 @@ func TestGit_Restore_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Restore("/tmp/testrepo", []string{"file.txt"})
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "-C")
 	assert.Contains(t, capturedCmd, "'/tmp/testrepo'")
@@ -685,9 +685,9 @@ func TestGit_Restore_Staged(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Restore("/tmp/testrepo", []string{"file.txt"}, git.WithRestoreStaged())
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "'restore'")
 	assert.Contains(t, capturedCmd, "'--staged'")
@@ -701,9 +701,9 @@ func TestGit_Restore_NoPaths_Error(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		t.Error("Should not call command when no paths provided")
 	})
-	
+
 	err := g.Restore("/tmp/testrepo", []string{})
-	
+
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "requires at least one path")
 }
@@ -715,9 +715,9 @@ func TestGit_RemoteGet_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	_, err := g.RemoteGet("/tmp/testrepo", "origin")
-	
+
 	assert.NoError(t, err)
 	// Uses direct runGit (no || true)
 	assert.Contains(t, capturedCmd, "'remote'")
@@ -733,9 +733,9 @@ func TestGit_GetConfig_Basic(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	_, err := g.GetConfig("/tmp/testrepo", "user.name")
-	
+
 	assert.NoError(t, err)
 	// Uses direct runGit (no || true)
 	assert.Contains(t, capturedCmd, "'config'")
@@ -752,9 +752,9 @@ func TestGit_CreateBranch_DefaultUsesSmallB(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.CreateBranch("/tmp/testrepo", "feature")
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "'checkout'")
 	assert.Contains(t, capturedCmd, "'-b'")
@@ -768,9 +768,9 @@ func TestGit_Reset_WithPaths(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Reset("/tmp/testrepo", git.WithResetPaths([]string{"file1.txt", "file2.txt"}))
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "'reset'")
 	assert.Contains(t, capturedCmd, "'--'")
@@ -783,9 +783,9 @@ func TestGit_Restore_DefaultWorktree(t *testing.T) {
 	g := createMockGit(t, func(cmd string) {
 		capturedCmd = cmd
 	})
-	
+
 	err := g.Restore("/tmp/testrepo", []string{"file.txt"})
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, capturedCmd, "'restore'")
 	assert.Contains(t, capturedCmd, "'--worktree'")
@@ -802,7 +802,7 @@ func createMockGitWithError(t *testing.T, exitCode int, stderr string) *git.Git 
 	mockSession := &GitTestMockSession{
 		callMcpToolFunc: func(toolName string, args interface{}) (*models.McpToolResult, error) {
 			assert.Equal(t, "shell", toolName)
-			
+
 			// First call is always git --version for ensureGitAvailable
 			if callCount == 0 {
 				callCount++
@@ -814,7 +814,7 @@ func createMockGitWithError(t *testing.T, exitCode int, stderr string) *git.Git 
 				jsonBytes, _ := json.Marshal(jsonData)
 				return &models.McpToolResult{Success: true, Data: string(jsonBytes)}, nil
 			}
-			
+
 			// Subsequent calls return error
 			jsonData := map[string]interface{}{
 				"stdout":    "",
@@ -825,16 +825,16 @@ func createMockGitWithError(t *testing.T, exitCode int, stderr string) *git.Git 
 			return &models.McpToolResult{Success: true, Data: string(jsonBytes)}, nil
 		},
 	}
-	
+
 	cmd := command.NewCommand(mockSession)
 	return git.NewGit(cmd)
 }
 
 func TestGit_Clone_AuthError(t *testing.T) {
 	g := createMockGitWithError(t, 128, "fatal: Authentication failed for 'https://github.com/user/repo.git'")
-	
+
 	_, err := g.Clone("https://github.com/user/repo.git")
-	
+
 	assert.Error(t, err)
 	_, ok := err.(*git.GitAuthError)
 	assert.True(t, ok, "expected GitAuthError, got %T", err)
@@ -842,9 +842,9 @@ func TestGit_Clone_AuthError(t *testing.T) {
 
 func TestGit_Status_NotARepoError(t *testing.T) {
 	g := createMockGitWithError(t, 128, "fatal: not a git repository (or any of the parent directories): .git")
-	
+
 	_, err := g.Status("/tmp/not-a-repo")
-	
+
 	assert.Error(t, err)
 	_, ok := err.(*git.GitNotARepoError)
 	assert.True(t, ok, "expected GitNotARepoError, got %T", err)
@@ -859,10 +859,10 @@ func TestGit_Commit_HashFallback(t *testing.T) {
 	mockSession := &GitTestMockSession{
 		callMcpToolFunc: func(toolName string, args interface{}) (*models.McpToolResult, error) {
 			assert.Equal(t, "shell", toolName)
-			
+
 			argsMap := args.(map[string]interface{})
 			cmd := argsMap["command"].(string)
-			
+
 			// First call: git --version
 			if callCount == 0 {
 				callCount++
@@ -874,7 +874,7 @@ func TestGit_Commit_HashFallback(t *testing.T) {
 				jsonBytes, _ := json.Marshal(jsonData)
 				return &models.McpToolResult{Success: true, Data: string(jsonBytes)}, nil
 			}
-			
+
 			callCount++
 			var stdout string
 			if strings.Contains(cmd, "'commit'") {
@@ -884,7 +884,7 @@ func TestGit_Commit_HashFallback(t *testing.T) {
 				// Fallback: return full commit hash
 				stdout = "deadbeef1234567890abcdef1234567890abcdef"
 			}
-			
+
 			jsonData := map[string]interface{}{
 				"stdout":    stdout,
 				"stderr":    "",
@@ -894,12 +894,12 @@ func TestGit_Commit_HashFallback(t *testing.T) {
 			return &models.McpToolResult{Success: true, Data: string(jsonBytes)}, nil
 		},
 	}
-	
+
 	cmd := command.NewCommand(mockSession)
 	g := git.NewGit(cmd)
-	
+
 	result, err := g.Commit("/tmp/testrepo", "Test commit")
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	// Should get the hash from rev-parse HEAD fallback

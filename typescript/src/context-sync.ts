@@ -33,6 +33,7 @@ export interface UploadPolicy {
   autoUpload: boolean;
   uploadStrategy: UploadStrategy;
   uploadMode: UploadMode;
+  archiveExcludePaths?: string[];
 }
 
 // DownloadPolicy defines the download policy for context synchronization
@@ -233,8 +234,13 @@ export class SyncPolicyImpl implements SyncPolicy {
 
   toJSON(): SyncPolicy {
     this.ensureDefaults();
+    let uploadPolicy = this.uploadPolicy;
+    if (uploadPolicy?.archiveExcludePaths && uploadPolicy.uploadMode !== UploadMode.Archive) {
+      const { archiveExcludePaths: _, ...rest } = uploadPolicy;
+      uploadPolicy = rest as UploadPolicy;
+    }
     return {
-      uploadPolicy: this.uploadPolicy,
+      uploadPolicy,
       downloadPolicy: this.downloadPolicy,
       deletePolicy: this.deletePolicy,
       extractPolicy: this.extractPolicy,
@@ -308,12 +314,17 @@ export class ContextSync {
 }
 
 // NewUploadPolicy creates a new upload policy with default values
-export function newUploadPolicy(): UploadPolicy {
-  return {
-    autoUpload: true,
-    uploadStrategy: UploadStrategy.UploadBeforeResourceRelease,
-    uploadMode: UploadMode.File,
+export function newUploadPolicy(options?: Partial<UploadPolicy>): UploadPolicy {
+  const policy: UploadPolicy = {
+    autoUpload: options?.autoUpload ?? true,
+    uploadStrategy:
+      options?.uploadStrategy ?? UploadStrategy.UploadBeforeResourceRelease,
+    uploadMode: options?.uploadMode ?? UploadMode.File,
   };
+  if (options?.archiveExcludePaths && options.archiveExcludePaths.length > 0) {
+    policy.archiveExcludePaths = options.archiveExcludePaths;
+  }
+  return policy;
 }
 
 // NewDownloadPolicy creates a new download policy with default values

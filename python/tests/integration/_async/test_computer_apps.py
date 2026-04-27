@@ -3,47 +3,24 @@ ci-stable
 """
 
 import asyncio
-import os
-import time
 
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import CreateSessionParams
 
 # Shared state: populated by test_get_installed_apps, consumed by subsequent tests
 _shared: dict = {}
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def agent_bay():
-    """Create AsyncAgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
+@pytest.fixture
+async def session(make_session):
+    """Create a session for computer apps testing.
 
-
-@pytest_asyncio.fixture
-async def session(agent_bay):
-    """Create a session for command testing."""
-    time.sleep(3)  # Ensure a delay to avoid session creation conflicts
-    params = CreateSessionParams(
-        image_id="linux_latest",
-    )
-    session_result = await agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        pytest.skip("Failed to create session")
-
-    session = session_result.session  # Assuming session has direct access to command
-    yield session
-
-    # Clean up session
-    try:
-        await agent_bay.delete(session)
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    Note: Computer module requires a desktop environment.
+    Uses windows_latest (computer use image with Windows desktop).
+    """
+    lc = await make_session(params=CreateSessionParams(image_id="windows_latest"))
+    return lc._result.session
 
 
 @pytest.mark.asyncio
@@ -79,14 +56,15 @@ async def test_get_installed_apps(session):
         print("Warning: Google Chrome not found in installed apps, subsequent tests will use fallback name")
 
 
-
 @pytest.mark.asyncio
 async def test_start_app_and_stop_app(session):
     """Test starting an application with parameters."""
     # Arrange
     chrome_app = _shared.get("chrome_app")
-    start_cmd = chrome_app.start_cmd if chrome_app else "/usr/bin/google-chrome-stable %U"
+    start_cmd = chrome_app.start_cmd if chrome_app else "should skip pytest"
     print(f"\nTest: Starting {start_cmd} with work directory...")
+    if start_cmd == "should skip pytest":
+        pytest.skip("Google Chrome not found in installed apps")
 
     # Act
     # Note: 'activity' is for mobile, so we test work_directory here
@@ -102,7 +80,6 @@ async def test_start_app_and_stop_app(session):
 
     # Cleanup
     await session.computer.stop_app_by_pname(pname)
-
 
 
 @pytest.mark.asyncio
@@ -138,7 +115,7 @@ async def test_app_lifecycle(session):
     # Wait for window
     print("Verifying app visibility (polling)...")
     found_in_visible = False
-    
+
     # Poll for up to 10 seconds
     for i in range(5):
         visible_apps = await session.computer.list_visible_apps()
@@ -147,11 +124,11 @@ async def test_app_lifecycle(session):
                 if p.pid == pid:
                     found_in_visible = True
                     break
-        
+
         if found_in_visible:
             print("App found in visible list")
             break
-            
+
         print(f"App PID {pid} not visible yet, waiting... (attempt {i+1})")
         await asyncio.sleep(2)
 

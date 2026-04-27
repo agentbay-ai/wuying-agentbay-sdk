@@ -49,17 +49,20 @@ Represents a session in the AgentBay cloud environment.
 
 ```typescript
 agent: [`Agent`](../advanced/agent.md)
+appInstanceId: `string` = `""`
 browser: [`Browser`](../../browser-use/browser.md)
 code: [`Code`](../../codespace/code.md)
 command: [`Command`](command.md)
 computer: [`Computer`](../../computer-use/computer.md)
 context: [`ContextManager`](context-manager.md)
+env: [`Env`](env.md)
 fileSystem: [`FileSystem`](filesystem.md)
 git: [`Git`](../advanced/git.md)
 linkUrl: `string` = `""`
 mcpTools: `McpTool`[] = `[]`
 mobile: [`Mobile`](../../mobile-use/mobile.md)
 oss: [`Oss`](../advanced/oss.md)
+pty: [`Pty`](pty.md)
 resourceUrl: `string` = `""`
 sessionId: `string`
 token: `string` = `""`

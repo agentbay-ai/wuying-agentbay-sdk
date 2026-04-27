@@ -36,6 +36,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := archiveExcludePathsExample(ab, uniqueID); err != nil {
+		fmt.Printf("❌ Example execution failed: %v\n", err)
+		os.Exit(1)
+	}
+
 	fmt.Println("✅ Archive upload mode example completed")
 }
 
@@ -219,5 +224,114 @@ func archiveUploadModeExample(ab *agentbay.AgentBay, uniqueID string) error {
 	fmt.Println("\n🎉 Archive upload mode example completed successfully!")
 	fmt.Println("✅ All operations completed without errors.")
 
+	return nil
+}
+
+func archiveExcludePathsExample(ab *agentbay.AgentBay, uniqueID string) error {
+	fmt.Println("\n📂 === Archive Upload Mode with archiveExcludePaths Example ===")
+
+	var session *agentbay.Session
+
+	defer func() {
+		if session != nil {
+			fmt.Println("\n🧹 Cleaning up exclude-paths session...")
+			deleteResult, err := ab.Delete(session, true)
+			if err != nil {
+				fmt.Printf("❌ Failed to delete session: %v\n", err)
+			} else {
+				fmt.Printf("✅ Session deleted successfully!\n")
+				fmt.Printf("   Success: %t\n", deleteResult.Success)
+				fmt.Printf("   Request ID: %s\n", deleteResult.RequestID)
+			}
+		}
+	}()
+
+	fmt.Println("\n📦 Step 1: Creating context for Archive + exclude paths...")
+	contextName := fmt.Sprintf("archive-exclude-context-%s", uniqueID)
+	contextResult, err := ab.Context.Get(contextName, true)
+	if err != nil {
+		return fmt.Errorf("context creation failed: %v", err)
+	}
+
+	fmt.Printf("✅ Context ID: %s\n", contextResult.ContextID)
+
+	fmt.Println("\n⚙️  Step 2: Configuring upload policy with ArchiveExcludePaths...")
+	uploadPolicy := agentbay.NewUploadPolicy()
+	uploadPolicy.UploadMode = agentbay.UploadModeArchive
+	uploadPolicy.ArchiveExcludePaths = []string{"important/", "config.json"}
+	syncPolicy := &agentbay.SyncPolicy{
+		UploadPolicy: uploadPolicy,
+	}
+
+	syncBase := "/tmp/archive-exclude-test"
+	fmt.Printf("✅ archiveExcludePaths: %v\n", uploadPolicy.ArchiveExcludePaths)
+
+	fmt.Println("\n🔧 Step 3: Creating context sync configuration...")
+	contextSync := &agentbay.ContextSync{
+		ContextID: contextResult.ContextID,
+		Path:      syncBase,
+		Policy:    syncPolicy,
+	}
+
+	fmt.Println("\n🏗️  Step 4: Creating session...")
+	sessionParams := agentbay.NewCreateSessionParams().
+		WithLabels(map[string]string{
+			"example":    fmt.Sprintf("archive-exclude-%s", uniqueID),
+			"type":       "archive-exclude-demo",
+			"uploadMode": "Archive",
+		}).
+		WithContextSync([]*agentbay.ContextSync{contextSync})
+
+	sessionResult, err := ab.Create(sessionParams)
+	if err != nil {
+		return fmt.Errorf("session creation failed: %v", err)
+	}
+
+	session = sessionResult.Session
+	fmt.Printf("✅ Session ID: %s\n", session.SessionID)
+
+	fmt.Println("\n📝 Step 5: Writing excluded and non-excluded files...")
+	if _, err := session.FileSystem.CreateDirectory(syncBase + "/important"); err != nil {
+		return fmt.Errorf("create_directory important failed: %v", err)
+	}
+	if _, err := session.FileSystem.CreateDirectory(syncBase + "/regular"); err != nil {
+		return fmt.Errorf("create_directory regular failed: %v", err)
+	}
+
+	if _, err := session.FileSystem.WriteFile(syncBase+"/important/data.txt",
+		"Excluded path: stored individually when possible.", "overwrite"); err != nil {
+		return fmt.Errorf("write important/data.txt failed: %v", err)
+	}
+	if _, err := session.FileSystem.WriteFile(syncBase+"/config.json",
+		`{"key":"value"}`, "overwrite"); err != nil {
+		return fmt.Errorf("write config.json failed: %v", err)
+	}
+	if _, err := session.FileSystem.WriteFile(syncBase+"/regular/data.txt",
+		"Regular path: eligible for bulk archive packaging.", "overwrite"); err != nil {
+		return fmt.Errorf("write regular/data.txt failed: %v", err)
+	}
+
+	fmt.Println("\n🔄 Step 6: Syncing context...")
+	syncResult, err := session.Context.Sync()
+	if err != nil {
+		return fmt.Errorf("context sync failed: %v", err)
+	}
+	fmt.Printf("✅ Context sync OK (request %s)\n", syncResult.RequestID)
+
+	fmt.Println("\n🔍 Step 7: Listing files...")
+	listResult, err := ab.Context.ListFiles(contextResult.ContextID, syncBase, 1, 20)
+	if err != nil {
+		return fmt.Errorf("list files failed: %v", err)
+	}
+	if !listResult.Success {
+		return fmt.Errorf("list files failed: %s", listResult.ErrorMessage)
+	}
+
+	fmt.Printf("✅ Listed %d entries\n", len(listResult.Entries))
+	for index, entry := range listResult.Entries {
+		fmt.Printf("   [%d] %s (%s, %d bytes)\n", index, entry.FilePath, entry.FileName, entry.Size)
+	}
+
+	fmt.Println("\n🎉 archiveExcludePaths example completed successfully!")
 	return nil
 }

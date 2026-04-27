@@ -9,10 +9,12 @@ import com.aliyun.agentbay.context.*;
 import com.aliyun.agentbay.exception.AgentBayException;
 import com.aliyun.agentbay.filesystem.FileSystem;
 import com.aliyun.agentbay.git.Git;
+import com.aliyun.agentbay.pty.Pty;
 import com.aliyun.agentbay.model.*;
 import com.aliyun.agentbay.oss.OSS;
 import com.aliyun.agentbay.code.Code;
 import com.aliyun.agentbay.command.Command;
+import com.aliyun.agentbay.env.Env;
 import com.aliyun.agentbay.mcp.McpTool;
 import com.aliyun.agentbay.mcp.McpToolsResult;
 import com.aliyun.agentbay._internal.WsClient;
@@ -42,7 +44,10 @@ public class Session {
     private Computer computer;
     public Mobile mobile;
     private Git git;
+    private Pty pty;
+    private Env env;
     private String fileTransferContextId;
+    private String appInstanceId;
     private String resourceUrl;
     private String token;
     private String linkUrl;
@@ -75,8 +80,29 @@ public class Session {
         this.computer = new Computer(this);
         this.mobile = new Mobile(this);
         this.git = new Git(this);
+        this.pty = new Pty(this);
+        this.env = new Env(this);
         this.imageId = "";
         this.wsUrl = "";
+        this.appInstanceId = "";
+    }
+
+    /**
+     * Get the application instance ID.
+     *
+     * @return The application instance ID
+     */
+    public String getAppInstanceId() {
+        return appInstanceId;
+    }
+
+    /**
+     * Set the application instance ID.
+     *
+     * @param appInstanceId The application instance ID
+     */
+    public void setAppInstanceId(String appInstanceId) {
+        this.appInstanceId = appInstanceId;
     }
 
     public String getWsUrl() {
@@ -158,6 +184,10 @@ public class Session {
      */
     public Git getGit() {
         return git;
+    }
+
+    public Pty getPty() {
+        return pty;
     }
 
     /**
@@ -924,6 +954,14 @@ public class Session {
         return mobile;
     }
 
+    /**
+     * Get the environment variable service for this session
+     *
+     * @return Env instance
+     */
+    public Env getEnv() {
+        return env;
+    }
 
     /**
      * Get the file transfer context ID for this session

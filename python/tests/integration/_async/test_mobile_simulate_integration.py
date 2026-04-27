@@ -2,11 +2,8 @@ import os
 import asyncio
 
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import MobileExtraConfig, MobileSimulateMode
-from agentbay import AsyncSession
 from agentbay import CreateSessionParams, ExtraConfigs
 from agentbay import AsyncMobileSimulateService
 
@@ -15,19 +12,8 @@ MOBILE_INFO_MODEL_A = "SM-A505F"
 MOBILE_INFO_MODEL_B = "moto g stylus 5G - 2024"
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    """
-    Set up the test environment by creating an AsyncAgentBay instance.
-    """
-    api_key = os.getenv(
-        "AGENTBAY_API_KEY", "your_api_key"
-    )  # Replace with your actual API key
-    return AsyncAgentBay(api_key=api_key)
-
-
 @pytest.mark.asyncio
-async def test_mobile_simulate_for_model_a(agent_bay):
+async def test_mobile_simulate_for_model_a(agent_bay_client):
     """
     Test device properties after mobile simulate for model a.
     """
@@ -43,7 +29,7 @@ async def test_mobile_simulate_for_model_a(agent_bay):
         mobile_info_content = f.read()
     
     # Create mobile simulate service and set simulate params
-    simulate_service = AsyncMobileSimulateService(agent_bay)
+    simulate_service = AsyncMobileSimulateService(agent_bay_client)
     simulate_service.set_simulate_enable(True)
     simulate_service.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
     
@@ -60,7 +46,7 @@ async def test_mobile_simulate_for_model_a(agent_bay):
             )
         )
     )
-    result = await agent_bay.create(params)
+    result = await agent_bay_client.create(params)
     session = None
     if not result.success and "no authorized app" in result.error_message:
         pytest.skip(f"The user has no authorized app instance: {result.error_message}")
@@ -80,14 +66,14 @@ async def test_mobile_simulate_for_model_a(agent_bay):
 
     await asyncio.sleep(2)
     print("Deleting session...")
-    delete_result = await agent_bay.delete(session)
+    delete_result = await agent_bay_client.delete(session)
     assert delete_result.success, "Failed to delete session"
     print(f"Session deleted successfully (RequestID: {delete_result.request_id})")
 
 
 
 @pytest.mark.asyncio
-async def test_mobile_simulate_for_model_b(agent_bay):
+async def test_mobile_simulate_for_model_b(agent_bay_client):
     """
     Test device properties after mobile simulate for model b.
     """
@@ -102,7 +88,7 @@ async def test_mobile_simulate_for_model_b(agent_bay):
         mobile_info_content = f.read()
     
     # Create mobile simulate service and set simulate params
-    simulate_service = AsyncMobileSimulateService(agent_bay)
+    simulate_service = AsyncMobileSimulateService(agent_bay_client)
     simulate_service.set_simulate_enable(True)
     simulate_service.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
     
@@ -119,7 +105,7 @@ async def test_mobile_simulate_for_model_b(agent_bay):
             )
         )
     )
-    result = await agent_bay.create(params)
+    result = await agent_bay_client.create(params)
     session = None
     if not result.success and "no authorized app" in result.error_message:
         pytest.skip(f"The user has no authorized app instance: {result.error_message}")
@@ -139,14 +125,14 @@ async def test_mobile_simulate_for_model_b(agent_bay):
 
     await asyncio.sleep(2)
     print("Deleting session...")
-    delete_result = await agent_bay.delete(session)
+    delete_result = await agent_bay_client.delete(session)
     assert delete_result.success, "Failed to delete session"
     print(f"Session deleted successfully (RequestID: {delete_result.request_id})")
 
 
 
 @pytest.mark.asyncio
-async def test_mobile_simulate_persistence(agent_bay):
+async def test_mobile_simulate_persistence(agent_bay_client):
     """
     Using model a simulate context to test persistence mobile simulate across sessions.
     """
@@ -162,7 +148,7 @@ async def test_mobile_simulate_persistence(agent_bay):
         mobile_info_content = f.read()
     
     # Create mobile simulate service and set simulate params
-    simulate_service_1 = AsyncMobileSimulateService(agent_bay)
+    simulate_service_1 = AsyncMobileSimulateService(agent_bay_client)
     simulate_service_1.set_simulate_enable(True)
     simulate_service_1.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
     
@@ -179,7 +165,7 @@ async def test_mobile_simulate_persistence(agent_bay):
             )
         )
     )
-    result = await agent_bay.create(params_1)
+    result = await agent_bay_client.create(params_1)
     if not result.success and "no authorized app" in result.error_message:
         pytest.skip(f"The user has no authorized app instance: {result.error_message}")
     assert result.success, f"Failed to create session: {result.error_message}"
@@ -198,7 +184,7 @@ async def test_mobile_simulate_persistence(agent_bay):
 
     await asyncio.sleep(2)
     print("Deleting session 1...")
-    delete_result = await agent_bay.delete(session_1)
+    delete_result = await agent_bay_client.delete(session_1)
     assert delete_result.success, "Failed to delete session"
     print(f"Session 1 deleted successfully (RequestID: {delete_result.request_id})")
 
@@ -206,7 +192,7 @@ async def test_mobile_simulate_persistence(agent_bay):
     # In Session 2
     # Directly use model a simulate context id to do mobile simulate across sessions.
     # Create mobile simulate service and set simulate params
-    simulate_service_2 = AsyncMobileSimulateService(agent_bay)
+    simulate_service_2 = AsyncMobileSimulateService(agent_bay_client)
     simulate_service_2.set_simulate_enable(True)
     simulate_service_2.set_simulate_mode(MobileSimulateMode.PROPERTIES_ONLY)
     simulate_service_2.set_simulate_context_id(mobile_sim_persistence_context_id)
@@ -219,7 +205,7 @@ async def test_mobile_simulate_persistence(agent_bay):
             )
         )
     )
-    result = await agent_bay.create(params_2)
+    result = await agent_bay_client.create(params_2)
     assert result.success, "Failed to create session"
     assert result.session is not None, "Session should not be None"
     session_2 = result.session
@@ -237,6 +223,6 @@ async def test_mobile_simulate_persistence(agent_bay):
     await asyncio.sleep(2)
 
     print("Deleting session 2...")
-    delete_result = await agent_bay.delete(session_2)
+    delete_result = await agent_bay_client.delete(session_2)
     assert delete_result.success, "Failed to delete session"
     print(f"Session 2 deleted successfully (RequestID: {delete_result.request_id})")

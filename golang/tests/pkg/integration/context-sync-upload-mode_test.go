@@ -4,10 +4,12 @@ package integration
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay"
+	"github.com/stretchr/testify/require"
 )
 
 func getTestAPIKey() string {
@@ -421,4 +423,137 @@ func testInvalidUploadModeValidation(t *testing.T, client *agentbay.AgentBay, un
 	} else {
 		t.Log("✅ 'Archive' uploadMode accepted successfully")
 	}
+}
+
+func TestArchiveModeWithExcludePaths(t *testing.T) {
+	t.Skip("archiveExcludePaths works in pre-release but not deployed to production yet. Remove this skip after production environment is updated.")
+
+	apiKey := getTestAPIKey()
+	uniqueId := generateUniqueId()
+
+	client, err := agentbay.NewAgentBay(apiKey, nil)
+	require.NoError(t, err)
+
+	contextName := fmt.Sprintf("archive-exclude-context-%s", uniqueId)
+	contextResult, err := client.Context.Get(contextName, true)
+	require.NoError(t, err)
+	require.True(t, contextResult.Success, contextResult.ErrorMessage)
+	require.NotNil(t, contextResult.Context)
+
+	contextID := contextResult.Context.ID
+	syncPath := "/tmp/archive-exclude-test"
+	t.Logf("contextId=%s syncPath=%s", contextID, syncPath)
+
+	uploadPolicy := agentbay.NewUploadPolicy()
+	uploadPolicy.UploadMode = agentbay.UploadModeArchive
+	uploadPolicy.ArchiveExcludePaths = []string{"important/", "config.json"}
+
+	syncPolicy := agentbay.NewSyncPolicy()
+	syncPolicy.UploadPolicy = uploadPolicy
+
+	contextSync, err := agentbay.NewContextSync(contextID, syncPath, syncPolicy)
+	require.NoError(t, err)
+
+	sessionParams := &agentbay.CreateSessionParams{
+		Labels: map[string]string{
+			"test": fmt.Sprintf("archive-exclude-%s", uniqueId),
+			"type": "archive-exclude-paths",
+		},
+		ContextSync: []*agentbay.ContextSync{contextSync},
+	}
+
+	t.Log("Creating session with Archive mode + exclude paths...")
+	sessionResult, err := client.Create(sessionParams)
+	require.NoError(t, err)
+	require.NotNil(t, sessionResult)
+	require.NotNil(t, sessionResult.Session)
+
+	session := sessionResult.Session
+
+	// Cleanup in case of failure
+	defer func() {
+		if session != nil {
+			_, _ = client.Delete(session, true)
+		}
+	}()
+
+	// Create directory structure
+	_, err = session.FileSystem.CreateDirectory(syncPath + "/important")
+	require.NoError(t, err)
+	_, err = session.FileSystem.CreateDirectory(syncPath + "/regular")
+	require.NoError(t, err)
+
+	// Write files: some in excluded paths, some not
+	writeImportant, err := session.FileSystem.WriteFile(syncPath+"/important/data.txt", "This file should be stored individually via FILE mode", "overwrite")
+	require.NoError(t, err)
+	require.True(t, writeImportant.Success)
+
+	writeConfig, err := session.FileSystem.WriteFile(syncPath+"/config.json", `{"key": "value", "setting": true}`, "overwrite")
+	require.NoError(t, err)
+	require.True(t, writeConfig.Success)
+
+	writeRegular, err := session.FileSystem.WriteFile(syncPath+"/regular/data.txt", "This file should be archived with the rest", "overwrite")
+	require.NoError(t, err)
+	require.True(t, writeRegular.Success)
+
+	t.Log("All files written successfully")
+
+	// Delete session with sync to trigger upload
+	delResult, err := client.Delete(session, true)
+	require.NoError(t, err)
+	require.NotNil(t, delResult)
+	require.True(t, delResult.Success, delResult.ErrorMessage)
+	t.Log("Session deleted with sync_context=True")
+	session = nil
+
+	// Verify files via list_files (only list root directory like Python)
+	listResult, err := client.Context.ListFiles(contextID, syncPath, 1, 20)
+	require.NoError(t, err)
+	require.True(t, listResult.Success, listResult.ErrorMessage)
+	require.Greater(t, len(listResult.Entries), 0, "Should have files after sync")
+
+	t.Logf("Total files found: %d", len(listResult.Entries))
+	for i, entry := range listResult.Entries {
+		t.Logf("  [%d] FilePath=%s FileName=%s FileType=%s Size=%d",
+			i, entry.FilePath, entry.FileName, entry.FileType, entry.Size)
+	}
+
+	// Verify excluded files exist as individual entries
+	filePaths := make([]string, 0, len(listResult.Entries))
+	fileNames := make([]string, 0, len(listResult.Entries))
+	for _, entry := range listResult.Entries {
+		if entry != nil {
+			filePaths = append(filePaths, entry.FilePath)
+			fileNames = append(fileNames, entry.FileName)
+		}
+	}
+
+	hasImportant := false
+	hasConfig := false
+	for _, p := range filePaths {
+		if strings.Contains(p, "important") {
+			hasImportant = true
+			break
+		}
+	}
+	for _, n := range fileNames {
+		if strings.Contains(n, "config.json") {
+			hasConfig = true
+			break
+		}
+	}
+
+	t.Logf("Has excluded 'important/' files individually: %v", hasImportant)
+	t.Logf("Has excluded 'config.json' individually: %v", hasConfig)
+
+	require.True(t, hasImportant,
+		"Expected excluded path 'important/' files to be stored individually (archiveExcludePaths), but got: %v", fileNames)
+	require.True(t, hasConfig,
+		"Expected excluded file 'config.json' to be stored individually (archiveExcludePaths), but got: %v", fileNames)
+
+	// Note: Go SDK ContextFileEntry doesn't expose presignedUrl/downloadUrl fields yet.
+	// Python/TypeScript tests check these properties on excluded files.
+	// Once Go SDK adds these fields, we can add similar verification here.
+
+	t.Log("Archive mode with exclude paths test completed successfully")
 }

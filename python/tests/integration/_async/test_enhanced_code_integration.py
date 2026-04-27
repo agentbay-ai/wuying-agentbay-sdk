@@ -1,47 +1,16 @@
 # ci-stable
-import asyncio
-import os
 
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay
-from agentbay import CreateSessionParams
 from agentbay import EnhancedCodeExecutionResult
 
 
-@pytest.fixture(scope="module")
-def event_loop():
-    """Create a module-scoped event loop so all tests share the same loop."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create AsyncAgentBay instance, skip if API key not available."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
-@pytest_asyncio.fixture(scope="module")
-async def session(agent_bay):
+@pytest_asyncio.fixture
+async def session(make_session):
     """Create a shared session for all tests in this module."""
-    params = CreateSessionParams(image_id="code_latest")
-    session_result = await agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        pytest.skip(f"Failed to create session: {session_result.error_message}")
-
-    yield session_result.session
-
-    # Cleanup after all tests in the module
-    try:
-        await session_result.session.delete()
-    except Exception:
-        pass  # Ignore cleanup errors
+    lc = await make_session("code_latest")
+    return lc._result.session
 
 
 @pytest.mark.asyncio

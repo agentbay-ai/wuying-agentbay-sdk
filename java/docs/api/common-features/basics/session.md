@@ -43,6 +43,28 @@ the (String, AgentBay) parameter order.</p>
 
 ### Methods
 
+### getAppInstanceId
+
+```java
+public String getAppInstanceId()
+```
+
+Get the application instance ID.
+
+**Returns:**
+- `String`: The application instance ID
+
+### setAppInstanceId
+
+```java
+public void setAppInstanceId(String appInstanceId)
+```
+
+Set the application instance ID.
+
+**Parameters:**
+- `appInstanceId` (String): The application instance ID
+
 ### getWsUrl
 
 ```java
@@ -76,6 +98,12 @@ Get the Git service for this session.
 
 **Returns:**
 - `Git`: The Git service instance
+
+### getPty
+
+```java
+public Pty getPty()
+```
 
 ### keepAlive
 
@@ -266,6 +294,17 @@ Get the mobile service for this session
 
 **Returns:**
 - `Mobile`: Mobile instance
+
+### getEnv
+
+```java
+public Env getEnv()
+```
+
+Get the environment variable service for this session
+
+**Returns:**
+- `Env`: Env instance
 
 ### getFileTransferContextId
 

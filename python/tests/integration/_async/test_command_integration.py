@@ -2,49 +2,23 @@
 
 # ci-stable
 
-import os
 import time
 
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import CreateSessionParams
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def agent_bay():
-    """Create an AsyncAgentBay instance."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
-@pytest_asyncio.fixture
-async def command_session(agent_bay):
+@pytest.fixture
+async def command_session(make_session):
     """Create a session for command testing."""
-    time.sleep(3)  # Ensure a delay to avoid session creation conflicts
-    params = CreateSessionParams(
-        image_id="code_latest",
-    )
-    session_result = await agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        pytest.skip("Failed to create session")
-
-    session = session_result.session  # Assuming session has direct access to command
-    yield session
-
-    # Clean up session
-    try:
-        await agent_bay.delete(session)
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    lc = await make_session(params=CreateSessionParams(image_id="code_latest"))
+    return lc._result.session
 
 
 async def test_execute_command_success(command_session):
     """Test executing a shell command successfully."""
-    command = command_session.command  # Assuming direct access to command interface
+    command = command_session.command
     result = await command.execute_command("echo 'Hello, AgentBay!'")
     print(f"Command execution result: {result.output}")
     assert result.success
@@ -70,7 +44,7 @@ async def test_exec_alias_success(command_session):
 
 async def test_execute_command_with_timeout(command_session):
     """Test executing a shell command with a timeout."""
-    command = command_session.command  # Assuming direct access to command interface
+    command = command_session.command
     command_str = "sleep 5"
     timeout_ms = 1000  # 1 second timeout
     result = await command.execute_command(command_str, timeout_ms)
@@ -83,7 +57,7 @@ async def test_execute_command_with_timeout(command_session):
 
 async def test_command_error_handling(command_session):
     """3.1 Command Error Handling - should handle command errors and edge cases"""
-    command = command_session.command  # Assuming direct access to command interface
+    command = command_session.command
 
     # Test invalid command
     invalid_result = await command.execute_command("invalid_command_12345")

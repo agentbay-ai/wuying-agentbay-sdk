@@ -1,83 +1,26 @@
 """Integration tests for browser type selection (chrome vs chromium)."""
 # ci-stable
 
-import asyncio
-import os
-
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import BrowserOption
-from agentbay import CreateSessionParams
 
 
-def get_test_api_key():
-    """Get API key for testing"""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        api_key = "akm-xxx"  # Replace with your test API key
-        print(
-            "Warning: Using default API key. Set AGENTBAY_API_KEY environment variable for testing."
-        )
-    return api_key
+@pytest.fixture
+async def computer_session(make_session):
+    """Create a session with computer use image (required for browser type selection).
+
+    Note: browser_type option is only available for computer use images (windows_latest).
+    """
+    lc = await make_session("windows_latest")
+    return lc._result.session
 
 
-def _mask_secret(secret: str, visible: int = 4) -> str:
-    """Mask a secret value, keeping only the last `visible` characters."""
-    if not secret:
-        return ""
-    if len(secret) <= visible:
-        return "*" * len(secret)
-    return ("*" * (len(secret) - visible)) + secret[-visible:]
-
-
-@pytest_asyncio.fixture
-async def computer_session():
-    """Create a session with computer use image (required for browser type selection)."""
-    api_key = get_test_api_key()
-    print("api_key =", _mask_secret(api_key))
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
-    print("Creating a new session for browser type testing...")
-    session_param = CreateSessionParams(image_id="linux_latest")
-    result = await agent_bay.create(session_param)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-
-    yield session
-
-    print("Cleaning up: Deleting the session...")
-    try:
-        await session.delete()
-        print("Session deleted successfully")
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
-
-
-@pytest_asyncio.fixture
-async def browser_session():
+@pytest.fixture
+async def browser_session(make_session):
     """Create a session with standard browser image."""
-    api_key = get_test_api_key()
-    print("api_key =", _mask_secret(api_key))
-    agent_bay = AsyncAgentBay(api_key=api_key)
-
-    print("Creating a new session with standard browser image...")
-    session_param = CreateSessionParams(image_id="browser_latest")
-    result = await agent_bay.create(session_param)
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-
-    yield session
-
-    print("Cleaning up: Deleting the session...")
-    try:
-        await session.delete()
-        print("Session deleted successfully")
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    lc = await make_session("browser_latest")
+    return lc._result.session
 
 
 @pytest.mark.asyncio
@@ -137,7 +80,7 @@ async def test_browser_type_chrome(computer_session):
 
 
 @pytest.mark.asyncio
-async def test_browser_type_chromium_explicit(computer_session):
+async def test_browser_type_chromium_explicit(browser_session):
     """Test explicit Chromium browser type selection."""
     print("\n=== Testing explicit Chromium browser type ===")
 
@@ -150,16 +93,16 @@ async def test_browser_type_chromium_explicit(computer_session):
 
     # Initialize browser
     print("Initializing browser with explicit Chromium type...")
-    success = await computer_session.browser.initialize(browser_option)
+    success = await browser_session.browser.initialize(browser_option)
     assert success is True, "Failed to initialize browser with Chromium type"
     print("Browser initialized successfully with Chromium")
 
     # Verify browser is initialized
-    assert computer_session.browser.is_initialized()
+    assert browser_session.browser.is_initialized()
     print("Browser is initialized")
 
     # Get endpoint URL
-    endpoint_url = await computer_session.browser.get_endpoint_url()
+    endpoint_url = await browser_session.browser.get_endpoint_url()
     assert endpoint_url is not None
     print(f"Browser endpoint URL: {endpoint_url}")
 

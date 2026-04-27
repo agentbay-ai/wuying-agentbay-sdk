@@ -2,53 +2,17 @@
 ci-stable
 """
 
-import os
-import time
-
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay
-from agentbay import CreateSessionParams
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    """Create an AsyncAgentBay instance."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
 
 @pytest_asyncio.fixture
-async def filesystem_session(agent_bay):
+async def filesystem_session(make_session):
     """Create a session for filesystem testing."""
-    # Get API key from environment
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    # Initialize AgentBay client
-    # Create a session
     print("Creating a new session for FileSystem testing...")
-    params = CreateSessionParams(
-        image_id="linux_latest",
-    )
-    result = await agent_bay.create(params)
-    if not result.success or not result.session:
-        pytest.skip("Failed to create session")
-
-    session = result.session
+    lc = await make_session("linux_latest")
+    session = lc._result.session
     yield session
-
-    # Clean up session
-    print("Cleaning up: Deleting the session...")
-    try:
-        await agent_bay.delete(session)
-        print(f"Session deleted: {session.session_id}")
-    except Exception as e:
-        print(f"Warning: Failed to delete session: {e}")
 
 
 async def test_read_file(filesystem_session):

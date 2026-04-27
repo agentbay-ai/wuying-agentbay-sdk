@@ -1,44 +1,24 @@
 # ci-stable
-import os
+import asyncio
 import time
 
 import pytest
-
-from agentbay import AsyncAgentBay
-from agentbay import CreateSessionParams
+import pytest_asyncio
 
 
 class TestGetFileTransferContext:
     """Integration tests for get method file transfer context fix"""
 
-    @pytest.fixture
-    def agent_bay(self):
-        """Create AgentBay instance"""
-        api_key = os.getenv("AGENTBAY_API_KEY")
-        if not api_key:
-            pytest.skip("AGENTBAY_API_KEY not set")
-        return AsyncAgentBay(api_key=api_key)
-
-    @pytest.fixture
-    async def test_session(self, agent_bay):
-        """Create a test session and clean up after test"""
-        params = CreateSessionParams(image_id="code_latest")
-        result = await agent_bay.create(params)
-        if not result.success:
-            pytest.fail(f"Failed to create session: {result.error_message}")
-
-        session = result.session
-        yield session
-
-        # Cleanup: delete the session after test
-        try:
-            await session.delete()
-        except Exception as e:
-            print(f"Warning: Failed to cleanup session {session.session_id}: {e}")
+    @pytest_asyncio.fixture
+    async def test_session(self, make_session):
+        """Create a test session and rely on make_session for cleanup."""
+        lc = await make_session("code_latest")
+        return lc._result.session
 
 
+    @pytest.mark.asyncio
     async def test_recovered_session_can_perform_file_operations(
-        self, agent_bay, test_session
+        self, agent_bay_client, test_session
     ):
         """
         Test that recovered session can perform actual file operations.
@@ -50,10 +30,10 @@ class TestGetFileTransferContext:
         session_id = test_session.session_id
 
         # Wait a bit for session to be fully ready
-        time.sleep(5)
+        await asyncio.sleep(5)
 
         # Use get method to recover the session
-        get_result = await agent_bay.get(session_id)
+        get_result = await agent_bay_client.get(session_id)
         assert get_result.success, f"Get failed: {get_result.error_message}"
 
         recovered_session = get_result.session
@@ -87,7 +67,8 @@ class TestGetFileTransferContext:
         except Exception as e:
             pytest.fail(f"File operations failed on recovered session: {e}")
 
-    async def test_original_and_recovered_session_both_work(self, agent_bay, test_session):
+    @pytest.mark.asyncio
+    async def test_original_and_recovered_session_both_work(self, agent_bay_client, test_session):
         """
         Test that both original session and recovered session can perform file operations.
 
@@ -99,7 +80,7 @@ class TestGetFileTransferContext:
         session_id = test_session.session_id
 
         # Wait a bit for session to be fully ready
-        time.sleep(5)
+        await asyncio.sleep(5)
 
         # Test 1: Original session can write files
         test_content_1 = f"Original session test at {time.time()}"
@@ -113,7 +94,7 @@ class TestGetFileTransferContext:
         ), f"Original session file write failed: {write_result_1.error_message}"
 
         # Test 2: Recover the session
-        get_result = await agent_bay.get(session_id)
+        get_result = await agent_bay_client.get(session_id)
         assert get_result.success, f"Get failed: {get_result.error_message}"
         recovered_session = get_result.session
 

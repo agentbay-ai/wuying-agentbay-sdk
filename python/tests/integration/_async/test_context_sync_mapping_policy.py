@@ -4,12 +4,11 @@ Integration tests for context sync with MappingPolicy.
 This test simulates: Windows session -> persist data -> Linux session -> access data
 """
 
-import os
+import asyncio
 import time
 
 import pytest
 
-from agentbay import AsyncAgentBay
 from agentbay import (
     ContextSync,
     DeletePolicy,
@@ -22,19 +21,10 @@ from agentbay import (
 from agentbay import CreateSessionParams
 
 
-@pytest.fixture
-def api_key():
-    """Get API key, skip if not available."""
-    key = os.getenv("AGENTBAY_API_KEY")
-    if not key or os.getenv("CI"):
-        pytest.skip("Skipping integration test: No API key available or running in CI")
-    return key
-
-
 @pytest.mark.asyncio
-async def test_context_sync_with_mapping_policy(api_key):
+async def test_context_sync_with_mapping_policy(agent_bay_client):
     """Test that context sync works with MappingPolicy for cross-platform persistence."""
-    ab = AsyncAgentBay(api_key)
+    ab = agent_bay_client
 
     # 1. Create a unique context name
     context_name = f"test-mapping-policy-{int(time.time())}"
@@ -73,7 +63,7 @@ async def test_context_sync_with_mapping_policy(api_key):
 
         # Create Windows session
         windows_session_result = await ab.create(windows_session_params)
-        if("no authorized app" in windows_session_result.error_message):
+        if "no authorized app" in windows_session_result.error_message:
             pytest.skip("No authorized app")
         assert windows_session_result.success
         assert windows_session_result.session is not None
@@ -83,7 +73,7 @@ async def test_context_sync_with_mapping_policy(api_key):
 
         # Wait for Windows session to be ready
         print("Waiting for Windows session to be ready...")
-        time.sleep(15)
+        await asyncio.sleep(15)
 
         # Create directory in Windows session
         print(f"Creating directory in Windows: {windows_path}")
@@ -112,7 +102,10 @@ async def test_context_sync_with_mapping_policy(api_key):
 
         # Sync Windows session to upload data
         print("Syncing Windows session to upload data...")
-        windows_sync_result = await windows_session.context.sync()
+        windows_sync_result = await windows_session.context.sync(
+            context_id=context.id,
+            path=windows_path,
+        )
         assert windows_sync_result.success
         print(
             f"Windows context sync successful (RequestID: {windows_sync_result.request_id})"
@@ -120,7 +113,7 @@ async def test_context_sync_with_mapping_policy(api_key):
 
         # Wait for upload to complete
         print("Waiting for upload to complete...")
-        time.sleep(10)
+        await asyncio.sleep(10)
 
         # Delete Windows session
         print("Deleting Windows session...")
@@ -167,7 +160,7 @@ async def test_context_sync_with_mapping_policy(api_key):
             print(
                 "Waiting for Linux session to be ready and data to be downloaded..."
             )
-            time.sleep(15)
+            await asyncio.sleep(15)
 
             # Verify file exists in Linux session at the mapped path
             linux_test_file_path = f"{linux_path}/{test_file_name}"

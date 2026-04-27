@@ -2,27 +2,13 @@
 ci-stable
 """
 
-import os
-
 import pytest
-import pytest_asyncio
-
-from agentbay import AsyncAgentBay
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    """Create AsyncAgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
 
 
 @pytest.mark.asyncio
-async def test_delete_session_basic(agent_bay):
+async def test_delete_session_basic(agent_bay_client):
     """Test basic session deletion."""
-    result = await agent_bay.create()
+    result = await agent_bay_client.create()
     assert result.success is True
     session = result.session
 
@@ -32,9 +18,9 @@ async def test_delete_session_basic(agent_bay):
 
 
 @pytest.mark.asyncio
-async def test_delete_session_with_sync_context(agent_bay):
+async def test_delete_session_with_sync_context(agent_bay_client):
     """Test session deletion with context sync."""
-    result = await agent_bay.create()
+    result = await agent_bay_client.create()
     assert result.success is True
     session = result.session
 
@@ -44,11 +30,11 @@ async def test_delete_session_with_sync_context(agent_bay):
 
 
 @pytest.mark.asyncio
-async def test_delete_multiple_sessions(agent_bay):
+async def test_delete_multiple_sessions(agent_bay_client):
     """Test deleting multiple sessions."""
     sessions = []
     for i in range(3):
-        result = await agent_bay.create()
+        result = await agent_bay_client.create()
         assert result.success is True
         sessions.append(result.session)
 
@@ -61,12 +47,12 @@ async def test_delete_multiple_sessions(agent_bay):
 
 
 @pytest.mark.asyncio
-async def test_delete_using_agent_bay(agent_bay):
+async def test_delete_using_agent_bay(agent_bay_client):
     """Test deleting session using AgentBay.delete()."""
-    result = await agent_bay.create()
+    result = await agent_bay_client.create()
     assert result.success is True
     session = result.session
 
-    delete_result = await agent_bay.delete(session)
+    delete_result = await agent_bay_client.delete(session)
     assert delete_result.success is True
     print(f"Session deleted via AgentBay: {session.session_id}")

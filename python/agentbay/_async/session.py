@@ -51,6 +51,7 @@ from .code import AsyncCode
 from .command import AsyncCommand
 from .computer import AsyncComputer
 from .context_manager import AsyncContextManager
+from .env import AsyncEnv
 from .filesystem import AsyncFileSystem
 from .mobile import AsyncMobile
 from .oss import AsyncOss
@@ -117,6 +118,9 @@ class AsyncSession:
         self.agent_bay = agent_bay
         self.session_id = session_id
 
+        # Application instance ID
+        self.app_instance_id = ""
+
         # Resource URL for accessing the session
         self.resource_url = ""
 
@@ -157,9 +161,15 @@ class AsyncSession:
 
         self.agent = AsyncAgent(self)
 
+        self.env = AsyncEnv(self)
+
         # Initialize Git module
         from .git.git import AsyncGit
         self.git = AsyncGit(self)
+
+        # Initialize PTY module
+        from .pty import AsyncPty
+        self.pty = AsyncPty(self)
 
     def _get_link_http_client(self) -> httpx.AsyncClient:
         """Internal: get or create a shared HTTP client for LinkUrl calls."""

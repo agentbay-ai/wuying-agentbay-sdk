@@ -528,6 +528,32 @@ def __init__(self, request_id: str = "",
              raw: Optional[dict] = None)
 ```
 
+## EnvResult
+
+```python
+class EnvResult(ApiResponse)
+```
+
+Result of environment variable operations (get).
+
+### __init__
+
+```python
+def __init__(self, request_id: str = "",
+             success: bool = False,
+             envs: Optional[Dict[str, str]] = None,
+             error_message: str = "")
+```
+
+Initialize an EnvResult.
+
+**Arguments**:
+
+    request_id: Unique identifier for the API request.
+    success: Whether the operation was successful.
+    envs: Dictionary of environment variable key-value pairs.
+    error_message: Error message if the operation failed.
+
 #### Response
 
 ```python

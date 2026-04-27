@@ -17,6 +17,7 @@ import { Browser } from "./browser";
 import { Code } from "./code";
 import { Command } from "./command";
 import { Computer } from "./computer";
+import { Env } from "./env";
 import {
   ContextManager,
   ContextSyncResult,
@@ -26,6 +27,7 @@ import { FileSystem } from "./filesystem";
 import { Git } from "./git";
 import { Mobile } from "./mobile";
 import { Oss } from "./oss";
+import { Pty } from "./pty";
 import { WsClient } from "./_internal/ws-client";
 import {
   ApiResponse,
@@ -217,15 +219,19 @@ export class Session {
   private agentBay: AgentBay;
   public sessionId: string;
 
-  // Resource URL for accessing the session
   public resourceUrl = "";
 
-  // LinkUrl-based direct tool call (non-VPC)
+  /** Application instance ID */
+  public appInstanceId = "";
+
+  /** Token for VPC sessions */
   public token = "";
   public linkUrl = "";
 
-  // WS long connection URL (for streaming output)
+  /** WebSocket URL for streaming features */
   public wsUrl = "";
+
+  /** Cached WebSocket client instance */
   private _wsClient: WsClient | null = null;
 
   // Recording functionality
@@ -234,6 +240,7 @@ export class Session {
   // File, command, code, and oss handlers (matching Python naming)
   public fileSystem: FileSystem; // file_system in Python
   public command: Command;
+  public env: Env;
   public code: Code;
   public oss: Oss;
 
@@ -253,6 +260,8 @@ export class Session {
   // Context management (matching Go version)
   public context: ContextManager;
 
+  public pty: Pty;
+
   // MCP tools list returned by backend for this session
   public mcpTools: McpTool[] = [];
 
@@ -269,6 +278,7 @@ export class Session {
     // Initialize file system, command and code handlers (matching Python naming)
     this.fileSystem = new FileSystem(this);
     this.command = new Command(this);
+    this.env = new Env(this);
     this.code = new Code(this);
     this.oss = new Oss(this);
 
@@ -287,6 +297,9 @@ export class Session {
 
     // Initialize context manager (matching Go version)
     this.context = newContextManager(this);
+
+    // Initialize PTY module
+    this.pty = new Pty(this);
   }
 
   /**

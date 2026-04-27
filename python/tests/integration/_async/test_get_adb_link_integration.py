@@ -3,33 +3,22 @@
 Integration tests for GetAdbLink API
 """
 import json
-import os
 
 import pytest
 
-from agentbay import AsyncAgentBay
+from agentbay import CreateSessionParams
 
 
 class TestGetAdbLinkIntegration:
     """Integration tests for GetAdbLink API"""
 
-    @pytest.fixture
-    def agentbay(self):
-        """Create AgentBay instance"""
-        api_key = os.getenv("AGENTBAY_API_KEY")
-        if not api_key:
-            pytest.skip("AGENTBAY_API_KEY environment variable not set")
-        return AsyncAgentBay(api_key=api_key)
-
     @pytest.mark.asyncio
-    async def test_get_adb_link_with_mobile_session(self, agentbay):
+    async def test_get_adb_link_with_mobile_session(self, agent_bay_client):
         """Test get_adb_link with a real mobile session"""
-        from agentbay import CreateSessionParams
-
         # Create a mobile session
         params = CreateSessionParams(image_id="mobile_latest")
-        session_result = await agentbay.create(params)
-        if( "no authorized app" in session_result.error_message):
+        session_result = await agent_bay_client.create(params)
+        if "no authorized app" in session_result.error_message:
             pytest.skip("No authorization")
         assert session_result is not None
         assert session_result.success is True, f"Failed to create session: {session_result.error_message}"
@@ -47,13 +36,13 @@ class TestGetAdbLinkIntegration:
             options = json.dumps({"adbkey_pub": "test-adb-public-key"})
 
             request = GetAdbLinkRequest(
-                authorization=f"Bearer {agentbay.api_key}",
+                authorization=f"Bearer {agent_bay_client.api_key}",
                 session_id=session.session_id,
                 option=options,
             )
 
             try:
-                response = agentbay.client.get_adb_link(request)
+                response = agent_bay_client.client.get_adb_link(request)
             except ClientException as e:
                 if "InvalidAction.NotFound" in str(e):
                     pytest.skip("GetAdbLink API not yet available in production")
@@ -73,9 +62,9 @@ class TestGetAdbLinkIntegration:
 
         finally:
             # Clean up
-            session.delete()
+            await agent_bay_client.delete(session)
 
-    def test_get_adb_link_with_invalid_session(self, agentbay):
+    def test_get_adb_link_with_invalid_session(self, agent_bay_client):
         """Test get_adb_link with invalid session ID"""
         from alibabacloud_tea_openapi.exceptions._client import ClientException
 
@@ -83,14 +72,14 @@ class TestGetAdbLinkIntegration:
 
         options = json.dumps({"adbkey_pub": "test-key"})
         request = GetAdbLinkRequest(
-            authorization=f"Bearer {agentbay.api_key}",
+            authorization=f"Bearer {agent_bay_client.api_key}",
             session_id="invalid-session-id-12345",
             option=options,
         )
 
         # Should raise exception for invalid session
         with pytest.raises(ClientException) as exc_info:
-            response = agentbay.client.get_adb_link(request)
+            response = agent_bay_client.client.get_adb_link(request)
 
         # Verify it's the expected error
         assert "InvalidMcpSession.NotFound" in str(

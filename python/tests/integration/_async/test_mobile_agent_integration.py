@@ -1,11 +1,9 @@
 """Integration tests for Mobile Agent functionality."""
 import asyncio
-import os
 
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import get_logger
 from agentbay import CreateSessionParams
 
@@ -15,45 +13,18 @@ logger = get_logger("mobile-agent-integration-test")
 load_dotenv()
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    """Create an AsyncAgentBay instance."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
-@pytest_asyncio.fixture(scope="module")
-async def mobile_agent_session(agent_bay):
+@pytest_asyncio.fixture
+async def mobile_agent_session(make_session):
     """Create a session for mobile agent testing."""
-    # Ensure a delay to avoid session creation conflicts
     await asyncio.sleep(3)
     params = CreateSessionParams(
         image_id="mobile_latest",
     )
-    session_result = await agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        # 打印错误信息以便调试
-        print(f"\n❌ Failed to create session: {session_result.error_message}")
-        logger.error(f"Failed to create session: {session_result.error_message}")
-        pytest.skip("Failed to create session")
-
-    session = session_result.session
-    # 添加 session_id 打印
+    lc = await make_session(params=params)
+    session = lc._result.session
     print(f"\n✅ Session created: {session.session_id}")
     logger.info(f"Session created: {session.session_id}")
-    yield session
-
-    # Clean up session with timeout to avoid hanging
-    try:
-        print(f"🧹 Cleaning up session: {session.session_id}")
-        await asyncio.wait_for(session.delete(), timeout=10.0)
-        print(f"✅ Session deleted: {session.session_id}")
-    except asyncio.TimeoutError:
-        logger.warning(f"Session deletion timed out: {session.session_id}")
-    except Exception as e:
-        logger.warning(f"Error deleting session: {e}")
+    return session
 
 
 @pytest.mark.asyncio
@@ -425,7 +396,7 @@ async def test_mobile_execute_task_and_wait_timeout_termination(mobile_agent_ses
         result = await agent.mobile.execute_task_and_wait(
             task,
             timeout=short_timeout,
-            max_steps=10
+            max_steps=10,
         )
         task_id = result.task_id
         

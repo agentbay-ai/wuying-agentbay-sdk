@@ -1,27 +1,15 @@
 # ci-stable
-import os
-import time
+import asyncio
 
 import pytest
 
-from agentbay import AsyncAgentBay
-
-
-@pytest.fixture
-def agent_bay():
-    """Create AsyncAgentBay instance, skip if API key not available."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
 
 @pytest.mark.asyncio
-async def test_mcp_tool_call_with_active_session(agent_bay):
+async def test_mcp_tool_call_with_active_session(agent_bay_client):
     """Test MCP tool call succeeds when session is active"""
     # Create a session
     print("Creating session for MCP tool call test...")
-    result = await agent_bay.create()
+    result = await agent_bay_client.create()
     assert result.success
     assert result.session is not None
     session = result.session
@@ -39,17 +27,17 @@ async def test_mcp_tool_call_with_active_session(agent_bay):
 
     # Clean up
     print("Deleting session...")
-    delete_result = await session.delete()
+    delete_result = await agent_bay_client.delete(session)
     assert delete_result.success
     print("Session deleted successfully")
 
 
 @pytest.mark.asyncio
-async def test_mcp_tool_call_with_deleted_session_auto_gen_false(agent_bay):
+async def test_mcp_tool_call_with_deleted_session_auto_gen_false(agent_bay_client):
     """Test MCP tool call fails when session is deleted and auto_gen_session=False"""
     # Create a session
     print("Creating session for deletion test...")
-    result = await agent_bay.create()
+    result = await agent_bay_client.create()
     assert result.success
     assert result.session is not None
     session = result.session
@@ -58,15 +46,15 @@ async def test_mcp_tool_call_with_deleted_session_auto_gen_false(agent_bay):
 
     # Delete the session
     print("Deleting session...")
-    delete_result = await session.delete()
+    delete_result = await agent_bay_client.delete(session)
     assert delete_result.success
     print(f"Session deleted successfully (RequestID: {delete_result.request_id})")
 
     # Wait for deletion to complete
-    time.sleep(2)
+    await asyncio.sleep(2)
 
     # Verify session is deleted
-    list_result = await agent_bay.list()
+    list_result = await agent_bay_client.list()
     assert list_result.success
     assert session_id not in list_result.session_ids, \
         f"Session ID {session_id} still exists after deletion"

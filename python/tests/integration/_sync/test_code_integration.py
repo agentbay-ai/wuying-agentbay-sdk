@@ -4,41 +4,15 @@
 # ci-stable
 
 import pytest
-import os
-from agentbay import AgentBay
+
 from agentbay import CreateSessionParams
 
 
 @pytest.fixture
-def code_session():
+def code_session(make_session):
     """Create a session for code execution tests."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AgentBay(api_key=api_key)
-    params = CreateSessionParams(image_id="code_latest")
-    session_result = agent_bay.create(params)
-    if not session_result.success or not session_result.session:
-        pytest.skip(f"Failed to create session: {session_result.error_message}")
-
-    session = session_result.session
-    code_obj = session.code
-
-    yield code_obj
-
-    # Cleanup
-    session.delete()
-
-
-@pytest.fixture
-def agent_bay_client():
-    """Create an AgentBay client for complex tests that need multiple sessions."""
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    return AgentBay(api_key=api_key)
+    lc = make_session(params=CreateSessionParams(image_id="code_latest"))
+    return lc._result.session.code
 
 
 @pytest.mark.sync
@@ -77,6 +51,7 @@ def test_execute_alias_python_success(code_session):
     result = code_session.execute(code, "python")
     assert result.success
     assert "Hello from alias" in result.result
+
 
 @pytest.mark.sync
 def test_run_code_javascript_success(code_session):
@@ -174,6 +149,7 @@ System.out.println("CONTEXT_VALUE:" + (x + 1));
     assert use_result.success
     assert "CONTEXT_VALUE:42" in use_result.result
 
+
 @pytest.mark.sync
 def test_run_code_unsupported_language(code_session):
     """Test code execution with unsupported language."""
@@ -185,6 +161,7 @@ def test_run_code_unsupported_language(code_session):
     # Should return failure for unsupported language
     assert not result.success
     assert result.error_message is not None
+
 
 @pytest.mark.sync
 def test_run_code_python_with_timeout(code_session):
@@ -204,6 +181,7 @@ print("Completed after 2 seconds")
     assert "Starting..." in result.result
     assert "Completed after 2 seconds" in result.result
 
+
 @pytest.mark.sync
 def test_run_code_javascript_with_timeout(code_session):
     """Test JavaScript code execution with custom timeout."""
@@ -222,6 +200,7 @@ console.log("Immediate output");
     assert result.result is not None
     assert "Starting..." in result.result
     assert "Immediate output" in result.result
+
 
 @pytest.mark.sync
 def test_run_code_python_file_operations(code_session):
@@ -250,6 +229,7 @@ print("File operations completed successfully")
     assert "Test content from Python code execution" in result.result
     assert "File operations completed successfully" in result.result
 
+
 @pytest.mark.sync
 def test_run_code_python_error_handling(code_session):
     """Test Python code with error handling."""
@@ -268,6 +248,7 @@ except ZeroDivisionError as e:
     assert result.result is not None
     assert "Caught error:" in result.result
     assert "Error handled successfully" in result.result
+
 
 @pytest.mark.sync
 def test_run_code_python_with_imports(code_session):
@@ -299,6 +280,7 @@ print(f"Numbers sum: {sum(parsed['numbers'])}")
     assert "Hello from Python" in result.result
     assert "Message: Hello from Python" in result.result
     assert "Numbers sum: 15" in result.result
+
 
 @pytest.mark.sync
 def test_run_code_cross_language_interop(code_session):
@@ -354,6 +336,7 @@ print("Cleanup completed")
     assert "84" in result.result
     assert "Cleanup completed" in result.result
 
+
 @pytest.mark.sync
 def test_3_2_complex_code_with_file_operations(agent_bay_client):
     """3.2 Complex Code with File Operations - should execute complex code with file operations"""
@@ -374,7 +357,6 @@ def test_3_2_complex_code_with_file_operations(agent_bay_client):
     code2 = session2.code
 
     try:
-
         # Step 7: Complex code test with file operations
         python_file_code = """
 import os
@@ -421,6 +403,7 @@ console.log(JSON.stringify(result));
         # Cleanup sessions
         session1.delete()
         session2.delete()
+
 
 @pytest.mark.sync
 def test_3_2_code_execution_error_handling(agent_bay_client):

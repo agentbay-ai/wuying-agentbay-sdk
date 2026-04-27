@@ -1,40 +1,22 @@
 # ci-stable
-import os
-import time
+import asyncio
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import ContextSync
 from agentbay import CreateSessionParams
-
-
-def get_test_api_key():
-    """Get API key for testing"""
-    return os.environ.get("AGENTBAY_API_KEY")
-
-
-@pytest_asyncio.fixture(scope="class")
-async def agent_bay():
-    """Fixture to provide AsyncAgentBay instance."""
-    api_key = get_test_api_key()
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    
-    return AsyncAgentBay(api_key=api_key)
 
 
 class TestDeleteIntegration:
     """Integration test for session deletion functionality"""
 
     @pytest.mark.asyncio
-    async def test_delete_without_params(self, agent_bay):
+    async def test_delete_without_params(self, agent_bay_client):
         """Test session deletion functionality without parameters"""
         # Create a session
         print("Creating session for parameter-less deletion test...")
-        result = await agent_bay.create()
+        result = await agent_bay_client.create()
         assert result.success
         assert result.session is not None
         session = result.session
@@ -48,22 +30,22 @@ class TestDeleteIntegration:
 
         # Verify session has been deleted
         # Wait for a while to ensure deletion operation is completed
-        time.sleep(2)
+        await asyncio.sleep(2)
 
         # Use list to get latest session list from server
-        list_result = await agent_bay.list()
+        list_result = await agent_bay_client.list()
         assert list_result.success
 
         # Check if session has been deleted
         assert session.session_id not in list_result.session_ids, f"Session ID {session.session_id} still exists after deletion"
 
     @pytest.mark.asyncio
-    async def test_delete_with_sync_context(self, agent_bay):
+    async def test_delete_with_sync_context(self, agent_bay_client):
         """Test session deletion functionality with sync_context parameter"""
         # Create context
         context_name = f"test-context-{uuid4().hex[:8]}"
         print(f"Creating context: {context_name}...")
-        context_result = await agent_bay.context.create(context_name)
+        context_result = await agent_bay_client.context.get(context_name, create=True)
         assert context_result.success
         assert context_result.context is not None
         context = context_result.context
@@ -80,7 +62,7 @@ class TestDeleteIntegration:
         )
 
         print("Creating session with context...")
-        result = await agent_bay.create(params)
+        result = await agent_bay_client.create(params)
         assert result.success
         assert result.session
         session = result.session
@@ -93,25 +75,25 @@ class TestDeleteIntegration:
         print(f"Session deleted successfully (RequestID: {delete_result.request_id})")
 
         # Verify session has been deleted
-        time.sleep(2)
-        list_result = await agent_bay.list()
+        await asyncio.sleep(2)
+        list_result = await agent_bay_client.list()
         assert list_result.success
         assert session.session_id not in list_result.session_ids
 
         # Clean up context
         try:
-            context_delete_result = await agent_bay.context.delete(context)
+            context_delete_result = await agent_bay_client.context.delete(context)
             if context_delete_result.success:
                 print(f"Context {context.id} deleted successfully")
         except Exception as e:
             print(f"Warning: Failed to delete context {context.id}: {e}")
 
     @pytest.mark.asyncio
-    async def test_agentbay_delete_with_sync_context(self, agent_bay):
+    async def test_agentbay_delete_with_sync_context(self, agent_bay_client):
         """Test agentbay-level deletion with sync context"""
         # Create a simple session
         print("Creating session for agentbay-level deletion test...")
-        result = await agent_bay.create()
+        result = await agent_bay_client.create()
         assert result.success
         assert result.session is not None
         session = result.session
@@ -119,12 +101,12 @@ class TestDeleteIntegration:
 
         # Delete using agentbay.delete method
         print("Deleting session using agentbay.delete method...")
-        delete_result = await agent_bay.delete(session, sync_context=True)
+        delete_result = await agent_bay_client.delete(session, sync_context=True)
         assert delete_result.success
         print(f"Session deleted successfully (RequestID: {delete_result.request_id})")
 
         # Verify session has been deleted
-        time.sleep(2)
-        list_result = await agent_bay.list()
+        await asyncio.sleep(2)
+        list_result = await agent_bay_client.list()
         assert list_result.success
         assert session.session_id not in list_result.session_ids

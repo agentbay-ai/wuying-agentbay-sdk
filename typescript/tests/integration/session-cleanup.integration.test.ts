@@ -1,5 +1,4 @@
-
-// ci-stable 
+// ci-stable
 import { AgentBay, Session } from "../../src";
 import { getTestApiKey } from "../utils/test-helpers";
 import { log } from "../../src/utils/logger";
@@ -88,12 +87,9 @@ describe("Session Cleanup Integration Test", () => {
             log(
               `📋 Session ${sessionId} status: ${sessionStatusResult.status}`
             );
-            if (status === "pausing"){
-              log(
-                `⏸️  Session ${sessionId} is pausing, needing to resume...`
-              );
+            if (status === "pausing") {
+              log(`⏸️  Session ${sessionId} is pausing, needing to resume...`);
               return;
-              
             }
 
             if (status === "deleting" || status === "deleted") {

@@ -1,48 +1,23 @@
-import os
 import typing
 
 import pytest
 import pytest_asyncio
 
-from agentbay import AsyncAgentBay
 from agentbay import AdbUrlResult
 from agentbay import CreateSessionParams
 from agentbay import AsyncSession
 
 
-@pytest.fixture
-def agent_bay():
-    """Create AsyncAgentBay instance, skip if API key not available."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
 @pytest_asyncio.fixture
-async def mobile_session(agent_bay):
+async def mobile_session(make_session):
     """Create a mobile session for ADB URL testing."""
     print("Creating a new session for mobile ADB URL testing...")
     params = CreateSessionParams(image_id="mobile_latest")
-    result = await agent_bay.create(params=params)
-    if("no authorized app") in result.error_message:
-        pytest.skip("Skipping mobile ADB URL test: No auth")
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
+    lc = await make_session(params=params)
+    session = lc._result.session
     assert session is not None, "Session was not created successfully."
     print(f"Session created with ID: {session.session_id}")
-    print(f"Request ID: {result.request_id}")
-
-    yield session
-
-    print("Cleaning up: Deleting the session...")
-    try:
-        delete_result = await agent_bay.delete(session)
-        print(
-            f"Session deleted. Success: {delete_result.success}, Request ID: {delete_result.request_id}"
-        )
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+    return session
 
 
 @pytest.mark.asyncio
@@ -104,11 +79,11 @@ async def test_get_adb_url_request_id_exists(mobile_session):
 
 
 @pytest.mark.asyncio
-async def test_get_adb_url_fails_on_non_mobile_image(agent_bay):
+async def test_get_adb_url_fails_on_non_mobile_image(agent_bay_client):
     """Test session.mobile.get_adb_url() fails when session uses non-mobile image."""
     print("Creating browser session for negative test...")
     params = CreateSessionParams(image_id="browser_latest")
-    result = await agent_bay.create(params=params)
+    result = await agent_bay_client.create(params=params)
     browser_session = result.session
     assert browser_session is not None, "Browser session was not created successfully."
 
@@ -123,6 +98,6 @@ async def test_get_adb_url_fails_on_non_mobile_image(agent_bay):
         print(f"Expected error: {tool_result.error_message}")
     finally:
         try:
-            await agent_bay.delete(browser_session)
+            await agent_bay_client.delete(browser_session)
         except Exception as e:
             print(f"Warning: Error deleting browser session: {e}")

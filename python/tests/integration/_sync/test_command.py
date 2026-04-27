@@ -3,49 +3,16 @@
 
 # ci-stable
 
-import os
-
-import pytest
 import pytest
 
-from agentbay import AgentBay
 from agentbay import CreateSessionParams
 
 
-# Define fixtures for session management
 @pytest.fixture
-def agent_session():
-    """
-    Fixture to create a session before all tests in this module
-    and delete it after all tests are done.
-    """
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agent_bay = AgentBay(api_key=api_key)
-    print("Creating a new session for Command testing...")
-
-    params = CreateSessionParams(image_id="code_latest")
-    result = agent_bay.create(params)
-
-    if not result.success or not result.session:
-        pytest.fail(f"Failed to create session: {result.error_message}")
-
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-
-    yield session
-
-    print("Cleaning up: Deleting the session...")
-    try:
-        delete_result = session.delete()
-        if delete_result.success:
-            print("Session successfully deleted")
-        else:
-            print(f"Warning: Error deleting session: {delete_result.error_message}")
-    except Exception as e:
-        print(f"Warning: Error deleting session: {e}")
+def agent_session(make_session):
+    """Create a session for Command testing."""
+    lc = make_session(params=CreateSessionParams(image_id="code_latest"))
+    return lc._result.session
 
 
 @pytest.fixture

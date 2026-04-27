@@ -14,6 +14,7 @@ import {
   MappingPolicy,
   newMappingPolicy,
   SyncPolicyImpl,
+  UploadMode,
 } from "../../src/context-sync";
 import { log } from "../../src/utils/logger";
 
@@ -437,6 +438,86 @@ describe("ContextSync Unit Tests", () => {
       expect(wlJson.isPathRegex).toBe(true);
       expect(wlJson.excludePaths).toEqual(["cache.*"]);
       expect(wlJson.isExcludeRegex).toBe(true);
+    });
+  });
+
+  describe("UploadPolicy archiveExcludePaths", () => {
+    it("should include archiveExcludePaths when set with Archive mode", () => {
+      const policy = newUploadPolicy({
+        uploadMode: UploadMode.Archive,
+        archiveExcludePaths: ["AGENTS.md", "sessions", "chats.json"],
+      });
+      expect(policy.uploadMode).toBe(UploadMode.Archive);
+      expect(policy.archiveExcludePaths).toEqual([
+        "AGENTS.md",
+        "sessions",
+        "chats.json",
+      ]);
+    });
+
+    it("should not include archiveExcludePaths when empty", () => {
+      const policy = newUploadPolicy({
+        uploadMode: UploadMode.Archive,
+      });
+      expect(policy.archiveExcludePaths).toBeUndefined();
+    });
+
+    it("should not include archiveExcludePaths when array is empty", () => {
+      const policy = newUploadPolicy({
+        uploadMode: UploadMode.Archive,
+        archiveExcludePaths: [],
+      });
+      expect(policy.archiveExcludePaths).toBeUndefined();
+    });
+
+    it("should survive JSON serialization via SyncPolicyImpl", () => {
+      const syncPolicy = new SyncPolicyImpl({
+        uploadPolicy: newUploadPolicy({
+          uploadMode: UploadMode.Archive,
+          archiveExcludePaths: ["AGENTS.md", "sessions"],
+        }),
+      });
+      const json = JSON.stringify(syncPolicy);
+      const parsed = JSON.parse(json);
+      expect(parsed.uploadPolicy.archiveExcludePaths).toEqual([
+        "AGENTS.md",
+        "sessions",
+      ]);
+    });
+
+    it("should not include archiveExcludePaths in JSON when empty", () => {
+      const syncPolicy = new SyncPolicyImpl({
+        uploadPolicy: newUploadPolicy({
+          uploadMode: UploadMode.Archive,
+        }),
+      });
+      const json = JSON.stringify(syncPolicy);
+      const parsed = JSON.parse(json);
+      expect(parsed.uploadPolicy.archiveExcludePaths).toBeUndefined();
+    });
+
+    it("should not include archiveExcludePaths in JSON when uploadMode is File", () => {
+      const syncPolicy = new SyncPolicyImpl({
+        uploadPolicy: {
+          autoUpload: true,
+          uploadStrategy: UploadStrategy.UploadBeforeResourceRelease,
+          uploadMode: UploadMode.File,
+          archiveExcludePaths: ["AGENTS.md", "sessions"],
+        },
+      });
+      const json = JSON.stringify(syncPolicy);
+      const parsed = JSON.parse(json);
+      expect(parsed.uploadPolicy.archiveExcludePaths).toBeUndefined();
+    });
+
+    it("should keep backward compatibility - newUploadPolicy() without args still works", () => {
+      const policy = newUploadPolicy();
+      expect(policy.autoUpload).toBe(true);
+      expect(policy.uploadStrategy).toBe(
+        UploadStrategy.UploadBeforeResourceRelease
+      );
+      expect(policy.uploadMode).toBe(UploadMode.File);
+      expect(policy.archiveExcludePaths).toBeUndefined();
     });
   });
 });

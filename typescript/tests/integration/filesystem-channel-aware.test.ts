@@ -28,7 +28,9 @@ describe("fileSystem channel-aware", () => {
 
     if (!createResponse.success || !createResponse.session) {
       throw new Error(
-        `Failed to create session: ${createResponse.errorMessage || "Unknown error"}`
+        `Failed to create session: ${
+          createResponse.errorMessage || "Unknown error"
+        }`
       );
     }
 
@@ -58,7 +60,11 @@ describe("fileSystem channel-aware", () => {
     const content = "Hello, channel-aware filesystem!";
     const path = `${TestPathPrefix}/channel_test_small.txt`;
 
-    const writeResponse = await session.fileSystem.writeFile(path, content, "overwrite");
+    const writeResponse = await session.fileSystem.writeFile(
+      path,
+      content,
+      "overwrite"
+    );
     expect(writeResponse.success).toBe(true);
 
     const readResponse = await session.fileSystem.readFile(path);
@@ -78,7 +84,11 @@ describe("fileSystem channel-aware", () => {
     const content = "A".repeat(60 * 1024); // 60KB
     const path = `${TestPathPrefix}/channel_test_medium.txt`;
 
-    const writeResponse = await session.fileSystem.writeFile(path, content, "overwrite");
+    const writeResponse = await session.fileSystem.writeFile(
+      path,
+      content,
+      "overwrite"
+    );
     expect(writeResponse.success).toBe(true);
 
     const readResponse = await session.fileSystem.readFile(path);
@@ -98,7 +108,11 @@ describe("fileSystem channel-aware", () => {
     const content = "B".repeat(200 * 1024); // 200KB
     const path = `${TestPathPrefix}/channel_test_large.txt`;
 
-    const writeResponse = await session.fileSystem.writeFile(path, content, "overwrite");
+    const writeResponse = await session.fileSystem.writeFile(
+      path,
+      content,
+      "overwrite"
+    );
     expect(writeResponse.success).toBe(true);
 
     const readResponse = await session.fileSystem.readFile(path);
@@ -117,10 +131,18 @@ describe("fileSystem channel-aware", () => {
 
     const path = `${TestPathPrefix}/channel_test_append.txt`;
 
-    const writeResponse = await session.fileSystem.writeFile(path, "first part", "overwrite");
+    const writeResponse = await session.fileSystem.writeFile(
+      path,
+      "first part",
+      "overwrite"
+    );
     expect(writeResponse.success).toBe(true);
 
-    const appendResponse = await session.fileSystem.writeFile(path, " second part", "append");
+    const appendResponse = await session.fileSystem.writeFile(
+      path,
+      " second part",
+      "append"
+    );
     expect(appendResponse.success).toBe(true);
 
     const readResponse = await session.fileSystem.readFile(path);
@@ -140,7 +162,11 @@ describe("fileSystem channel-aware", () => {
     const content = "你好世界 🌍 こんにちは 안녕하세요 مرحبا";
     const path = `${TestPathPrefix}/channel_test_unicode.txt`;
 
-    const writeResponse = await session.fileSystem.writeFile(path, content, "overwrite");
+    const writeResponse = await session.fileSystem.writeFile(
+      path,
+      content,
+      "overwrite"
+    );
     expect(writeResponse.success).toBe(true);
 
     const readResponse = await session.fileSystem.readFile(path);

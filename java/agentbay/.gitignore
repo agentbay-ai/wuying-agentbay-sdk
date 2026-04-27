@@ -90,8 +90,12 @@ celerybeat-schedule
 .env
 .venv
 env/
+!src/main/java/com/aliyun/agentbay/env/
+!src/integration-test/java/com/aliyun/agentbay/env/
 venv/
 ENV/
+!src/main/java/com/aliyun/agentbay/env/
+!src/integration-test/java/com/aliyun/agentbay/env/
 env.bak/
 venv.bak/
 

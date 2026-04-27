@@ -303,7 +303,8 @@ class AsyncAgentBay:
         tool_list = response_data.get("ToolList")
         session.mcpTools = self._parse_tool_list_to_mcp_tools(tool_list)
 
-        # Set ResourceUrl
+        # Set AppInstanceId and ResourceUrl
+        session.app_instance_id = app_instance_id
         session.resource_url = resource_url
 
         # LinkUrl/token may be returned by the server for direct tool calls.
@@ -1265,6 +1266,8 @@ class AsyncAgentBay:
 
         # Set ResourceUrl from GetSession response
         if get_result.data:
+            session.app_instance_id = str(
+                getattr(get_result.data, "app_instance_id", "") or "")
             session.resource_url = get_result.data.resource_url
             session.mcpTools = self._parse_tool_list_to_mcp_tools(
                 get_result.data.tool_list)

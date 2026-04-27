@@ -608,7 +608,8 @@ export class AgentBay {
 
       const session = new Session(this, sessionId);
 
-      // Set ResourceUrl
+      // Set AppInstanceId and ResourceUrl
+      session.appInstanceId = data.appInstanceId || "";
       session.resourceUrl = resourceUrl;
 
       // LinkUrl/token may be returned by the server for direct tool calls.
@@ -1194,6 +1195,7 @@ export class AgentBay {
 
     // Set ResourceUrl from GetSession response
     if (getResult.data) {
+      session.appInstanceId = getResult.data.appInstanceId || "";
       session.resourceUrl = getResult.data.resourceUrl;
       session.token = getResult.data.token || "";
       session.linkUrl = getResult.data.linkUrl || "";

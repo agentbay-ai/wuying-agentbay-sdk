@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import os
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import pytest
 import pytest_asyncio
-
-from agentbay import AsyncAgentBay, CreateSessionParams
 
 
 def _parse_bounds_rect(bounds: Any) -> Optional[Tuple[int, int, int, int]]:
@@ -31,24 +28,10 @@ def _parse_bounds_rect(bounds: Any) -> Optional[Tuple[int, int, int, int]]:
     return None
 
 
-@pytest_asyncio.fixture(scope="module")
-async def agent_bay():
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AsyncAgentBay(api_key=api_key)
-
-
 @pytest_asyncio.fixture
-async def session(agent_bay):
-    session_param = CreateSessionParams(image_id="mobile_latest")
-    result = await agent_bay.create(session_param)
-    if not result.success and "no authorized app" in result.error_message:
-        pytest.skip(f"The user has no authorized app instance: {result.error_message}")
-    assert result.success, f"Failed to create session: {result.error_message}"
-    s = result.session
-    yield s
-    await s.delete()
+async def session(make_session):
+    lc = await make_session("mobile_latest")
+    return lc._result.session
 
 
 @pytest.mark.asyncio

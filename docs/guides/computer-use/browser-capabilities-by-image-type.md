@@ -16,14 +16,14 @@ Different image types provide different levels of browser automation capabilitie
 | **Browser Type Selection** (Chrome/Chromium) | ❌ Chromium Only | ✅ Chrome or Chromium | ❌ Not Available |
 | **Browser Proxies** | ✅ Supported | ✅ Supported | ❌ Not Supported |
 | **Browser Context** | ✅ Supported | ✅ Supported | ❌ Not Supported |
-| **Browser Random Fingerprint** | ✅ Supported | ✅ Supported | ✅ Supported |
+| **Browser Random Fingerprint** | ✅ Supported | ✅ Supported | ❌ Not Available |
 | **Browser Fingerprint Local Sync** | ✅ Supported | ✅ Supported | ❌ Not Supported |
 | **Browser Fingerprint Construct** | ✅ Supported | ✅ Supported | ❌ Not Supported |
 | **Browser Fingerprint Persistence** | ✅ Supported | ✅ Supported | ❌ Not Supported |
 | **Browser Command-line Args** | ✅ Supported | ✅ Supported | ❌ Not Supported |
 | **Browser Default Navigate** | ✅ Supported | ✅ Supported | ❌ Not Supported |
 | **CAPTCHA Solving** | ✅ Supported | ✅ Supported | ❌ Not Supported |
-| **Page Use Agent** (AI-powered automation) | ✅ Supported | ❌ Not Available | ❌ Not Available |
+| **Page Use Agent** (AI-powered automation) | ✅ Supported | ✅ Supported | ❌ Not Available |
 | **Desktop UI Automation** | ❌ Not Available | ✅ Supported | ✅ Supported |
 | **Window Management** | ❌ Not Available | ✅ Supported | ✅ Supported |
 | **Best For** | Pure web automation (best performance) | Web + Desktop automation (Linux apps) | Desktop automation only (Windows apps) |

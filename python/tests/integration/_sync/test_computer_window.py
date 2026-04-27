@@ -4,39 +4,24 @@ import time
 
 """Integration tests for Computer window management functionality."""
 
-import os
 import aiohttp
 from pathlib import Path
 
 import pytest
-import pytest
 
-from agentbay import AgentBay
 from agentbay import CreateSessionParams
 
 
-@pytest.fixture(scope="module")
-def agent_bay():
-    """Create AgentBay instance."""
-    api_key = os.environ.get("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-    return AgentBay(api_key=api_key)
-
 @pytest.fixture
-def session(agent_bay):
-    """Create a session with windows_latest image."""
-    print("\nCreating session for computer window testing...")
-    session_param = CreateSessionParams(image_id="windows_latest")
-    result = agent_bay.create(session_param)
-    if ("no authorized app" in result.error_message):
-        pytest.skip("No authorized app")
-    assert result.success, f"Failed to create session: {result.error_message}"
-    session = result.session
-    print(f"Session created with ID: {session.session_id}")
-    yield session
-    print("\nCleaning up: Deleting the session...")
-    session.delete()
+def session(make_session):
+    """Create a session with windows_latest image.
+
+    Note: Computer module requires a desktop environment.
+    Uses windows_latest (computer use image with Windows desktop).
+    """
+    lc = make_session(params=CreateSessionParams(image_id="windows_latest"))
+    return lc._result.session
+
 
 def save_screenshot_from_url(screenshot_url: str, filename: str) -> None:
     """Download screenshot from URL and save as PNG file in python/screenshots directory."""
@@ -68,6 +53,7 @@ def save_screenshot_from_url(screenshot_url: str, filename: str) -> None:
         f.write(image_data)
 
     print(f"DEBUG: Successfully saved screenshot to {file_path}")
+
 
 @pytest.mark.sync
 def test_window_management_lifecycle(session):
@@ -120,7 +106,6 @@ def test_window_management_lifecycle(session):
     else:
         pytest.fail(f"Failed to start application: {start_result.error_message}")
     calculator_window_id = None
-
 
     # Test ListRootWindows
     print("Testing list_root_windows...")
@@ -271,6 +256,7 @@ def test_window_management_lifecycle(session):
     else:
         print(f"Warning: Failed to close Calculator window: {close_result.error_message}")
 
+
 @pytest.mark.sync
 def test_list_root_windows(session):
     """Test listing root windows."""
@@ -291,6 +277,7 @@ def test_list_root_windows(session):
         assert hasattr(window, "window_id"), "Window should have window_id"
         print(f"First window: {window.title} (ID: {window.window_id})")
 
+
 @pytest.mark.sync
 def test_get_active_window(session):
     """Test getting the active window."""
@@ -309,6 +296,7 @@ def test_get_active_window(session):
     else:
         print("No active window found")
 
+
 @pytest.mark.sync
 def test_focus_mode(session):
     """Test focus mode functionality."""
@@ -326,11 +314,12 @@ def test_focus_mode(session):
     assert result_off.success, f"Focus mode off failed: {result_off.error_message}"
     print("Focus mode disabled successfully")
 
+
 @pytest.mark.sync
 def test_screenshot(session):
     """Test screenshot functionality."""
     print("\nTest: Screenshot...")
-    if(session.get_link_url()):
+    if session.get_link_url():
         pytest.skip("This cloud environment does not support `screenshot()`")
 
     # Take a screenshot
@@ -350,4 +339,3 @@ def test_screenshot(session):
             print("Test screenshot saved as test_screenshot.png")
         except Exception as e:
             print(f"Warning: Failed to save test screenshot: {e}")
-

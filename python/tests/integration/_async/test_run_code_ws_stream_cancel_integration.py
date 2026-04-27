@@ -1,28 +1,21 @@
 # ci-stable
 # -*- coding: utf-8 -*-
+"""Integration tests for run_code WebSocket stream cancellation."""
+
 import asyncio
-import os
 import time
 
 import pytest
 
-from agentbay import AsyncAgentBay, CreateSessionParams
+from agentbay import CreateSessionParams
 from agentbay._common.exceptions import WsCancelledError
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_run_code_ws_stream_cancel_e2e():
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        pytest.skip("AGENTBAY_API_KEY environment variable not set")
-
-    agentbay = AsyncAgentBay(api_key=api_key)
-
-    result = await agentbay.create(CreateSessionParams())
-    assert result.success is True, result.error_message
-    assert result.session is not None
-    session = result.session
+async def test_run_code_ws_stream_cancel_e2e(make_session):
+    lc = await make_session()
+    session = lc._result.session
 
     ws_client = None
     try:
@@ -95,5 +88,4 @@ async def test_run_code_ws_stream_cancel_e2e():
                 await ws_client.close()
             except Exception:
                 pass
-        await session.delete()
 

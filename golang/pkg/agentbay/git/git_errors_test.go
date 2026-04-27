@@ -266,7 +266,7 @@ func TestGitStatusResult_Counts(t *testing.T) {
 	}
 	assert.Equal(t, 5, result.TotalCount())
 	assert.Equal(t, 2, result.StagedCount())    // staged.txt + added.txt
-	assert.Equal(t, 2, result.UnstagedCount())   // unstaged.txt + conflict.txt (not untracked)
-	assert.Equal(t, 1, result.UntrackedCount())  // untracked.txt
-	assert.Equal(t, 1, result.ConflictCount())   // conflict.txt
+	assert.Equal(t, 2, result.UnstagedCount())  // unstaged.txt + conflict.txt (not untracked)
+	assert.Equal(t, 1, result.UntrackedCount()) // untracked.txt
+	assert.Equal(t, 1, result.ConflictCount())  // conflict.txt
 }
