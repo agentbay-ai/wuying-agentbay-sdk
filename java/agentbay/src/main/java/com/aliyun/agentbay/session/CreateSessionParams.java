@@ -24,9 +24,18 @@ public class CreateSessionParams {
 
     /**
      * SDK-side idle release timeout in seconds.
-     * Default is 300 seconds.
+     *
+     * @deprecated Prefer {@link #lifecyclePolicy} (minutes-based full lifecycle control).
+     * Cannot be used together with {@link #lifecyclePolicy}.
      */
+    @Deprecated
     private Integer idleReleaseTimeout;
+
+    /**
+     * Full lifecycle policy (idle and max runtime in minutes, optional manual release).
+     * Mutually exclusive with {@link #idleReleaseTimeout}.
+     */
+    private LifecyclePolicy lifecyclePolicy;
 
     /** Custom labels for the Session. These can be used for organizing and filtering sessions. */
     private Map<String, String> labels;
@@ -126,8 +135,10 @@ public class CreateSessionParams {
     /**
      * Get the SDK-side idle release timeout in seconds.
      *
-     * @return idle release timeout in seconds, default is 300
+     * @return idle release timeout in seconds, or null if not set
+     * @deprecated Use {@link #getLifecyclePolicy()} for minutes-based lifecycle control.
      */
+    @Deprecated
     public Integer getIdleReleaseTimeout() {
         return idleReleaseTimeout;
     }
@@ -136,9 +147,39 @@ public class CreateSessionParams {
      * Set the SDK-side idle release timeout in seconds.
      *
      * @param idleReleaseTimeout idle release timeout in seconds
+     * @deprecated Use {@link #setLifecyclePolicy(LifecyclePolicy)} for minutes-based lifecycle control.
+     * @throws IllegalArgumentException if {@link #lifecyclePolicy} is already set
      */
+    @Deprecated
     public void setIdleReleaseTimeout(Integer idleReleaseTimeout) {
+        if (idleReleaseTimeout != null && lifecyclePolicy != null) {
+            throw new IllegalArgumentException(
+                "lifecyclePolicy cannot be used together with idleReleaseTimeout");
+        }
         this.idleReleaseTimeout = idleReleaseTimeout;
+    }
+
+    /**
+     * Gets the lifecycle policy (minutes-based), if set.
+     *
+     * @return lifecycle policy, or null
+     */
+    public LifecyclePolicy getLifecyclePolicy() {
+        return lifecyclePolicy;
+    }
+
+    /**
+     * Sets the lifecycle policy. Mutually exclusive with {@link #idleReleaseTimeout}.
+     *
+     * @param lifecyclePolicy lifecycle configuration
+     * @throws IllegalArgumentException if idle release timeout was already set (non-null)
+     */
+    public void setLifecyclePolicy(LifecyclePolicy lifecyclePolicy) {
+        if (lifecyclePolicy != null && idleReleaseTimeout != null) {
+            throw new IllegalArgumentException(
+                "idleReleaseTimeout cannot be used together with lifecyclePolicy");
+        }
+        this.lifecyclePolicy = lifecyclePolicy;
     }
 
     /**

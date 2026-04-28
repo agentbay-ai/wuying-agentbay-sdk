@@ -13,8 +13,9 @@ import com.aliyun.agentbay.model.*;
 import com.aliyun.agentbay.network.BetaNetworkService;
 import com.aliyun.agentbay.skills.BetaSkillsService;
 
-import com.aliyun.agentbay.session.Session;
 import com.aliyun.agentbay.session.CreateSessionParams;
+import com.aliyun.agentbay.session.LifecyclePolicy;
+import com.aliyun.agentbay.session.Session;
 import com.aliyun.agentbay.util.ResponseUtil;
 import com.aliyun.agentbay.util.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -464,10 +465,18 @@ public class AgentBay {
                 request.setImageId(params.getImageId());
             }
 
-            // SDK idle release timeout (seconds)
-            Integer idleReleaseTimeout = params.getIdleReleaseTimeout();
-            if (idleReleaseTimeout != null) {
-                request.setTimeout(idleReleaseTimeout);
+            // Lifecycle policy (minutes, full takeover)
+            LifecyclePolicy lp = params.getLifecyclePolicy();
+            if (lp != null) {
+                request.setTimeout(lp.getIdleReleaseTimeout());
+                request.setMaxRuntime(lp.getMaxRuntime());
+                request.setManualRelease(lp.isManualRelease());
+            } else {
+                // Legacy SDK idle release timeout (seconds)
+                Integer idleReleaseTimeout = params.getIdleReleaseTimeout();
+                if (idleReleaseTimeout != null) {
+                    request.setTimeout(idleReleaseTimeout);
+                }
             }
 
             // Set labels if provided
