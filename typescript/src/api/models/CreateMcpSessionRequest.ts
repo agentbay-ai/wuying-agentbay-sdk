@@ -10,6 +10,8 @@ export class CreateMcpSessionRequest extends $dara.Model {
   externalUserId?: string;
   imageId?: string;
   timeout?: number;
+  maxRuntime?: number;
+  manualRelease?: boolean;
   labels?: string;
   mcpPolicyId?: string;
   networkId?: string;
@@ -29,6 +31,8 @@ export class CreateMcpSessionRequest extends $dara.Model {
       externalUserId: 'ExternalUserId',
       imageId: 'ImageId',
       timeout: 'Timeout',
+      maxRuntime: 'MaxRuntime',
+      manualRelease: 'ManualRelease',
       labels: 'Labels',
       mcpPolicyId: 'McpPolicyId',
       networkId: 'NetworkId',
@@ -51,6 +55,8 @@ export class CreateMcpSessionRequest extends $dara.Model {
       externalUserId: 'string',
       imageId: 'string',
       timeout: 'number',
+      maxRuntime: 'number',
+      manualRelease: 'boolean',
       labels: 'string',
       mcpPolicyId: 'string',
       networkId: 'string',

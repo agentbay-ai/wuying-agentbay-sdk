@@ -9,6 +9,8 @@ export class CreateMcpSessionShrinkRequest extends $dara.Model {
   externalUserId?: string;
   imageId?: string;
   timeout?: number;
+  maxRuntime?: number;
+  manualRelease?: boolean;
   labels?: string;
   mcpPolicyId?: string;
   networkId?: string;
@@ -28,6 +30,8 @@ export class CreateMcpSessionShrinkRequest extends $dara.Model {
       externalUserId: 'ExternalUserId',
       imageId: 'ImageId',
       timeout: 'Timeout',
+      maxRuntime: 'MaxRuntime',
+      manualRelease: 'ManualRelease',
       labels: 'Labels',
       mcpPolicyId: 'McpPolicyId',
       networkId: 'NetworkId',
@@ -50,6 +54,8 @@ export class CreateMcpSessionShrinkRequest extends $dara.Model {
       externalUserId: 'string',
       imageId: 'string',
       timeout: 'number',
+      maxRuntime: 'number',
+      manualRelease: 'boolean',
       labels: 'string',
       mcpPolicyId: 'string',
       networkId: 'string',

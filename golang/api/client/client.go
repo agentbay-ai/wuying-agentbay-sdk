@@ -262,6 +262,14 @@ func (client *Client) CreateMcpSessionWithOptions(tmpReq *CreateMcpSessionReques
 		body["Timeout"] = request.Timeout
 	}
 
+	if !dara.IsNil(request.MaxRuntime) {
+		body["MaxRuntime"] = request.MaxRuntime
+	}
+
+	if !dara.IsNil(request.ManualRelease) {
+		body["ManualRelease"] = request.ManualRelease
+	}
+
 	if !dara.IsNil(request.Labels) {
 		body["Labels"] = request.Labels
 	}

@@ -15,6 +15,8 @@ class CreateMcpSessionShrinkRequest(DaraModel):
         external_user_id: Optional[str] = None,
         image_id: Optional[str] = None,
         timeout: Optional[int] = None,
+        max_runtime: Optional[int] = None,
+        manual_release: Optional[bool] = None,
         labels: Optional[str] = None,
         load_skill: Optional[bool] = None,
         mcp_policy_id: Optional[str] = None,
@@ -32,6 +34,8 @@ class CreateMcpSessionShrinkRequest(DaraModel):
         self.external_user_id = external_user_id
         self.image_id = image_id
         self.timeout = timeout
+        self.max_runtime = max_runtime
+        self.manual_release = manual_release
         self.labels = labels
         self.load_skill = load_skill
         self.mcp_policy_id = mcp_policy_id
@@ -66,6 +70,12 @@ class CreateMcpSessionShrinkRequest(DaraModel):
 
         if self.timeout is not None:
             result["Timeout"] = self.timeout
+
+        if self.manual_release is not None:
+            result["ManualRelease"] = self.manual_release
+
+        if self.max_runtime is not None:
+            result["MaxRuntime"] = self.max_runtime
 
         if self.labels is not None:
             result["Labels"] = self.labels
@@ -118,6 +128,12 @@ class CreateMcpSessionShrinkRequest(DaraModel):
 
         if m.get("Timeout") is not None:
             self.timeout = m.get("Timeout")
+
+        if m.get("ManualRelease") is not None:
+            self.manual_release = m.get("ManualRelease")
+
+        if m.get("MaxRuntime") is not None:
+            self.max_runtime = m.get("MaxRuntime")
 
         if m.get("Labels") is not None:
             self.labels = m.get("Labels")

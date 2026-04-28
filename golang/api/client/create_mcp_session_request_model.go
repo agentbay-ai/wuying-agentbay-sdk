@@ -39,6 +39,10 @@ type iCreateMcpSessionRequest interface {
 	GetSdkStats() *string
 	SetLoginRegionId(v string) *CreateMcpSessionRequest
 	GetLoginRegionId() *string
+	SetManualRelease(v bool) *CreateMcpSessionRequest
+	GetManualRelease() *bool
+	SetMaxRuntime(v int32) *CreateMcpSessionRequest
+	GetMaxRuntime() *int32
 	SetLoadSkill(v bool) *CreateMcpSessionRequest
 	GetLoadSkill() *bool
 	SetSkills(v []*string) *CreateMcpSessionRequest
@@ -52,6 +56,8 @@ type CreateMcpSessionRequest struct {
 	ExternalUserId      *string                                       `json:"ExternalUserId,omitempty" xml:"ExternalUserId,omitempty"`
 	ImageId             *string                                       `json:"ImageId,omitempty" xml:"ImageId,omitempty"`
 	Timeout             *int32                                        `json:"Timeout,omitempty" xml:"Timeout,omitempty"`
+	ManualRelease       *bool                                         `json:"ManualRelease,omitempty" xml:"ManualRelease,omitempty"`
+	MaxRuntime          *int32                                        `json:"MaxRuntime,omitempty" xml:"MaxRuntime,omitempty"`
 	Labels              *string                                       `json:"Labels,omitempty" xml:"Labels,omitempty"`
 	McpPolicyId         *string                                       `json:"McpPolicyId,omitempty" xml:"McpPolicyId,omitempty"`
 	NetworkId           *string                                       `json:"NetworkId,omitempty" xml:"NetworkId,omitempty"`
@@ -95,6 +101,14 @@ func (s *CreateMcpSessionRequest) GetImageId() *string {
 
 func (s *CreateMcpSessionRequest) GetTimeout() *int32 {
 	return s.Timeout
+}
+
+func (s *CreateMcpSessionRequest) GetManualRelease() *bool {
+	return s.ManualRelease
+}
+
+func (s *CreateMcpSessionRequest) GetMaxRuntime() *int32 {
+	return s.MaxRuntime
 }
 
 func (s *CreateMcpSessionRequest) GetLabels() *string {
@@ -148,6 +162,16 @@ func (s *CreateMcpSessionRequest) SetImageId(v string) *CreateMcpSessionRequest 
 
 func (s *CreateMcpSessionRequest) SetTimeout(v int32) *CreateMcpSessionRequest {
 	s.Timeout = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequest) SetManualRelease(v bool) *CreateMcpSessionRequest {
+	s.ManualRelease = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequest) SetMaxRuntime(v int32) *CreateMcpSessionRequest {
+	s.MaxRuntime = &v
 	return s
 }
 

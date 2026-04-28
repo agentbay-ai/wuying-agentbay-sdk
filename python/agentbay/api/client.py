@@ -283,6 +283,10 @@ class Client(OpenApiClient):
             body["ImageId"] = request.image_id
         if not DaraCore.is_null(request.timeout):
             body["Timeout"] = request.timeout
+        if not DaraCore.is_null(request.max_runtime):
+            body["MaxRuntime"] = request.max_runtime
+        if not DaraCore.is_null(request.manual_release):
+            body["ManualRelease"] = request.manual_release
         if not DaraCore.is_null(request.labels):
             body["Labels"] = request.labels
         if not DaraCore.is_null(request.load_skill):
@@ -355,6 +359,10 @@ class Client(OpenApiClient):
             body["ImageId"] = request.image_id
         if not DaraCore.is_null(request.timeout):
             body["Timeout"] = request.timeout
+        if not DaraCore.is_null(request.max_runtime):
+            body["MaxRuntime"] = request.max_runtime
+        if not DaraCore.is_null(request.manual_release):
+            body["ManualRelease"] = request.manual_release
         if not DaraCore.is_null(request.labels):
             body["Labels"] = request.labels
         if not DaraCore.is_null(request.load_skill):

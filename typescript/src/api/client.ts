@@ -248,6 +248,14 @@ export class Client extends OpenApi {
       body["Timeout"] = (request as any).timeout;
     }
 
+    if (!$dara.isNull(request.maxRuntime)) {
+      body["MaxRuntime"] = request.maxRuntime;
+    }
+
+    if (!$dara.isNull(request.manualRelease)) {
+      body["ManualRelease"] = request.manualRelease;
+    }
+
     if (!$dara.isNull(request.labels)) {
       body["Labels"] = request.labels;
     }

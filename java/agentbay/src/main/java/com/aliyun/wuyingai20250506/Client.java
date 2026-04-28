@@ -297,6 +297,14 @@ public class Client extends com.aliyun.teaopenapi.Client {
             body.put("Timeout", request.timeout);
         }
 
+        if (!com.aliyun.teautil.Common.isUnset(request.maxRuntime)) {
+            body.put("MaxRuntime", request.maxRuntime);
+        }
+
+        if (!com.aliyun.teautil.Common.isUnset(request.manualRelease)) {
+            body.put("ManualRelease", request.manualRelease);
+        }
+
         com.aliyun.teaopenapi.models.OpenApiRequest req = com.aliyun.teaopenapi.models.OpenApiRequest.build(TeaConverter.buildMap(
             new TeaPair("body", com.aliyun.openapiutil.Client.parseToMap(body))
         ));

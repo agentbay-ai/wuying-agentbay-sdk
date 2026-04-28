@@ -35,6 +35,12 @@ public class CreateMcpSessionShrinkRequest extends TeaModel {
     @NameInMap("LoginRegionId")
     public String loginRegionId;
 
+    @NameInMap("ManualRelease")
+    public Boolean manualRelease;
+
+    @NameInMap("MaxRuntime")
+    public Integer maxRuntime;
+
     @NameInMap("McpPolicyId")
     public String mcpPolicyId;
 
@@ -137,6 +143,22 @@ public class CreateMcpSessionShrinkRequest extends TeaModel {
     }
     public String getLoginRegionId() {
         return this.loginRegionId;
+    }
+
+    public CreateMcpSessionShrinkRequest setManualRelease(Boolean manualRelease) {
+        this.manualRelease = manualRelease;
+        return this;
+    }
+    public Boolean getManualRelease() {
+        return this.manualRelease;
+    }
+
+    public CreateMcpSessionShrinkRequest setMaxRuntime(Integer maxRuntime) {
+        this.maxRuntime = maxRuntime;
+        return this;
+    }
+    public Integer getMaxRuntime() {
+        return this.maxRuntime;
     }
 
     public CreateMcpSessionShrinkRequest setMcpPolicyId(String mcpPolicyId) {

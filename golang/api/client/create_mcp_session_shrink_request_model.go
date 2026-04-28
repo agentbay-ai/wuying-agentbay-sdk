@@ -39,6 +39,10 @@ type iCreateMcpSessionShrinkRequest interface {
 	GetSdkStats() *string
 	SetLoginRegionId(v string) *CreateMcpSessionShrinkRequest
 	GetLoginRegionId() *string
+	SetManualRelease(v bool) *CreateMcpSessionShrinkRequest
+	GetManualRelease() *bool
+	SetMaxRuntime(v int32) *CreateMcpSessionShrinkRequest
+	GetMaxRuntime() *int32
 	SetLoadSkill(v bool) *CreateMcpSessionShrinkRequest
 	GetLoadSkill() *bool
 	SetSkillsShrink(v string) *CreateMcpSessionShrinkRequest
@@ -52,6 +56,8 @@ type CreateMcpSessionShrinkRequest struct {
 	ExternalUserId            *string `json:"ExternalUserId,omitempty" xml:"ExternalUserId,omitempty"`
 	ImageId                   *string `json:"ImageId,omitempty" xml:"ImageId,omitempty"`
 	Timeout                   *int32  `json:"Timeout,omitempty" xml:"Timeout,omitempty"`
+	ManualRelease             *bool   `json:"ManualRelease,omitempty" xml:"ManualRelease,omitempty"`
+	MaxRuntime                *int32  `json:"MaxRuntime,omitempty" xml:"MaxRuntime,omitempty"`
 	Labels                    *string `json:"Labels,omitempty" xml:"Labels,omitempty"`
 	McpPolicyId               *string `json:"McpPolicyId,omitempty" xml:"McpPolicyId,omitempty"`
 	NetworkId                 *string `json:"NetworkId,omitempty" xml:"NetworkId,omitempty"`
@@ -95,6 +101,14 @@ func (s *CreateMcpSessionShrinkRequest) GetImageId() *string {
 
 func (s *CreateMcpSessionShrinkRequest) GetTimeout() *int32 {
 	return s.Timeout
+}
+
+func (s *CreateMcpSessionShrinkRequest) GetManualRelease() *bool {
+	return s.ManualRelease
+}
+
+func (s *CreateMcpSessionShrinkRequest) GetMaxRuntime() *int32 {
+	return s.MaxRuntime
 }
 
 func (s *CreateMcpSessionShrinkRequest) GetLabels() *string {
@@ -148,6 +162,16 @@ func (s *CreateMcpSessionShrinkRequest) SetImageId(v string) *CreateMcpSessionSh
 
 func (s *CreateMcpSessionShrinkRequest) SetTimeout(v int32) *CreateMcpSessionShrinkRequest {
 	s.Timeout = &v
+	return s
+}
+
+func (s *CreateMcpSessionShrinkRequest) SetManualRelease(v bool) *CreateMcpSessionShrinkRequest {
+	s.ManualRelease = &v
+	return s
+}
+
+func (s *CreateMcpSessionShrinkRequest) SetMaxRuntime(v int32) *CreateMcpSessionShrinkRequest {
+	s.MaxRuntime = &v
 	return s
 }
 
