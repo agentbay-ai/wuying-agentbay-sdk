@@ -462,6 +462,83 @@ If you set `idle_release_timeout` and want to prevent the session from being rel
 
 Calling keep-alive resets the backend idle timer back to the configured timeout value.
 
+### Lifecycle Policy
+
+The `LifecyclePolicy` API provides fine-grained control over session lifecycle with three dimensions:
+
+- **Idle Release Timeout** (minutes): Auto-release after inactivity (default: 5 minutes)
+- **Max Runtime** (minutes): Absolute maximum session duration from creation (default: 30 minutes)
+- **Manual Release**: Disable all auto-release; the session only ends via `delete()`
+
+When `LifecyclePolicy` is set on create, the SDK sends explicit lifecycle settings to the backend and overrides console defaults for that session.
+
+<details open>
+<summary>📘 <strong>Python</strong></summary>
+
+```python
+from agentbay import AgentBay, CreateSessionParams, LifecyclePolicy
+
+agent_bay = AgentBay(api_key=api_key)
+policy = LifecyclePolicy(idle_release_timeout=10, max_runtime=60)
+params = CreateSessionParams(lifecycle_policy=policy)
+session_result = agent_bay.create(params)
+```
+
+</details>
+
+<details>
+<summary>⚡ <strong>TypeScript</strong></summary>
+
+```typescript
+import { AgentBay, LifecyclePolicy } from "wuying-agentbay-sdk";
+
+const agentBay = new AgentBay({ apiKey: process.env.AGENTBAY_API_KEY ?? "" });
+const policy = new LifecyclePolicy({
+  idleReleaseTimeout: 10,
+  maxRuntime: 60,
+});
+await agentBay.create({ lifecyclePolicy: policy });
+```
+
+</details>
+
+<details>
+<summary>🔷 <strong>Golang</strong></summary>
+
+```go
+import "github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay"
+
+client, _ := agentbay.NewAgentBay(apiKey, nil)
+lp, _ := agentbay.NewLifecyclePolicyWithValues(10, 60, false)
+params, _ := agentbay.NewCreateSessionParams().WithLifecyclePolicy(lp)
+_, _ = client.Create(params)
+```
+
+</details>
+
+<details>
+<summary>☕ <strong>Java</strong></summary>
+
+```java
+import com.aliyun.agentbay.AgentBay;
+import com.aliyun.agentbay.model.SessionResult;
+import com.aliyun.agentbay.session.CreateSessionParams;
+import com.aliyun.agentbay.session.LifecyclePolicy;
+
+AgentBay agentBay = new AgentBay(apiKey);
+CreateSessionParams params = new CreateSessionParams();
+params.setLifecyclePolicy(new LifecyclePolicy(10, 60));
+SessionResult result = agentBay.create(params);
+```
+
+</details>
+
+Manual release only (no automatic idle or max runtime):
+
+```python
+LifecyclePolicy(manual_release=True)
+```
+
 ### Important Notes
 
 - Released sessions (either manually or by timeout) will **not** appear in `agent_bay.list()` results

@@ -127,7 +127,7 @@ Before using the SDK, you need to:
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.18.0</version>
+    <version>0.19.0</version>
 </dependency>
 ```
 
@@ -244,6 +244,7 @@ Features available across all environments:
 - [Command Execution](common-features/basics/command-execution.md) - Execute shell commands and scripts
 - [File Operations](common-features/basics/file-operations.md) - Upload, download, and manipulate files
 - [Data Persistence](common-features/basics/data-persistence.md) - Persistent data storage and synchronization
+- [Environment Variables](common-features/basics/environment-variables.md) - Set and query global environment variables
 
 **Configuration**
 - [SDK Configuration](common-features/configuration/sdk-configuration.md) - SDK settings and environment variables
@@ -824,18 +825,20 @@ FILE: java/README.md
 
 ## 📦 Installation
 
+> **Note:** Please check [Maven Central](https://central.sonatype.com/artifact/com.aliyun/agentbay-sdk) for the latest version number and replace `LATEST_VERSION` below.
+
 ### Maven
 ```xml
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.15.0</version>
+    <version>LATEST_VERSION</version>
 </dependency>
 ```
 
 ### Gradle
 ```gradle
-implementation 'com.aliyun:agentbay-sdk:0.15.0'
+implementation 'com.aliyun:agentbay-sdk:LATEST_VERSION'
 ```
 
 ## 🚀 Prerequisites
@@ -967,14 +970,8 @@ CommandResult result = session.getCommand().executeCommand("java MyClass.java");
 System.out.println(result.getOutput());
 ```
 
-### Data Persistence
-```java
-// Create context
-Context context = agentBay.getContext().get("my-project", true).getContext();
 
-// Create session with context
-
-... [truncated, 975 chars remaining] ...
+... [truncated, 1,132 chars remaining] ...
 
 ================================================
 FILE: python/README.md
@@ -1147,7 +1144,7 @@ FILE: python/pyproject.toml
 ================================================
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.18.1"
+version = "0.19.0"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
@@ -1342,7 +1339,7 @@ FILE: typescript/package.json
 ================================================
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.18.0",
+    "version": "0.19.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",

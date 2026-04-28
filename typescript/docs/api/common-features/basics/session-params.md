@@ -39,6 +39,7 @@ contextSync: [`ContextSync`](context-sync.md)[]
 framework: `string`
 idleReleaseTimeout: `number`
 labels: `Record`<`string`, `string`>
+lifecyclePolicy: `undefined` | ``LifecyclePolicy``
 ```
 
 
@@ -135,6 +136,12 @@ ___
 #### Implementation of
 
 `CreateSessionParamsInterface`.`labels`
+
+___
+
+#### Implementation of
+
+`CreateSessionParamsInterface`.`lifecyclePolicy`
 
 ___
 

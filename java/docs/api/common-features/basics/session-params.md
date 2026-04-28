@@ -71,7 +71,7 @@ public Integer getIdleReleaseTimeout()
 Get the SDK-side idle release timeout in seconds.
 
 **Returns:**
-- `Integer`: idle release timeout in seconds, default is 300
+- `Integer`: idle release timeout in seconds, or null if not set
 
 ### setIdleReleaseTimeout
 
@@ -83,6 +83,34 @@ Set the SDK-side idle release timeout in seconds.
 
 **Parameters:**
 - `idleReleaseTimeout` (Integer): idle release timeout in seconds
+
+**Throws:**
+- `IllegalArgumentException`: if {@link #lifecyclePolicy} is already set
+
+### getLifecyclePolicy
+
+```java
+public LifecyclePolicy getLifecyclePolicy()
+```
+
+Gets the lifecycle policy (minutes-based), if set.
+
+**Returns:**
+- `LifecyclePolicy`: lifecycle policy, or null
+
+### setLifecyclePolicy
+
+```java
+public void setLifecyclePolicy(LifecyclePolicy lifecyclePolicy)
+```
+
+Sets the lifecycle policy. Mutually exclusive with {@link #idleReleaseTimeout}.
+
+**Parameters:**
+- `lifecyclePolicy` (LifecyclePolicy): lifecycle configuration
+
+**Throws:**
+- `IllegalArgumentException`: if idle release timeout was already set (non-null)
 
 ### getLabels
 

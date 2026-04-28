@@ -2,6 +2,20 @@
 
 All notable changes to the Wuying AgentBay SDK will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **LifecyclePolicy**: New composite object for fine-grained session lifecycle control across all four SDKs
+  - `idle_release_timeout` (minutes): Auto-release after inactivity (default: 5 min)
+  - `max_runtime` (minutes): Absolute maximum session duration (default: 30 min)
+  - `manual_release`: Disable all auto-release, session only ends via `delete()`
+  - Supports "full takeover" semantics — when set, console defaults are overridden
+
+### Deprecated
+
+- `CreateSessionParams.idle_release_timeout` (seconds): Use `LifecyclePolicy.idle_release_timeout` (minutes) instead
+
 ## [0.19.0] - 2026-04-16
 
 ### Added

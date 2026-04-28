@@ -353,6 +353,10 @@ Takes a screenshot of the specified page.
 public ActResult act(Page page, Object actionInput) throws BrowserException
 ```
 
+```java
+public ActResult act(Object actionInput) throws BrowserException
+```
+
 Perform an action on a web page.
 Uses synchronous execution.
 
@@ -395,6 +399,10 @@ Uses asynchronous execution with task polling for long-running operations
 public ObserveResultTuple observe(Page page, ObserveOptions options) throws BrowserException
 ```
 
+```java
+public ObserveResultTuple observe(ObserveOptions options) throws BrowserException
+```
+
 Observe elements or state on a web page.
 
 **Parameters:**
@@ -411,6 +419,10 @@ Observe elements or state on a web page.
 
 ```java
 public ExtractResultTuple<T> extract(Page page, ExtractOptions<T> options) throws BrowserException
+```
+
+```java
+public ExtractResultTuple<T> extract(ExtractOptions<T> options) throws BrowserException
 ```
 
 Extract information from a web page.

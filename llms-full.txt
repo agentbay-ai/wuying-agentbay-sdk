@@ -36,6 +36,8 @@ Directory structure:
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── data_persistence/
     │   │   │   │   │   │   ├── README.md
+    │   │   │   │   │   ├── env_management/
+    │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── filesystem_example/
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── get/
@@ -43,6 +45,8 @@ Directory structure:
     │   │   │   │   │   ├── list_sessions/
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── mcp_tool_direct_call/
+    │   │   │   │   │   │   ├── README.md
+    │   │   │   │   │   ├── pty_example/
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── session_creation/
     │   │   │   │   │   │   ├── README.md
@@ -116,6 +120,8 @@ Directory structure:
     │   │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   │   ├── data_persistence/
     │   │   │   │   │   │   │   ├── README.md
+    │   │   │   │   │   │   ├── env_management/
+    │   │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   │   ├── file_system/
     │   │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   │   ├── filesystem_example/
@@ -153,6 +159,8 @@ Directory structure:
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── data-persistence/
     │   │   │   │   │   │   ├── README.md
+    │   │   │   │   │   ├── env-management/
+    │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── filesystem-example/
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── get/
@@ -160,6 +168,8 @@ Directory structure:
     │   │   │   │   │   ├── list_sessions/
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── mcp_tool_direct_call/
+    │   │   │   │   │   │   ├── README.md
+    │   │   │   │   │   ├── pty-example/
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   ├── session-creation/
     │   │   │   │   │   │   ├── README.md
@@ -284,7 +294,7 @@ Before using the SDK, you need to:
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.18.0</version>
+    <version>0.19.0</version>
 </dependency>
 ```
 
@@ -401,6 +411,7 @@ Features available across all environments:
 - [Command Execution](common-features/basics/command-execution.md) - Execute shell commands and scripts
 - [File Operations](common-features/basics/file-operations.md) - Upload, download, and manipulate files
 - [Data Persistence](common-features/basics/data-persistence.md) - Persistent data storage and synchronization
+- [Environment Variables](common-features/basics/environment-variables.md) - Set and query global environment variables
 
 **Configuration**
 - [SDK Configuration](common-features/configuration/sdk-configuration.md) - SDK settings and environment variables
@@ -1045,6 +1056,8 @@ This directory is generated. Run `go run scripts/generate_api_docs.go` to refres
 - `common-features/advanced/oss.md` – OSS
 - `common-features/advanced/network.md` – Network
 - `common-features/advanced/git.md` – Git
+- `common-features/basics/pty.md` – PTY Terminal
+- `common-features/basics/env.md` – Env
 
 ## Computer Use
 
@@ -1837,6 +1850,40 @@ go run main.go
 This example is based on the Python data persistence example and demonstrates the same functionality using idiomatic Go patterns and the Golang AgentBay SDK.
 
 ================================================
+FILE: golang/docs/examples/common-features/basics/env_management/README.md
+================================================
+# Env Module Example (Go)
+
+This example shows **session-scoped** environment variables using `session.Env`: `Set`, `Get` with no keys (all) or specific names, overwrite, and a shell command that reads `$DEMO_APP`.
+
+## Prerequisites
+
+- Go 1.21+ (matching the SDK module)
+- `AGENTBAY_API_KEY` in the environment
+
+## Run
+
+From this directory:
+
+```bash
+export AGENTBAY_API_KEY="your-api-key"
+go run main.go
+```
+
+The session uses `imageId` `AIO_ubuntu2404`.
+
+## Expected output (illustrative)
+
+- Session ID printed after create.
+- Steps 1–5 print `DEMO_APP` / `DEMO_STAGE` values and `echo $DEMO_APP` as `agentbay`.
+- Session is deleted in a deferred cleanup.
+
+## See also
+
+- [Env API reference](../../../../api/common-features/basics/env.md)
+
+
+================================================
 FILE: golang/docs/examples/common-features/basics/filesystem_example/README.md
 ================================================
 # FileSystem Example
@@ -2172,6 +2219,49 @@ Example completed successfully!
 - Tool calls use the OpenAPI route
 - Proper error handling and cleanup are demonstrated
 
+
+
+================================================
+FILE: golang/docs/examples/common-features/basics/pty_example/README.md
+================================================
+# PTY Terminal Example
+
+Demonstrates interactive pseudo-terminal (PTY) sessions in Go: create, echo input, resize, list, disconnect/reconnect, kill, and graceful exit with `Wait`.
+
+## Features Demonstrated
+
+- Create a PTY with an `OnData` callback
+- Send shell input and observe output
+- Resize the terminal
+- List PTY sessions via `Pty.List`
+- `Disconnect` locally and `Connect` to the same `ptySessionId`
+- `Kill` and read exit code -9
+- Send `exit` and `Wait` for exit code 0
+
+## Running the Example
+
+1. Add the module dependency:
+
+```bash
+go get github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay
+```
+
+2. Set your API key:
+
+```bash
+export AGENTBAY_API_KEY=your_api_key_here
+```
+
+3. Run from this directory:
+
+```bash
+go run main.go
+```
+
+## Related
+
+- Go package: `golang/pkg/agentbay/pty`
+- Integration tests: `golang/tests/pkg/integration/pty_integration_test.go`
 
 
 ================================================
@@ -3602,6 +3692,9 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		// Create a deep copy of params to avoid modifying the original object
 		params = a.copyCreateSessionParams(params)
 	}
+	if params.LifecyclePolicy != nil && params.IdleReleaseTimeout > 0 {
+		return nil, fmt.Errorf("lifecycle policy and IdleReleaseTimeout are mutually exclusive")
+	}
 
 	// Flag to indicate if we need to wait for mobile simulate
 	needsMobileSim := false
@@ -3673,8 +3766,17 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		createSessionRequest.NetworkId = tea.String(params.BetaNetworkId)
 	}
 
-	// SDK idle release timeout (seconds)
-	if params.IdleReleaseTimeout > 0 {
+	// Lifecycle policy (minutes, full takeover)
+	if params.LifecyclePolicy != nil {
+		lp := params.LifecyclePolicy
+		if lp.ManualRelease {
+			createSessionRequest.ManualRelease = tea.Bool(true)
+		} else {
+			createSessionRequest.Timeout = tea.Int32(lp.IdleReleaseTimeout)
+			createSessionRequest.MaxRuntime = tea.Int32(lp.MaxRuntime)
+		}
+	} else if params.IdleReleaseTimeout > 0 {
+		// Legacy SDK idle release timeout (seconds)
 		createSessionRequest.Timeout = tea.Int32(params.IdleReleaseTimeout)
 	}
 
@@ -3859,7 +3961,10 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	session := NewSession(a, *response.Body.Data.SessionId)
 	session.ImageId = params.ImageId
 
-	// Set ResourceUrl
+	// Set AppInstanceId and ResourceUrl
+	if response.Body.Data.GetAppInstanceId() != nil {
+		session.AppInstanceId = *response.Body.Data.GetAppInstanceId()
+	}
 	if response.Body.Data.ResourceUrl != nil {
 		session.ResourceUrl = *response.Body.Data.ResourceUrl
 	}
@@ -3998,30 +4103,8 @@ func (a *AgentBay) waitForMobileSimulate(session *Session, mobileSimPath string,
 		return nil
 	}
 	if mobileSimPath == "" {
-		LogWarn("Mobile simulate path is empty, skipping mobile simulate")
-		return nil
-	}
 
-	// Run mobile simulate command
-	startTime := time.Now()
-	devInfoFilePath := mobileSimPath + "/" + MobileInfoFileName
-	wyaApplyOption := ""
-
-	switch mobileSimMode {
-	case models.MobileSimulateModePropertiesOnly, "":
-		wyaApplyOption = ""
-	case models.MobileSimulateModeSensorsOnly:
-		wyaApplyOption = " -sensors"
-	case models.MobileSimulateModePackagesOnly:
-		wyaApplyOption = " -packages"
-	case models.MobileSimulateModeServicesOnly:
-		wyaApplyOption = " -services"
-	case models.MobileSimulateModeAll:
-		wyaApplyOption = " -all"
-	}
-
-
-... [truncated, 27,560 chars remaining] ...
+... [truncated, 28,344 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func NewListSessionParams() *ListSessionParams {
@@ -7959,10 +8042,12 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/code"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/command"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/computer"
+	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/env"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/filesystem"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/git"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/internal"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/mobile"
+	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/pty"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/models"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/oss"
 )
@@ -8062,6 +8147,9 @@ type Session struct {
 	ImageId   string // ImageId used when creating this session
 	McpTools  []McpTool
 
+	// Application instance ID
+	AppInstanceId string
+
 	// Resource URL for accessing the session
 	ResourceUrl string
 
@@ -8099,8 +8187,13 @@ type Session struct {
 	// Agent for task execution
 	Agent *agent.Agent
 
+	Env *env.Env
+
 	// Context management
 	Context *ContextManager
+
+	// PTY for interactive terminal sessions
+	Pty *pty.Pty
 }
 
 func (s *Session) getLinkHttpClient() *http.Client {
@@ -8321,8 +8414,13 @@ func NewSession(agentBay *AgentBay, sessionID string) *Session {
 	// Initialize Agent
 	session.Agent = agent.NewAgent(session)
 
+	session.Env = env.NewEnv(session, session)
+
 	// Initialize context manager
 	session.Context = NewContextManager(session)
+
+	// Initialize PTY module
+	session.Pty = pty.NewPty(session)
 
 	return session
 }
@@ -8575,21 +8673,8 @@ func (s *Session) Delete(syncContext ...bool) (*DeleteResult, error) {
 			}
 			responseJSON, _ := json.MarshalIndent(response.Body, "", "  ")
 			logAPIResponseWithDetails("DeleteSessionAsync", requestID, false, nil, string(responseJSON))
-			return &DeleteResult{
-				ApiResponse: models.ApiResponse{
-					RequestID: requestID,
-				},
-				Success:      false,
-				ErrorMessage: errorMsg,
-			}, nil
-		}
-	}
 
-	// Poll for session deletion status
-	LogInfo(fmt.Sprintf("Waiting for session %s to be deleted... (DeleteRequestId=%s)", s.SessionID, requestID))
-	pollTimeout := 5 * time.Minute  // 5 minutes timeout
-
-... [truncated, 45,071 chars remaining] ...
+... [truncated, 45,635 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func (s *Session) ValidateLabels(labels map[string]string) string {
@@ -8600,6 +8685,7 @@ func (s *Session) Info() (*InfoResult, error) {
 func (s *Session) ListMcpTools() (*McpToolsResult, error) {
 func (s *Session) getMcpServerForTool(toolName string) string {
 func (s *Session) GetMcpServerForTool(toolName string) string {
+func (s *Session) AppendMcpTool(name, server string) {
 func (s *Session) CallMcpTool(toolName string, args interface{}) (*models.McpToolResult, error) {
 func (s *Session) callMcpToolLinkUrl(toolName string, args interface{}, serverName string) (*models.McpToolResult, er...
 func (s *Session) GetMetrics() (*models.SessionMetricsResult, error) {
@@ -8617,18 +8703,20 @@ FILE: java/README.md
 
 ## 📦 Installation
 
+> **Note:** Please check [Maven Central](https://central.sonatype.com/artifact/com.aliyun/agentbay-sdk) for the latest version number and replace `LATEST_VERSION` below.
+
 ### Maven
 ```xml
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.15.0</version>
+    <version>LATEST_VERSION</version>
 </dependency>
 ```
 
 ### Gradle
 ```gradle
-implementation 'com.aliyun:agentbay-sdk:0.15.0'
+implementation 'com.aliyun:agentbay-sdk:LATEST_VERSION'
 ```
 
 ## 🚀 Prerequisites
@@ -8760,14 +8848,8 @@ CommandResult result = session.getCommand().executeCommand("java MyClass.java");
 System.out.println(result.getOutput());
 ```
 
-### Data Persistence
-```java
-// Create context
-Context context = agentBay.getContext().get("my-project", true).getContext();
 
-// Create session with context
-
-... [truncated, 975 chars remaining] ...
+... [truncated, 1,132 chars remaining] ...
 
 ================================================
 FILE: java/docs/api/README.md
@@ -8789,7 +8871,9 @@ This directory is generated. Run `mvn exec:java` in `java/agentbay` to refresh i
 - [common-features/basics/context-manager.md](common-features/basics/context-manager.md)
 - [common-features/basics/context-sync.md](common-features/basics/context-sync.md)
 - [common-features/basics/context.md](common-features/basics/context.md)
+- [common-features/basics/env.md](common-features/basics/env.md)
 - [common-features/basics/filesystem.md](common-features/basics/filesystem.md)
+- [common-features/basics/pty.md](common-features/basics/pty.md)
 - [common-features/basics/session-params.md](common-features/basics/session-params.md)
 - [common-features/basics/session.md](common-features/basics/session.md)
 - [computer-use/computer.md](computer-use/computer.md)
@@ -8993,6 +9077,9 @@ from ._common.exceptions import (
     GitNotFoundError,
     GitConflictError,
     GitNotARepoError,
+    PtyError,
+    PtySessionNotFoundError,
+    PtyNotConnectedError,
 )
 from ._common.logger import AgentBayLogger, get_logger, log, _colorize_log_message
 from ._common.params.context_sync import (
@@ -9016,6 +9103,7 @@ from ._common.params.session_params import (
     BrowserContext,
     BrowserSyncMode,
     CreateSessionParams,
+    LifecyclePolicy,
     ListSessionParams,
 )
 from ._common.models.response import (
@@ -9026,6 +9114,7 @@ from ._common.models.response import (
     SessionListResult,
     DeleteResult,
     BoolResult,
+    EnvResult,
     McpToolResult,
     AdbUrlResult,
     McpToolsResult,
@@ -9117,7 +9206,9 @@ from ._sync.context import (
     ContextService,
 )
 from ._sync.beta_network import SyncBetaNetworkService as BetaNetwork
+from ._sync.env import Env
 from ._sync.code import Code, CodeExecutionResult
+from ._sync.pty import Pty
 from ._common.models.code import (
     EnhancedCodeExecutionResult,
     ExecutionResult as CodeExecutionResult,
@@ -9142,8 +9233,10 @@ from ._async.context_manager import AsyncContextManager
 from ._async.context import AsyncContextService
 from ._async.extension import AsyncExtensionsService
 from ._async.code import AsyncCode
+from ._async.env import AsyncEnv
 from ._async.mobile_simulate import AsyncMobileSimulateService
 from ._async.beta_network import AsyncBetaNetworkService as AsyncBetaNetwork
+from ._async.pty import AsyncPty, PtyHandle, PtySession
 
 
 
@@ -9177,6 +9270,7 @@ __all__ = [
     "OSSDownloadResult",
     "ContextManager",
     "AsyncContextManager",
+    "Env",
     "Code",
     "AsyncCode",
     "BetaNetwork",
@@ -9197,6 +9291,7 @@ __all__ = [
     "get_logger",
     "log",
     "CreateSessionParams",
+    "LifecyclePolicy",
     "ListSessionParams",
     "BrowserContext",
     "ContextSync",
@@ -9260,6 +9355,7 @@ __all__ = [
     "SessionListResult",
     "DeleteResult",
     "BoolResult",
+    "EnvResult",
     "McpToolResult",
     "SessionMetrics",
     "SessionMetricsResult",
@@ -9295,6 +9391,7 @@ __all__ = [
     "ProcessListResult",
     "AppOperationResult",
     "UIElementListResult",
+    "AsyncEnv",
     "AsyncMobileSimulateService",
     "MobileSimulateService",
     "MobileSimulateUploadResult",
@@ -10157,7 +10254,8 @@ class AsyncAgentBay:
         tool_list = response_data.get("ToolList")
         session.mcpTools = self._parse_tool_list_to_mcp_tools(tool_list)
 
-        # Set ResourceUrl
+        # Set AppInstanceId and ResourceUrl
+        session.app_instance_id = app_instance_id
         session.resource_url = resource_url
 
         # LinkUrl/token may be returned by the server for direct tool calls.
@@ -10366,7 +10464,7 @@ class AsyncAgentBay:
                 consume_time = end_time - start_time
                 _logger.info(
 
-... [truncated, 34,034 chars remaining] ...
+... [truncated, 34,579 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _log_request_debug_info(self, request: CreateMcpSessionRequest) -> None:
@@ -14043,7 +14141,7 @@ class AsyncFileTransfer:
         self,
         *,
 
-... [truncated, 81,215 chars remaining] ...
+... [truncated, 81,269 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _put_file_sync(
@@ -14780,6 +14878,7 @@ from .code import AsyncCode
 from .command import AsyncCommand
 from .computer import AsyncComputer
 from .context_manager import AsyncContextManager
+from .env import AsyncEnv
 from .filesystem import AsyncFileSystem
 from .mobile import AsyncMobile
 from .oss import AsyncOss
@@ -14846,6 +14945,9 @@ class AsyncSession:
         self.agent_bay = agent_bay
         self.session_id = session_id
 
+        # Application instance ID
+        self.app_instance_id = ""
+
         # Resource URL for accessing the session
         self.resource_url = ""
 
@@ -14886,9 +14988,15 @@ class AsyncSession:
 
         self.agent = AsyncAgent(self)
 
+        self.env = AsyncEnv(self)
+
         # Initialize Git module
         from .git.git import AsyncGit
         self.git = AsyncGit(self)
+
+        # Initialize PTY module
+        from .pty import AsyncPty
+        self.pty = AsyncPty(self)
 
     def _get_link_http_client(self) -> httpx.AsyncClient:
         """Internal: get or create a shared HTTP client for LinkUrl calls."""
@@ -15294,14 +15402,8 @@ class AsyncSession:
                             "NotFound" in error_message or
                             "not found" in error_code.lower()
                         )) or
-                        "not found" in error_message.lower()
-                    )
 
-                    if is_not_found:
-                        # Session is deleted
-                        _logger.info(
-
-... [truncated, 40,866 chars remaining] ...
+... [truncated, 41,070 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _validate_labels(self, labels: Dict[str, str]) -> Optional[OperationResult]:
@@ -15370,6 +15472,8 @@ All synchronous API classes are in the `sync/` directory:
 - [MobileSimulate](sync/mobile-simulate.md) - `agentbay.mobile_simulate`
 - [SessionParams](sync/session-params.md) - `agentbay.agentbay._common.params.session_params`
 - [Git](sync/git.md) - `agentbay.git.git`
+- [Pty](sync/pty.md) - `agentbay.pty`
+- [Env](sync/env.md) - `agentbay.env`
 
 ## Asynchronous API
 
@@ -15394,6 +15498,8 @@ All asynchronous API classes are in the `async/` directory:
 - [AsyncMobileSimulate](async/async-mobile-simulate.md) - `agentbay.mobile_simulate`
 - [AsyncSessionParams](async/async-session-params.md) - `agentbay.agentbay._common.params.session_params`
 - [AsyncGit](async/async-git.md) - `agentbay.git.git`
+- [AsyncPty](async/async-pty.md) - `agentbay.pty`
+- [AsyncEnv](async/async-env.md) - `agentbay.env`
 
 ## Common Classes
 
@@ -16428,6 +16534,41 @@ Both examples provide detailed console output showing:
 
 
 ================================================
+FILE: python/docs/examples/_async/common-features/basics/env_management/README.md
+================================================
+# Env Module Example
+
+This example shows how to manage session-scoped environment variables with `session.env` on an image that exposes the env MCP tools.
+
+## What it demonstrates
+
+- `session.env.set({"KEY": "value"})` — set variables in the sandbox
+- `session.env.get()` — read all variables returned by the service
+- `session.env.get(keys=["KEY"])` — read selected keys only
+- Overwriting a key with a second `set` call
+- Confirming the value in the shell via `session.command.execute_command("echo $KEY")`
+
+## Prerequisites
+
+- Python 3.8+
+- `agentbay` installed (e.g. `pip install agentbay` or editable install from this repo)
+- `AGENTBAY_API_KEY` set in the environment
+
+## Run
+
+```bash
+export AGENTBAY_API_KEY="your-api-key-here"
+python main.py
+```
+
+The session is created with `image_id="AIO_ubuntu2404"` so env tools are available.
+
+## Expected output
+
+You should see the session id, success lines for `set` / `get`, `KEY` transitioning from `value` to `updated`, and shell stdout containing `updated`. The script raises if any step fails. On exit, the session is deleted.
+
+
+================================================
 FILE: python/docs/examples/_async/common-features/basics/file_system/README.md
 ================================================
 # FileSystem Examples
@@ -17275,7 +17416,7 @@ FILE: python/pyproject.toml
 ================================================
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.18.1"
+version = "0.19.0"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
@@ -17494,8 +17635,10 @@ These documents are generated automatically using TypeDoc. Run `npm run docs:gen
   - context-manager.md
   - context-sync.md
   - context.md
+  - env.md
   - filesystem.md
   - logging.md
+  - pty.md
   - session-params.md
   - session.md
 - `computer-use`
@@ -18879,6 +19022,39 @@ All examples provide detailed console output showing:
 
 
 ================================================
+FILE: typescript/docs/examples/common-features/basics/env-management/README.md
+================================================
+# Env Module Example (TypeScript)
+
+This example shows how to manage **session-scoped** environment variables with `session.env`: set values, read all or selected keys, overwrite a key, and confirm the values appear in `session.command` output.
+
+## Prerequisites
+
+- Node.js 16+
+- `AGENTBAY_API_KEY` set in your environment
+- When developing this repo, the example imports from `typescript/src` via a relative path. For a standalone project, install `wuying-agentbay-sdk`, run `npm run build` in the package if needed, and change the import to `wuying-agentbay-sdk`.
+
+## Run
+
+From the repository `typescript` directory (so `wuying-agentbay-sdk` resolves):
+
+```bash
+export AGENTBAY_API_KEY="your-api-key"
+npx ts-node docs/examples/common-features/basics/env-management/main.ts
+```
+
+## Expected output (illustrative)
+
+- Session is created with `imageId` `AIO_ubuntu2404`.
+- Logs for set, get-all, get-by-keys, overwrite, and `echo $DEMO_APP` showing `agentbay`.
+- Session is deleted at the end.
+
+## See also
+
+- [Env API reference](../../../../api/common-features/basics/env.md)
+
+
+================================================
 FILE: typescript/docs/examples/common-features/basics/filesystem-example/README.md
 ================================================
 # Filesystem Operations Example
@@ -19287,6 +19463,49 @@ This direct MCP tool calling approach is useful when you need to:
 
 
 ================================================
+FILE: typescript/docs/examples/common-features/basics/pty-example/README.md
+================================================
+# PTY Terminal Example
+
+Demonstrates interactive pseudo-terminal (PTY) sessions: create, input echo, resize, list, disconnect/reconnect, kill, and graceful exit with `wait`.
+
+## Features Demonstrated
+
+- Create a PTY with `onData` output handling
+- Send shell input and verify output
+- Resize terminal dimensions
+- List active PTY sessions on the sandbox session
+- Disconnect locally and `connect` to the same server-side PTY
+- `kill` and read exit code -9
+- `exit` the shell and await exit code 0
+
+## Running the Example
+
+1. Install the SDK:
+
+```bash
+npm install wuying-agentbay-sdk
+```
+
+2. Set your API key:
+
+```bash
+export AGENTBAY_API_KEY=your_api_key_here
+```
+
+3. Run (from this directory):
+
+```bash
+npx ts-node pty-example.ts
+```
+
+## Related
+
+- [PTY API reference](../../../../api/common-features/basics/pty.md) (if generated in your tree)
+- TypeScript integration tests: `typescript/tests/integration/pty.integration.test.ts`
+
+
+================================================
 FILE: typescript/docs/examples/common-features/basics/session-creation/README.md
 ================================================
 # Session Creation and Management Example
@@ -19383,7 +19602,7 @@ FILE: typescript/package.json
 ================================================
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.18.0",
+    "version": "0.19.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",
@@ -19519,6 +19738,7 @@ import {
   CreateSessionParamsInterface,
   CreateSessionParams as CreateSessionParamsClass,
 } from "./session-params";
+export { LifecyclePolicy, type LifecyclePolicyOptions } from "./lifecycle-policy";
 import { BrowserSyncMode } from "./session-params";
 import { Context } from "./context";
 import { ExtraConfigs } from "./types/extra-configs";
@@ -19837,8 +20057,18 @@ export class AgentBay {
         (request as any).networkId = (paramsCopy as any).betaNetworkId;
       }
 
-      // SDK idle release timeout (seconds)
-      if (
+      // Lifecycle policy (minutes, full takeover)
+      if ((paramsCopy as any).lifecyclePolicy) {
+        const lp = (paramsCopy as any).lifecyclePolicy;
+        if (lp.manualRelease) {
+          (request as any).manualRelease = true;
+        } else {
+          (request as any).timeout = lp.idleReleaseTimeout;
+          (request as any).maxRuntime = lp.maxRuntime;
+        }
+      }
+      // Legacy SDK idle release timeout (seconds)
+      else if (
         (paramsCopy as any).idleReleaseTimeout !== undefined &&
         (paramsCopy as any).idleReleaseTimeout !== null &&
         (paramsCopy as any).idleReleaseTimeout > 0
@@ -20048,24 +20278,12 @@ export class AgentBay {
           requestId,
           success: false,
           errorMessage:
-            "Invalid response format: 'data' field is not a dictionary",
-        };
-      }
 
-      // Check data-level success field (business logic success)
-      if (data.success === false) {
-        const errorMessage = data.errMsg || "Session creation failed";
-        logAPIResponseWithDetails(
-          "CreateMcpSession",
-          requestId,
-          false,
-          {},
-          errorMessage
-        );
-
-... [truncated, 29,823 chars remaining] ...
+... [truncated, 30,437 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
+      if (data.success === false) {
+        logAPIResponseWithDetails(
         logDebug("Full response:", JSON.stringify(sessionData, null, 2));
       if (!sessionId) {
         logAPIResponseWithDetails(
@@ -23960,8 +24178,14 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
       timeoutMs
     );
     promise.then(
-      (v) => { clearTimeout(timer); resolve(v); },
-      (e) => { clearTimeout(timer); reject(e); }
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
     );
   });
 }
@@ -24687,9 +24911,8 @@ export class FileSystem {
             if (base64String) {
               // Base64 string should only contain A-Z, a-z, 0-9, +, /, and = (padding)
               // Remove padding for validation, then check remaining characters
-              const base64WithoutPadding = base64String.replace(/=+$/, "");
 
-... [truncated, 41,391 chars remaining] ...
+... [truncated, 41,706 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
               if (!/^[A-Za-z0-9+/]+$/.test(base64WithoutPadding)) {
@@ -24800,11 +25023,15 @@ export class FileSystem {
           logInfo(`Session expired, stopping WS monitoring for: ${path}`);
             clearTimeout(timeoutId);
             resolve();
-      logWarn(
+      logWarn(`WS push subscribe failed: ${error}. Falling back to polling.`);
       if (unsubscribePush) {
+          unsubscribePush();
       if (unsubscribeState) {
+          unsubscribeState();
     if (unsubscribePush) {
+        unsubscribePush();
     if (unsubscribeState) {
+        unsubscribeState();
     logInfo(`Stopped WS push monitoring for: ${path}`);
     logInfo(`Polling fallback (baseline pre-established) for: ${path}`);
     while (!signal?.aborted) {
@@ -24845,12 +25072,15 @@ export {
   AgentBay,
   CreateSessionParams,
   CreateSessionParamsClass,
+  LifecyclePolicy,
+  type LifecyclePolicyOptions,
 } from "./agent-bay";
 export * from "./agent";
 export * from "./api";
 export * from "./browser";
 export { Code } from "./code";
 export * from "./command";
+export * from "./env";
 export { Context, ContextService } from "./context";
 export { BetaNetworkService } from "./beta-network";
 export {
@@ -24866,6 +25096,7 @@ export * from "./extension";
 export * from "./filesystem";
 export * from "./oss";
 export { Mobile } from "./mobile";
+export * from "./pty";
 export {
   MobileSimulateService,
   type MobileSimulateUploadResult,
@@ -25707,6 +25938,7 @@ import { Browser } from "./browser";
 import { Code } from "./code";
 import { Command } from "./command";
 import { Computer } from "./computer";
+import { Env } from "./env";
 import {
   ContextManager,
   ContextSyncResult,
@@ -25716,6 +25948,7 @@ import { FileSystem } from "./filesystem";
 import { Git } from "./git";
 import { Mobile } from "./mobile";
 import { Oss } from "./oss";
+import { Pty } from "./pty";
 import { WsClient } from "./_internal/ws-client";
 import {
   ApiResponse,
@@ -25907,15 +26140,19 @@ export class Session {
   private agentBay: AgentBay;
   public sessionId: string;
 
-  // Resource URL for accessing the session
   public resourceUrl = "";
 
-  // LinkUrl-based direct tool call (non-VPC)
+  /** Application instance ID */
+  public appInstanceId = "";
+
+  /** Token for VPC sessions */
   public token = "";
   public linkUrl = "";
 
-  // WS long connection URL (for streaming output)
+  /** WebSocket URL for streaming features */
   public wsUrl = "";
+
+  /** Cached WebSocket client instance */
   private _wsClient: WsClient | null = null;
 
   // Recording functionality
@@ -25924,6 +26161,7 @@ export class Session {
   // File, command, code, and oss handlers (matching Python naming)
   public fileSystem: FileSystem; // file_system in Python
   public command: Command;
+  public env: Env;
   public code: Code;
   public oss: Oss;
 
@@ -25943,6 +26181,8 @@ export class Session {
   // Context management (matching Go version)
   public context: ContextManager;
 
+  public pty: Pty;
+
   // MCP tools list returned by backend for this session
   public mcpTools: McpTool[] = [];
 
@@ -25959,6 +26199,7 @@ export class Session {
     // Initialize file system, command and code handlers (matching Python naming)
     this.fileSystem = new FileSystem(this);
     this.command = new Command(this);
+    this.env = new Env(this);
     this.code = new Code(this);
     this.oss = new Oss(this);
 
@@ -25977,6 +26218,9 @@ export class Session {
 
     // Initialize context manager (matching Go version)
     this.context = newContextManager(this);
+
+    // Initialize PTY module
+    this.pty = new Pty(this);
   }
 
   /**
@@ -26397,15 +26641,12 @@ export class Session {
             // Continue to next poll iteration
           }
         }
-        // Check session status if we got valid data
-        else if (sessionResult.status) {
-          const status = sessionResult.status;
-          logDebug(`📊 Session status: ${status}`);
-          if (status === "FINISH") {
 
-... [truncated, 46,534 chars remaining] ...
+... [truncated, 46,763 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
+          logDebug(`📊 Session status: ${status}`);
+          if (status === "FINISH") {
             logInfo(`✅ Session ${this.sessionId} successfully deleted`);
       logAPIResponseWithDetails("DeleteSessionAsync", requestId, true, {
       logError("Error calling delete_session_async:", error);
