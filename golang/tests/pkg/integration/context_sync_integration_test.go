@@ -743,8 +743,45 @@ func TestExploreContextFilesAfterSync(t *testing.T) {
 	listFilesRecursive(t, ab, ctx.ID, "/home/wuying", 0, 3)
 }
 
+// collectAllFiles recursively collects FILE entries under folderPath.
+// Returns a flat slice of filePath strings (OSS-style paths).
+//
+// NOTE: entry.FilePath from ListFiles is an OSS internal path, NOT a local path.
+// We extract only the last segment and append it to the local folderPath
+// to build the correct sub-path for the next recursive call.
+func collectAllFiles(t *testing.T, ab *agentbay.AgentBay, contextID string, folderPath string, depth int, maxDepth int) []string {
+	listResult, err := ab.Context.ListFiles(contextID, folderPath, 1, 200)
+	if err != nil || !listResult.Success || len(listResult.Entries) == 0 {
+		return nil
+	}
+	var files []string
+	for _, entry := range listResult.Entries {
+		ft := strings.ToUpper(entry.FileType)
+		// Extract the last segment from the OSS path to build the local sub-path
+		ossPath := strings.TrimRight(entry.FilePath, "/")
+		idx := strings.LastIndex(ossPath, "/")
+		var lastSegment string
+		if idx >= 0 {
+			lastSegment = ossPath[idx+1:]
+		} else {
+			lastSegment = ossPath
+		}
+		if ft == "FOLDER" || ft == "DIR" || ft == "DIRECTORY" {
+			if depth < maxDepth {
+				subPath := strings.TrimRight(folderPath, "/") + "/" + lastSegment
+				t.Logf("%sRecursing into %s (OSS: %s)", strings.Repeat("  ", depth), subPath, entry.FilePath)
+				files = append(files, collectAllFiles(t, ab, contextID, subPath, depth+1, maxDepth)...)
+			}
+		} else {
+			files = append(files, entry.FilePath)
+		}
+	}
+	return files
+}
+
 // TestWhiteListPatternBWList tests creating a session with ContextSync using
-// IsPathRegex and IsExcludeRegex fields. Mirrors Python test_create_session_with_pattern_bwlist.
+// IsPathRegex and IsExcludeRegex fields.
+// Mirrors Python test_create_session_with_pattern_bwlist_linux.
 func TestWhiteListPatternBWList(t *testing.T) {
 	apiKey := os.Getenv("AGENTBAY_API_KEY")
 	if apiKey == "" || os.Getenv("CI") != "" {
@@ -754,22 +791,29 @@ func TestWhiteListPatternBWList(t *testing.T) {
 	ab, err := agentbay.NewAgentBay(apiKey)
 	require.NoError(t, err, "Failed to create AgentBay client")
 
-	t.Log("Creating context test-pattern-bwlist-context...")
-	contextResult, err := ab.Context.Get("test-pattern-bwlist-context", true)
+	base := "/home/wuying/testdata"
+
+	t.Log("Creating context for BWList pattern test...")
+	contextName := fmt.Sprintf("bwlist-linux-ctx-%d", time.Now().Unix())
+	contextResult, err := ab.Context.Get(contextName, true)
 	require.NoError(t, err, "Error getting/creating context")
 	require.True(t, contextResult.Success && contextResult.Context != nil, "Failed to get/create context")
 	ctx := contextResult.Context
 	t.Logf("Context ID: %s", ctx.ID)
 
-	// BWList configuration:
-	// - path="/home/wuying": exact directory to include (IsPathRegex=false, default)
-	// - ExcludePaths: relative sub-paths under /home/wuying to exclude
-	//   e.g. "record" means /home/wuying/record is excluded
-	// - IsExcludeRegex=true: treat ExcludePaths entries as regex patterns
-	//
-	// NOTE: ExcludePaths are RELATIVE to the white-listed path, not absolute.
-	// So "record" excludes /home/wuying/record,
-	// and "record.*" would exclude any sub-path matching that regex under /home/wuying.
+	// Clean up context after test
+	defer func() {
+		delCtx, err := ab.Context.Delete(ctx)
+		if err != nil {
+			t.Logf("Warning: Failed to delete context: %v", err)
+		} else {
+			t.Logf("Context deleted: %s (RequestID: %s)", ctx.ID, delCtx.RequestID)
+		}
+	}()
+
+	// BWList:
+	//   path="project-.*"  (IsPathRegex=true): match project-alpha, project-beta
+	//   ExcludePaths=["cache.*"]  (IsExcludeRegex=true): exclude cache sub-dirs
 	syncPolicy := &agentbay.SyncPolicy{
 		UploadPolicy:   agentbay.NewUploadPolicy(),
 		DownloadPolicy: agentbay.NewDownloadPolicy(),
@@ -779,81 +823,136 @@ func TestWhiteListPatternBWList(t *testing.T) {
 		BWList: &agentbay.BWList{
 			WhiteLists: []*agentbay.WhiteList{
 				{
-					Path:           "/home/wuying", // exact white-listed directory
-					IsPathRegex:    false,          // path is an absolute dir, not regex
-					ExcludePaths:   []string{"record", "\u4e0b\u8f7d"}, // exclude /home/wuying/record and /home/wuying/下载
-					IsExcludeRegex: true,           // treat ExcludePaths as regex patterns
+					Path:           `project-.*`, // regex matching project-alpha, project-beta
+					IsPathRegex:    true,
+					ExcludePaths:   []string{`cache.*`}, // exclude sub-dirs matching cache.*
+					IsExcludeRegex: true,
 				},
 			},
 		},
 	}
 
-	contextSync, err := agentbay.NewContextSync(ctx.ID, "/home", syncPolicy)
+	contextSync, err := agentbay.NewContextSync(ctx.ID, base, syncPolicy)
 	require.NoError(t, err, "Error creating context sync")
 
 	sessionParams := agentbay.NewCreateSessionParams()
 	sessionParams.AddContextSyncConfig(contextSync)
+	sessionParams.WithImageId("linux_latest")
 	sessionParams.WithLabels(map[string]string{"test": "patternBWList"})
 
+	t.Log("Creating session with BWList...")
 	createResult, err := ab.Create(sessionParams)
 	require.NoError(t, err, "Error creating session")
 	require.True(t, createResult.Success, fmt.Sprintf("Session creation failed: %s", createResult.ErrorMessage))
 	require.NotNil(t, createResult.Session)
 	session := createResult.Session
-	t.Logf("Session created with ID: %s", session.SessionID)
+	t.Logf("Session ID: %s", session.SessionID)
 
-	// Wait for session to initialise, then trigger upload via Delete(syncContext=true)
-	t.Log("Waiting 10s before triggering upload...")
-	time.Sleep(10 * time.Second)
+	// Write test files onto local FS
+	fs := session.FileSystem
+	for _, dir := range []string{
+		base,
+		base + "/project-alpha",
+		base + "/project-beta",
+		base + "/project-beta/cache",
+	} {
+		r, err := fs.CreateDirectory(dir)
+		if err != nil {
+			t.Logf("  mkdir %s failed: %v", dir, err)
+		} else {
+			t.Logf("  mkdir %s: %v", dir, r.Success)
+		}
+	}
+	testFiles := [][2]string{
+		{base + "/project-alpha/main.py", "# main entry point\nprint('hello')\n"},
+		{base + "/project-alpha/README.txt", "Project Alpha README\n"},
+		{base + "/project-beta/config.json", `{"env": "test"}` + "\n"},
+		{base + "/project-beta/cache/temp.log", "temporary log\n"},
+	}
+	for _, tf := range testFiles {
+		r, err := fs.WriteFile(tf[0], tf[1], "overwrite")
+		if err != nil {
+			t.Logf("  write %s failed: %v", tf[0], err)
+		} else {
+			t.Logf("  write %s: %v", tf[0], r.Success)
+		}
+	}
 
-	t.Log("Deleting session with syncContext=true to trigger upload...")
+	// delete(syncContext=true) triggers upload with BWList filter
+	t.Log("Deleting session with syncContext=true (BWList upload filter applied)...")
 	deleteResult, err := ab.Delete(session, true)
 	require.NoError(t, err, "Delete failed")
 	require.True(t, deleteResult.Success, fmt.Sprintf("Delete failed: %s", deleteResult.ErrorMessage))
-	t.Logf("Delete result: success=%v, requestID=%s", deleteResult.Success, deleteResult.RequestID)
+	t.Logf("Session deleted. Filtered upload triggered. RequestID: %s", deleteResult.RequestID)
 
-	// Wait for upload to finish
-	t.Log("Waiting 20s for upload to complete...")
-	time.Sleep(20 * time.Second)
-
-	// === Verify via ListFiles: check entries under /home/wuying ===
-	// We list /home/wuying (not /home) because the excluded sub-dirs "record" and "下载"
-	// are children of /home/wuying. Only by listing /home/wuying can we confirm they
-	// were correctly filtered out by IsExcludeRegex.
-	t.Log("\n=== Verifying context files under '/home/wuying' ===")
-	listResult, err := ab.Context.ListFiles(ctx.ID, "/home/wuying", 1, 100)
-	require.NoError(t, err, "ListFiles failed")
-	require.True(t, listResult.Success, fmt.Sprintf("list_files failed: %s", listResult.ErrorMessage))
-
-	topLevelPaths := make([]string, 0, len(listResult.Entries))
-	for _, entry := range listResult.Entries {
-		topLevelPaths = append(topLevelPaths, entry.FilePath)
-	}
-	t.Logf("Entries under /home/wuying: %v", topLevelPaths)
-
-	// Verify /home/wuying content exists (BWList white-listed it)
-	assert.Greater(t, len(topLevelPaths), 0,
-		fmt.Sprintf("Expected /home/wuying to have content in context, but got: %v", topLevelPaths))
-	t.Logf("✅ /home/wuying content found in context: %v", topLevelPaths)
-
-	// Verify excluded sub-dirs are NOT present
-	// ExcludePaths are relative to /home/wuying, so:
-	// "record" -> /home/wuying/record should be absent
-	// "下载"   -> /home/wuying/下载 should be absent
-	excludedNames := []string{"record", "\u4e0b\u8f7d"}
-	for _, excluded := range excludedNames {
-		var matched []string
-		for _, p := range topLevelPaths {
-			stripped := strings.TrimRight(p, "/")
-			if strings.HasSuffix(stripped, excluded) {
-				matched = append(matched, p)
+	// Poll OSS for uploaded files (up to 40s)
+	t.Log("Polling OSS for uploaded files...")
+	var allFiles []string
+	for attempt := 0; attempt < 20; attempt++ {
+		time.Sleep(2 * time.Second)
+		probe, err := ab.Context.ListFiles(ctx.ID, base, 1, 200)
+		if err != nil || !probe.Success || len(probe.Entries) == 0 {
+			t.Logf("  attempt %d: no entries yet", attempt+1)
+			continue
+		}
+		t.Logf("  attempt %d: found %d top-level entries", attempt+1, len(probe.Entries))
+		allFiles = nil
+		for _, e := range probe.Entries {
+			ft := strings.ToUpper(e.FileType)
+			ossPath := strings.TrimRight(e.FilePath, "/")
+			idx := strings.LastIndex(ossPath, "/")
+			var lastSeg string
+			if idx >= 0 {
+				lastSeg = ossPath[idx+1:]
+			} else {
+				lastSeg = ossPath
+			}
+			t.Logf("    [%s] %s  -> lastSegment=%s", ft, e.FilePath, lastSeg)
+			if ft == "FOLDER" || ft == "DIR" || ft == "DIRECTORY" {
+				subPath := strings.TrimRight(base, "/") + "/" + lastSeg
+				t.Logf("      Recursing into %s...", subPath)
+				allFiles = append(allFiles, collectAllFiles(t, ab, ctx.ID, subPath, 1, 5)...)
+			} else {
+				allFiles = append(allFiles, e.FilePath)
 			}
 		}
-		assert.Equal(t, 0, len(matched),
-			fmt.Sprintf("Expected '%s' to be excluded by IsExcludeRegex, but found: %v", excluded, matched))
+		if len(allFiles) > 0 {
+			t.Logf("  Found %d file(s) in OSS on attempt %d", len(allFiles), attempt+1)
+			break
+		}
 	}
-	t.Logf("✅ Excluded sub-dirs %v correctly absent from context", excludedNames)
-	t.Log("Session with BWList IsExcludeRegex (relative paths) verified successfully")
+
+	t.Log("\n=== OSS file listing ===")
+	for _, p := range allFiles {
+		t.Logf("  %s", p)
+	}
+	t.Logf("Collected %d file(s) total", len(allFiles))
+
+	assert.Equal(t, 3, len(allFiles),
+		fmt.Sprintf("Expected exactly 3 files in OSS after BWList filter, got %d: %v", len(allFiles), allFiles))
+
+	// Files that SHOULD be present
+	for _, name := range []string{"main.py", "README.txt", "config.json"} {
+		found := false
+		for _, p := range allFiles {
+			if strings.Contains(p, name) {
+				found = true
+				break
+			}
+		}
+		t.Logf("  %s: %s", map[bool]string{true: "FOUND", false: "NOT FOUND"}[found], name)
+		assert.True(t, found,
+			fmt.Sprintf("Expected '%s' in OSS after BWList upload filter, not found in: %v", name, allFiles))
+	}
+	t.Log("\u2705 Expected files present in OSS")
+
+	// Files that SHOULD be absent (excluded by cache.* regex)
+	for _, p := range allFiles {
+		assert.False(t, strings.Contains(p, "temp.log"),
+			fmt.Sprintf("Expected 'temp.log' ABSENT (excluded by BWList), but found: %s", p))
+	}
+	t.Log("\u2705 Excluded file temp.log correctly absent from OSS")
+	t.Log("BWList with IsPathRegex + IsExcludeRegex verified successfully (Linux)")
 }
 
 // TestWhiteListValidation tests that WhiteList correctly validates wildcard patterns

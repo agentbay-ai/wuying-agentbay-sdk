@@ -311,41 +311,41 @@ public class AgentBayIntegrationTest {
         }
         
         private List<String> collectAllFiles(String contextId, String folderPath) {
-            // Recursively collect FILE entry names under folderPath.
-            // folderPath is a Windows local path; list_files returns OSS-style paths.
-            // For FOLDER entries: extract last segment, build sub-path, recurse.
-            // For FILE entries: extract last segment (file name) and store it.
+            // Recursively collect FILE entries under folderPath (Linux local path).
+            // list_files returns OSS-style internal paths; extract the last segment
+            // and append it to folderPath (with "/") to build the correct local sub-path.
             ContextFileListResult result = agentBay.getContext().listFiles(contextId, folderPath, 1, 200);
             if (!result.isSuccess() || result.getEntries() == null || result.getEntries().isEmpty()) {
                 return new java.util.ArrayList<>();
             }
-            List<String> fileNames = new java.util.ArrayList<>();
+            List<String> filePaths = new java.util.ArrayList<>();
             for (FileInfo entry : result.getEntries()) {
                 String ftype = entry.getFileType() != null ? entry.getFileType().toUpperCase() : "";
                 // Extract the last segment from the OSS path
-                String filePath = entry.getFilePath();
-                String lastSegment = filePath.replaceAll("/$", "");
-                int slashIdx = lastSegment.lastIndexOf('/');
-                if (slashIdx >= 0) lastSegment = lastSegment.substring(slashIdx + 1);
+                String ossPath = entry.getFilePath().replaceAll("/$", "");
+                int slashIdx = ossPath.lastIndexOf('/');
+                String lastSegment = slashIdx >= 0 ? ossPath.substring(slashIdx + 1) : ossPath;
                 if (ftype.equals("FOLDER") || ftype.equals("DIR") || ftype.equals("DIRECTORY")) {
-                    // Build Windows local sub-path and recurse
-                    String subPath = folderPath.replaceAll("\\\\$", "") + "\\" + lastSegment;
-                    fileNames.addAll(collectAllFiles(contextId, subPath));
+                    // Build Linux local sub-path and recurse
+                    String subPath = folderPath.replaceAll("/$", "") + "/" + lastSegment;
+                    System.out.println("  Recursing into " + subPath + " (OSS: " + entry.getFilePath() + ")");
+                    filePaths.addAll(collectAllFiles(contextId, subPath));
                 } else {
-                    fileNames.add(lastSegment);
+                    filePaths.add(entry.getFilePath());
                 }
             }
-            return fileNames;
+            return filePaths;
         }
 
         @Test
         public void testCreateSessionWithPatternBwlist() throws AgentBayException, InterruptedException {
-            System.out.println("Testing BWList is_path_regex + is_exclude_regex via single-session strategy...");
+            // Mirrors Python test_create_session_with_pattern_bwlist_linux and Go TestWhiteListPatternBWList.
+            System.out.println("Testing BWList is_path_regex + is_exclude_regex via single-session strategy (Linux)...");
 
-            String base = "C:\\Users\\Administrator\\testdata";
+            String base = "/home/wuying/testdata";
 
             // Create context
-            String contextName = "bwlist-ctx-" + System.currentTimeMillis();
+            String contextName = "bwlist-linux-ctx-" + System.currentTimeMillis();
             ContextResult contextResult = agentBay.getContext().get(contextName, true);
             assertTrue("Failed to get/create context: " + contextResult.getErrorMessage(),
                     contextResult.isSuccess() && contextResult.getContext() != null);
@@ -378,7 +378,7 @@ public class AgentBayIntegrationTest {
             Map<String, String> labels = new HashMap<>();
             labels.put("test", "patternBWList");
             CreateSessionParams params = new CreateSessionParams();
-            params.setImageId("imgc-0ae8jv3fd5yuss7ky");
+            params.setImageId("linux_latest");
             params.setLabels(labels);
             params.setContextSyncs(Collections.singletonList(contextSync));
 
@@ -392,9 +392,9 @@ public class AgentBayIntegrationTest {
             com.aliyun.agentbay.filesystem.FileSystem fs = session.getFileSystem();
             String[] dirs = {
                 base,
-                base + "\\project-alpha",
-                base + "\\project-beta",
-                base + "\\project-beta\\cache"
+                base + "/project-alpha",
+                base + "/project-beta",
+                base + "/project-beta/cache"
             };
             for (String dir : dirs) {
                 try {
@@ -405,10 +405,10 @@ public class AgentBayIntegrationTest {
                 }
             }
             String[][] testFiles = {
-                {base + "\\project-alpha\\main.py",       "# main entry point\nprint('hello')\n"},
-                {base + "\\project-alpha\\README.txt",    "Project Alpha README\n"},
-                {base + "\\project-beta\\config.json",    "{\"env\": \"test\"}\n"},
-                {base + "\\project-beta\\cache\\temp.log", "temporary log\n"},
+                {base + "/project-alpha/main.py",       "# main entry point\nprint('hello')\n"},
+                {base + "/project-alpha/README.txt",    "Project Alpha README\n"},
+                {base + "/project-beta/config.json",    "{\"env\": \"test\"}\n"},
+                {base + "/project-beta/cache/temp.log", "temporary log\n"},
             };
             for (String[] fileEntry : testFiles) {
                 try {
@@ -426,38 +426,43 @@ public class AgentBayIntegrationTest {
             session = null; // Already deleted, avoid double deletion in tearDown
             System.out.println("  Session deleted. Filtered upload triggered.");
 
-            // list_files(base) – one call, traverse entries directly
-            System.out.println("\n=== Verifying OSS content via context.listFiles ===");
-            ContextFileListResult probe = agentBay.getContext().listFiles(contextId, base, 1, 200);
-            int entryCount = probe.getEntries() != null ? probe.getEntries().size() : 0;
-            System.out.println("  listFiles(" + base + ") -> success=" + probe.isSuccess() + ", entries=" + entryCount);
-
+            // Poll OSS for uploaded files (up to 40s)
+            System.out.println("Polling OSS for uploaded files...");
             List<String> allFiles = new java.util.ArrayList<>();
-            if (probe.getEntries() != null && !probe.getEntries().isEmpty()) {
-                for (FileInfo e : probe.getEntries()) {
-                    String ftype = e.getFileType() != null ? e.getFileType().toUpperCase() : "";
-                    String fp = e.getFilePath().replaceAll("/$", "");
-                    int idx = fp.lastIndexOf('/');
-                    String lastSeg = idx >= 0 ? fp.substring(idx + 1) : fp;
-                    System.out.println("    [" + ftype + "] " + e.getFilePath() + "  -> lastSegment=" + lastSeg);
-                    if (ftype.equals("FOLDER") || ftype.equals("DIR") || ftype.equals("DIRECTORY")) {
-                        String subPath = base.replaceAll("\\\\$", "") + "\\" + lastSeg;
-                        System.out.println("      Recursing into " + subPath + "...");
-                        allFiles.addAll(collectAllFiles(contextId, subPath));
-                    } else {
-                        allFiles.add(e.getFilePath());
+            for (int attempt = 0; attempt < 20; attempt++) {
+                Thread.sleep(2000);
+                ContextFileListResult probe = agentBay.getContext().listFiles(contextId, base, 1, 200);
+                int entryCount = probe.getEntries() != null ? probe.getEntries().size() : 0;
+                if (entryCount > 0) {
+                    System.out.println("  Found " + entryCount + " top-level entries on attempt " + (attempt + 1));
+                    for (FileInfo e : probe.getEntries()) {
+                        String ftype = e.getFileType() != null ? e.getFileType().toUpperCase() : "";
+                        String fp = e.getFilePath().replaceAll("/$", "");
+                        int idx = fp.lastIndexOf('/');
+                        String lastSeg = idx >= 0 ? fp.substring(idx + 1) : fp;
+                        System.out.println("    [" + ftype + "] " + e.getFilePath() + "  -> lastSegment=" + lastSeg);
+                        if (ftype.equals("FOLDER") || ftype.equals("DIR") || ftype.equals("DIRECTORY")) {
+                            String subPath = base.replaceAll("/$", "") + "/" + lastSeg;
+                            System.out.println("      Recursing into " + subPath + "...");
+                            allFiles.addAll(collectAllFiles(contextId, subPath));
+                        } else {
+                            allFiles.add(e.getFilePath());
+                        }
+                    }
+                    if (!allFiles.isEmpty()) {
+                        System.out.println("  Found " + allFiles.size() + " file(s) in OSS on attempt " + (attempt + 1));
+                        break;
                     }
                 }
-            } else {
-                System.out.println("  WARNING: No entries found in OSS.");
+                System.out.println("  attempt " + (attempt + 1) + ": no files yet");
             }
 
-            System.out.println("  Collected " + allFiles.size() + " file(s) total");
-            System.out.println("\n  === All files in OSS (" + allFiles.size() + " total) ===");
-            assertEquals("Expected exactly 3 files in OSS", 3, allFiles.size());
+            System.out.println("\n=== OSS file listing ===");
             for (String p : allFiles) {
-                System.out.println("    " + p);
+                System.out.println("  " + p);
             }
+            System.out.println("  Collected " + allFiles.size() + " file(s) total");
+            assertEquals("Expected exactly 3 files in OSS after BWList filter", 3, allFiles.size());
 
             // Files that SHOULD be present
             for (String name : Arrays.asList("main.py", "README.txt", "config.json")) {
@@ -468,13 +473,12 @@ public class AgentBayIntegrationTest {
             System.out.println("\u2705 Expected files present in OSS");
 
             // Files that SHOULD be absent (excluded by cache.* regex)
-            for (String name : Collections.singletonList("temp.log")) {
-                boolean found = allFiles.stream().anyMatch(p -> p.contains(name));
-                System.out.println("  " + (found ? "FOUND (should be absent!)" : "correctly absent") + ": " + name);
-                assertFalse("Expected '" + name + "' ABSENT (excluded by BWList), but found in: " + allFiles, found);
+            for (String p : allFiles) {
+                assertFalse("Expected 'temp.log' ABSENT (excluded by BWList), but found: " + p,
+                        p.contains("temp.log"));
             }
-            System.out.println("\u2705 Excluded files correctly absent from OSS");
-            System.out.println("BWList with isPathRegex + isExcludeRegex verified successfully");
+            System.out.println("\u2705 Excluded file temp.log correctly absent from OSS");
+            System.out.println("BWList with isPathRegex + isExcludeRegex verified successfully (Linux)");
         }
     }
 

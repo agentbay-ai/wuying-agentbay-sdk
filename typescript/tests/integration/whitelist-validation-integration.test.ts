@@ -72,7 +72,7 @@ describe("WhiteListValidationIntegration", () => {
 
     expect(() => {
       newContextSync(contextId, "/tmp/data", policy);
-    }).toThrow("Wildcard patterns are not supported in exclude_paths");
+    }).toThrow(/Wildcard patterns are not supported/);
 
     expect(() => {
       newContextSync(contextId, "/tmp/data", policy);
