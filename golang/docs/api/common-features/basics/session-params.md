@@ -20,8 +20,12 @@ type CreateSessionParams struct {
 	ImageId	string
 
 	// IdleReleaseTimeout specifies the SDK-side idle release timeout in seconds.
-	// Default is 300 seconds.
+	// Default is 300 seconds. Deprecated for new code: use LifecyclePolicy (minutes).
 	IdleReleaseTimeout	int32
+
+	// LifecyclePolicy configures idle release and max runtime in minutes, and optional manual release.
+	// Mutually exclusive with IdleReleaseTimeout when that field is set (greater than zero).
+	LifecyclePolicy	*LifecyclePolicy
 
 	// ContextSync is a list of context synchronization configurations.
 	// These configurations define how contexts should be synchronized and mounted.
@@ -160,6 +164,15 @@ func (p *CreateSessionParams) WithLabels(labels map[string]string) *CreateSessio
 ```
 
 WithLabels sets the labels for the session parameters and returns the updated parameters.
+
+### WithLifecyclePolicy
+
+```go
+func (p *CreateSessionParams) WithLifecyclePolicy(lp *LifecyclePolicy) (*CreateSessionParams, error)
+```
+
+WithLifecyclePolicy sets the lifecycle policy (minutes). Mutually exclusive with IdleReleaseTimeout
+when IdleReleaseTimeout > 0.
 
 ### WithLoadSkills
 

@@ -182,6 +182,9 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		// Create a deep copy of params to avoid modifying the original object
 		params = a.copyCreateSessionParams(params)
 	}
+	if params.LifecyclePolicy != nil && params.IdleReleaseTimeout > 0 {
+		return nil, fmt.Errorf("lifecycle policy and IdleReleaseTimeout are mutually exclusive")
+	}
 
 	// Flag to indicate if we need to wait for mobile simulate
 	needsMobileSim := false
@@ -253,8 +256,13 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		createSessionRequest.NetworkId = tea.String(params.BetaNetworkId)
 	}
 
-	// SDK idle release timeout (seconds)
-	if params.IdleReleaseTimeout > 0 {
+	// Lifecycle policy (minutes); otherwise legacy SDK idle release timeout (seconds).
+	if params.LifecyclePolicy != nil {
+		lp := params.LifecyclePolicy
+		createSessionRequest.Timeout = tea.Int32(lp.IdleReleaseTimeout)
+		createSessionRequest.MaxRuntime = tea.Int32(lp.MaxRuntime)
+		createSessionRequest.ManualRelease = tea.Bool(lp.ManualRelease)
+	} else if params.IdleReleaseTimeout > 0 {
 		createSessionRequest.Timeout = tea.Int32(params.IdleReleaseTimeout)
 	}
 
@@ -1423,6 +1431,11 @@ func (a *AgentBay) copyCreateSessionParams(params *CreateSessionParams) *CreateS
 		Framework:           params.Framework,
 		EnableBrowserReplay: params.EnableBrowserReplay,
 		LoadSkills:          params.LoadSkills,
+	}
+
+	if params.LifecyclePolicy != nil {
+		lpCopy := *params.LifecyclePolicy
+		copy.LifecyclePolicy = &lpCopy
 	}
 
 	// Deep copy Labels map
