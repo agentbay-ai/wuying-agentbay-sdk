@@ -5,11 +5,11 @@
 # -*- coding: utf-8 -*-
 """Integration tests for WebSocket functionality."""
 
-import asyncio
 
 import pytest
 
 from agentbay import AgentBay, BrowserOption, CreateSessionParams
+import threading
 
 
 @pytest.mark.integration
@@ -41,7 +41,7 @@ def test_ws_connect_and_basic_call_stream(agent_bay_client: AgentBay):
         events: list[dict] = []
         ends: list[dict] = []
         errors: list[Exception] = []
-        end_signal = asyncio.Event()
+        end_signal = threading.Event()
 
         def on_event(invocation_id: str, data: dict) -> None:
             assert invocation_id
@@ -73,7 +73,7 @@ def test_ws_connect_and_basic_call_stream(agent_bay_client: AgentBay):
         )
 
         try:
-            end_data = asyncio.wait_for(handle.wait_end(), timeout=600)
+            end_data = handle.wait_end_with_timeout(600)
         except Exception as e:
             assert end_signal.is_set(), "Expected on_error/on_end to be called"
             if errors:
@@ -108,7 +108,7 @@ def test_ws_register_callback_should_receive_captcha_push(agent_bay_client: Agen
     ws_client = None
     try:
         ws_client = session._get_ws_client()
-        push_signal = asyncio.Event()
+        push_signal = threading.Event()
         received: list[dict] = []
 
         def on_push(payload: dict) -> None:
@@ -137,7 +137,7 @@ def test_ws_register_callback_should_receive_captcha_push(agent_bay_client: Agen
             page.wait_for_timeout(1000)
             page.click("#next_step1")
 
-            asyncio.wait_for(push_signal.wait(), timeout=180.0)
+            push_signal.wait(timeout=180.0)
 
         assert received, "Expected at least 1 push callback invocation"
         first = received[0]

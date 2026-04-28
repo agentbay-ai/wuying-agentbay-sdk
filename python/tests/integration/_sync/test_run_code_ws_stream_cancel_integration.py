@@ -5,7 +5,6 @@
 # -*- coding: utf-8 -*-
 """Integration tests for run_code WebSocket stream cancellation."""
 
-import asyncio
 import time
 
 import pytest
@@ -79,7 +78,7 @@ def test_run_code_ws_stream_cancel_e2e(make_session):
 
         t0 = time.monotonic()
         with pytest.raises(WsCancelledError):
-            asyncio.wait_for(handle.wait_end(), timeout=2)
+            handle.wait_end_with_timeout(2)
         assert time.monotonic() - t0 < 2.0
 
         assert ends == [], f"unexpected on_end after cancel: ends={ends}, events={events}, errors={errors}"

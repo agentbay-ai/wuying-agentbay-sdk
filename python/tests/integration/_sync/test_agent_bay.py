@@ -274,7 +274,7 @@ def test_create_session_with_pattern_bwlist_windows(make_session):
 
     # ── Create session WITH BWList ─────────────────────────────────────────────
     lc = make_session(
-        "windows_latest",
+        "computer-use-ubuntu-2204",
         context_name=context_name,
         context_path=base,
         context_policy=sync_policy,

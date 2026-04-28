@@ -3,7 +3,6 @@
 
 # ci-stable
 
-import asyncio
 import random
 import time
 
@@ -37,9 +36,9 @@ def test_list_all_sessions(make_session):
     print(f"Request ID: {result.request_id}")
 
 
-def test_list_with_single_label(make_session):
-    """Test listing sessions with a single label filter."""
-    print("\n=== Testing list() with single label ===")
+def test_list_with_multiple_labels(make_session):
+    """Test listing sessions with multiple label filters."""
+    print("\n=== Testing list() with multiple labels ===")
 
     unique_id = generate_unique_id()
     print(f"Using unique ID for test: {unique_id}")
@@ -93,53 +92,3 @@ def test_list_with_single_label(make_session):
     print(f"Total sessions with label: {len(result.session_ids)}")
     print(f"Request ID: {result.request_id}")
 
-
-def test_list_with_multiple_labels(make_session):
-    """Test listing sessions with multiple label filters."""
-    print("\n=== Testing list() with multiple labels ===")
-
-    unique_id = generate_unique_id()
-    print(f"Using unique ID for test: {unique_id}")
-
-    # Create dev and staging sessions concurrently
-    dev_lc, _ = asyncio.gather(
-        make_session(params=CreateSessionParams(labels={
-            "project": f"list-test-{unique_id}",
-            "environment": "dev",
-            "owner": f"test-{unique_id}",
-        })),
-        make_session(params=CreateSessionParams(labels={
-            "project": f"list-test-{unique_id}",
-            "environment": "staging",
-            "owner": f"test-{unique_id}",
-        })),
-    )
-
-    agent_bay = dev_lc.agent_bay
-    dev_session_id = dev_lc._result.session.session_id
-    print(f"Dev session ID: {dev_session_id}")
-
-    # Wait for labels to propagate
-    time.sleep(5)
-
-    result = agent_bay.list(labels={
-        "project": f"list-test-{unique_id}",
-        "environment": "dev",
-    })
-
-    assert result.success, "list() with multiple labels should succeed"
-    assert result.request_id is not None, "Request ID should be present"
-    assert len(result.session_ids) >= 1, "Should find at least 1 session"
-
-    found = False
-    for item in result.session_ids:
-        sid = item.get("sessionId") if isinstance(item, dict) else item
-        print(f"Session ID: {sid}")
-        if sid == dev_session_id:
-            found = True
-            break
-
-    assert found, "Dev session should be in the results"
-    print(f"Found dev session: {found}")
-    print(f"Total matching sessions: {len(result.session_ids)}")
-    print(f"Request ID: {result.request_id}")

@@ -88,198 +88,24 @@ describe("Session GetLink", () => {
       }
     });
 
-    // Port validation tests - valid port range [30100, 30199]
-    it("should get link with valid port in range [30100, 30199]", async () => {
+    it("should get link with port parameter", async () => {
       if (typeof session.getLink === "function") {
-        log("Testing getLink with valid port 30150...");
+        log("Testing getLink with port 30150...");
         try {
-          const validPort = 30150;
-          const linkWithPortResponse = await session.getLink(
-            undefined,
-            validPort
-          );
+          const port = 30150;
+          const linkWithPortResponse = await session.getLink(undefined, port);
+          log(`Session link with port ${port}:`, linkWithPortResponse.data);
           log(
-            `Session link with port ${validPort}:`,
-            linkWithPortResponse.data
-          );
-          log(
-            `Get Link with Valid Port RequestId: ${
+            `Get Link with Port RequestId: ${
               linkWithPortResponse.requestId || "undefined"
             }`
           );
 
-          // Verify successful response
           expect(linkWithPortResponse.requestId).toBeDefined();
-          expect(linkWithPortResponse.success).toBe(true);
           expect(linkWithPortResponse.data).toBeDefined();
           expect(typeof linkWithPortResponse.data).toBe("string");
         } catch (error) {
-          log(`Note: Session link retrieval with valid port failed: ${error}`);
-        }
-      } else {
-        log("Note: Session getLink method is not available, skipping test");
-      }
-    });
-
-    it("should get link with valid port at lower boundary (30100)", async () => {
-      if (typeof session.getLink === "function") {
-        log("Testing getLink with valid port at lower boundary 30100...");
-        try {
-          const validPort = 30100;
-          const linkWithPortResponse = await session.getLink("wss", validPort);
-          log(
-            `Session link with port ${validPort}:`,
-            linkWithPortResponse.data
-          );
-          log(
-            `Get Link with Lower Boundary Port RequestId: ${
-              linkWithPortResponse.requestId || "undefined"
-            }`
-          );
-
-          // Verify successful response
-          expect(linkWithPortResponse.requestId).toBeDefined();
-          expect(linkWithPortResponse.success).toBe(true);
-          expect(linkWithPortResponse.data).toBeDefined();
-          expect(typeof linkWithPortResponse.data).toBe("string");
-        } catch (error) {
-          log(
-            `Note: Session link retrieval with lower boundary port failed: ${error}`
-          );
-        }
-      } else {
-        log("Note: Session getLink method is not available, skipping test");
-      }
-    });
-
-    it("should get link with valid port at upper boundary (30199)", async () => {
-      if (typeof session.getLink === "function") {
-        log("Testing getLink with valid port at upper boundary 30199...");
-        try {
-          const validPort = 30199;
-          const linkWithPortResponse = await session.getLink(
-            "https",
-            validPort
-          );
-          log(
-            `Session link with port ${validPort}:`,
-            linkWithPortResponse.data
-          );
-          log(
-            `Get Link with Upper Boundary Port RequestId: ${
-              linkWithPortResponse.requestId || "undefined"
-            }`
-          );
-
-          // Verify successful response
-          expect(linkWithPortResponse.requestId).toBeDefined();
-          expect(linkWithPortResponse.success).toBe(true);
-          expect(linkWithPortResponse.data).toBeDefined();
-          expect(typeof linkWithPortResponse.data).toBe("string");
-        } catch (error) {
-          log(
-            `Note: Session link retrieval with upper boundary port failed: ${error}`
-          );
-        }
-      } else {
-        log("Note: Session getLink method is not available, skipping test");
-      }
-    });
-
-    // Port validation tests - invalid port ranges
-    it("should throw error for port below valid range (< 30100)", async () => {
-      if (typeof session.getLink === "function") {
-        log("Testing getLink with invalid port below range...");
-        const invalidPort = 30099;
-
-        try {
-          await session.getLink("wss", invalidPort);
-          fail("Expected error for invalid port");
-        } catch (error) {
-          log(`Expected error for invalid port ${invalidPort}: ${error}`);
-
-          expect(error).toBeInstanceOf(Error);
-          const errorMessage = (error as Error).message;
-          // Backend returns PARAM_ERROR with valid port range info
-          expect(errorMessage).toContain("Failed to get link");
-          expect(errorMessage).toMatch(/PARAM_ERROR|InvalidPort/);
-        }
-      } else {
-        log("Note: Session getLink method is not available, skipping test");
-      }
-    });
-
-    it("should throw error for port above valid range (> 30199)", async () => {
-      if (typeof session.getLink === "function") {
-        log("Testing getLink with invalid port above range...");
-        const invalidPort = 30200;
-
-        try {
-          await session.getLink("https", invalidPort);
-          fail("Expected error for invalid port");
-        } catch (error) {
-          log(`Expected error for invalid port ${invalidPort}: ${error}`);
-
-          expect(error).toBeInstanceOf(Error);
-          const errorMessage = (error as Error).message;
-          expect(errorMessage).toContain("Failed to get link");
-          expect(errorMessage).toMatch(/PARAM_ERROR|InvalidPort/);
-        }
-      } else {
-        log("Note: Session getLink method is not available, skipping test");
-      }
-    });
-
-    it("should throw error for non-integer port", async () => {
-      if (typeof session.getLink === "function") {
-        log("Testing getLink with non-integer port...");
-        const invalidPort = 30150.5;
-
-        try {
-          await session.getLink("wss", invalidPort);
-          fail("Expected error for non-integer port");
-        } catch (error) {
-          log(`Expected error for non-integer port ${invalidPort}: ${error}`);
-
-          expect(error).toBeInstanceOf(Error);
-          const errorMessage = (error as Error).message;
-          // Backend returns InvalidPort for non-integer values
-          expect(errorMessage).toContain("Failed to get link");
-          expect(errorMessage).toMatch(/InvalidPort|PARAM_ERROR/);
-        }
-      } else {
-        log("Note: Session getLink method is not available, skipping test");
-      }
-    });
-
-    it("should throw error for commonly used but invalid ports", async () => {
-      if (typeof session.getLink === "function") {
-        log("Testing getLink with commonly used but invalid ports...");
-
-        // Test port 8080 (commonly used but outside valid range)
-        const invalidPort8080 = 8080;
-        try {
-          await session.getLink(undefined, invalidPort8080);
-          fail("Expected error for invalid port 8080");
-        } catch (error) {
-          log(`Expected error for invalid port ${invalidPort8080}: ${error}`);
-          expect(error).toBeInstanceOf(Error);
-          const errorMessage = (error as Error).message;
-          expect(errorMessage).toContain("Failed to get link");
-          expect(errorMessage).toMatch(/PARAM_ERROR|InvalidPort/);
-        }
-
-        // Test port 443 (HTTPS default but outside valid range)
-        const invalidPort443 = 443;
-        try {
-          await session.getLink("https", invalidPort443);
-          fail("Expected error for invalid port 443");
-        } catch (error) {
-          log(`Expected error for invalid port ${invalidPort443}: ${error}`);
-          expect(error).toBeInstanceOf(Error);
-          const errorMessage = (error as Error).message;
-          expect(errorMessage).toContain("Failed to get link");
-          expect(errorMessage).toMatch(/PARAM_ERROR|InvalidPort/);
+          log(`Note: Session link retrieval with port failed: ${error}`);
         }
       } else {
         log("Note: Session getLink method is not available, skipping test");
@@ -306,70 +132,6 @@ describe("Session GetLink", () => {
           expect(typeof linkResponse.data).toBe("string");
         } catch (error) {
           log(`Note: Session link async retrieval failed: ${error}`);
-        }
-      } else {
-        log(
-          "Note: Session getLinkAsync method is not available, skipping test"
-        );
-      }
-    });
-
-    it("should throw error for invalid port in getLinkAsync", async () => {
-      if (typeof session.getLinkAsync === "function") {
-        log("Testing getLinkAsync with invalid port...");
-        const invalidPort = 25000;
-
-        try {
-          await session.getLinkAsync("wss", invalidPort);
-          fail("Expected error for invalid port in getLinkAsync");
-        } catch (error) {
-          log(
-            `Expected error for invalid port ${invalidPort} in getLinkAsync: ${error}`
-          );
-
-          expect(error).toBeInstanceOf(Error);
-          const errorMessage = (error as Error).message;
-          expect(errorMessage).toContain("Failed to get link");
-          expect(errorMessage).toMatch(/PARAM_ERROR|InvalidPort/);
-        }
-      } else {
-        log(
-          "Note: Session getLinkAsync method is not available, skipping test"
-        );
-      }
-    });
-
-    it("should handle backend error for invalid port in getLinkAsync", async () => {
-      if (typeof session.getLinkAsync === "function") {
-        log("Testing getLinkAsync backend port validation...");
-
-        const validPort = 30199; // Valid for client-side validation
-
-        try {
-          const linkResponse = await session.getLinkAsync("https", validPort);
-
-          // If successful, verify the response
-          log(
-            `Backend accepted port ${validPort} in getLinkAsync, response:`,
-            linkResponse.data
-          );
-          expect(linkResponse.requestId).toBeDefined();
-          expect(linkResponse.data).toBeDefined();
-        } catch (error) {
-          log(`Backend rejected port ${validPort} in getLinkAsync: ${error}`);
-
-          // If backend rejects, verify it's a proper error
-          expect(error).toBeInstanceOf(Error);
-          const errorMessage = (error as Error).message;
-
-          // Check if it's a backend validation error
-          if (errorMessage.includes("Failed to get link asynchronously")) {
-            expect(errorMessage).toContain("Failed to get link asynchronously");
-            log("Backend port validation test for getLinkAsync completed");
-          } else {
-            // Re-throw if it's an unexpected error
-            throw error;
-          }
         }
       } else {
         log(

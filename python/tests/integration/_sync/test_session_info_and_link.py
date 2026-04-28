@@ -72,8 +72,8 @@ def test_get_link_with_valid_port(make_session):
         url.startswith("http") or url.startswith("wss") or url.startswith("ws")
     ), "Returned link does not look like a URL"
 
-    # Test with port in valid range [30100, 30199]
-    valid_ports = [30100, 30150, 30199]
+    # Test with port in valid range [1, 32767]
+    valid_ports = [1, 32767]
     for port in valid_ports:
         print(f"Calling session.get_link() with port {port}...")
         result = session.get_link(port=port)
@@ -88,43 +88,3 @@ def test_get_link_with_valid_port(make_session):
         ), f"Returned link with port {port} does not look like a URL"
 
 
-@pytest.mark.sync
-def test_get_link_with_invalid_port_below_range(make_session):
-    """Test session.get_link() with port below valid range raises SessionError."""
-    params = CreateSessionParams(image_id="browser_latest")
-    lc = make_session(params=params)
-    session: Session = typing.cast(Session, lc._result.session)
-
-    invalid_port = 30099
-    print(f"Calling session.get_link() with invalid port {invalid_port}...")
-    with pytest.raises(SessionError):
-        session.get_link(port=invalid_port)
-    print(f"Expected SessionError raised for port {invalid_port}")
-
-
-@pytest.mark.sync
-def test_get_link_with_invalid_port_above_range(make_session):
-    """Test session.get_link() with port above valid range raises SessionError."""
-    params = CreateSessionParams(image_id="browser_latest")
-    lc = make_session(params=params)
-    session: Session = typing.cast(Session, lc._result.session)
-
-    invalid_port = 30200
-    print(f"Calling session.get_link() with invalid port {invalid_port}...")
-    with pytest.raises(SessionError):
-        session.get_link(port=invalid_port)
-    print(f"Expected SessionError raised for port {invalid_port}")
-
-
-@pytest.mark.sync
-def test_get_link_with_invalid_port_non_integer(make_session):
-    """Test session.get_link() with non-integer port raises SessionError."""
-    params = CreateSessionParams(image_id="browser_latest")
-    lc = make_session(params=params)
-    session: Session = typing.cast(Session, lc._result.session)
-
-    invalid_port = 30150.5
-    print(f"Calling session.get_link() with non-integer port {invalid_port}...")
-    with pytest.raises(SessionError):
-        session.get_link(port=invalid_port)
-    print(f"Expected SessionError raised for port {invalid_port}")

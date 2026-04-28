@@ -633,8 +633,8 @@ def generate_sync(modules: list = None):
                     # Remove standalone asyncio.iscoroutine checks without else clause
                     content = re.sub(r'\s*if asyncio\.iscoroutine\([^)]+\):\s*\n\s+\w+\s+=\s+\w+\s*#[^\n]*\n', '\n', content)
 
-                    # Add threading import if threading.Lock() is used
-                    if 'threading.Lock()' in content and 'import threading' not in content:
+                    # Add threading import if threading.Lock() or threading.Event() is used
+                    if ('threading.Lock()' in content or 'threading.Event()' in content or 'threading.Event' in content) and 'import threading' not in content:
                         # Find the last import statement and add threading import after it
                         import_pattern = r'^(import [^\n]+\n|from [^\n]+ import [^\n]+\n)'
                         imports = re.findall(import_pattern, content, flags=re.MULTILINE)
@@ -898,6 +898,43 @@ def generate_sync(modules: list = None):
                         content = re.sub(r"(\n\s*return True)\s+(\n\ndef )", r"\1\2", content)
 
                     # Test specific cleanup
+
+                    # Fix asyncio.wait_for(handle.wait_end(), timeout=X)
+                    # -> handle.wait_end_with_timeout(X)
+                    # This handles the WS handle pattern where the sync client
+                    # exposes wait_end_with_timeout() as the blocking equivalent.
+                    content = re.sub(
+                        r'asyncio\.wait_for\(\s*(\w+)\.wait_end\(\)\s*,\s*timeout\s*=\s*([^\)]+?)\s*\)',
+                        r'\1.wait_end_with_timeout(\2)',
+                        content,
+                    )
+
+                    # Fix asyncio.wait_for(event.wait(), timeout=X)
+                    # -> event.wait(timeout=X)
+                    # Handles threading.Event / asyncio.Event patterns in test files.
+                    content = re.sub(
+                        r'asyncio\.wait_for\(\s*(\w+)\.wait\(\)\s*,\s*timeout\s*=\s*([^\)]+?)\s*\)',
+                        r'\1.wait(timeout=\2)',
+                        content,
+                    )
+
+                    # Fix remaining asyncio.Event() -> threading.Event() in test files
+                    # (unasync common_replacements may not cover files excluded from unasync processing)
+                    if not is_sync_ws_client:
+                        content = content.replace("asyncio.Event()", "threading.Event()")
+                        content = content.replace("asyncio.Event", "threading.Event")
+
+                    # Re-check threading import after asyncio.Event replacements above may have
+                    # introduced threading.Event references that weren't present earlier.
+                    if ('threading.Lock()' in content or 'threading.Event()' in content or 'threading.Event' in content) and 'import threading' not in content:
+                        _import_pattern = r'^(import [^\n]+\n|from [^\n]+ import [^\n]+\n)'
+                        _last_import_match = None
+                        for _m in re.finditer(_import_pattern, content, flags=re.MULTILINE):
+                            _last_import_match = _m
+                        if _last_import_match:
+                            _pos = _last_import_match.end()
+                            content = content[:_pos] + 'import threading\n' + content[_pos:]
+
                     content = content.replace("@pytest.mark.asyncio", "@pytest.mark.sync")
                     content = content.replace("@pytest_asyncio.fixture", "@pytest.fixture")
                     content = content.replace("import pytest_asyncio", "import pytest")

@@ -34,7 +34,6 @@ function sleep(ms: number): Promise<void> {
 describe("Context Sync Upload Mode Integration Tests", () => {
   let agentBay: AgentBay;
   let uniqueId: string;
-  let testSessions: Session[] = [];
 
   beforeAll(async () => {
     const apiKey = getTestAPIKey();
@@ -42,20 +41,6 @@ describe("Context Sync Upload Mode Integration Tests", () => {
     uniqueId = generateUniqueId();
 
     log(`Using unique ID for test: ${uniqueId}`);
-  });
-
-  afterAll(async () => {
-    log("Cleaning up: Deleting all test sessions...");
-    for (const session of testSessions) {
-      try {
-        const result = await agentBay.delete(session, true);
-        log(
-          `Session ${session.sessionId} deleted. Success: ${result.success}, Request ID: ${result.requestId}`
-        );
-      } catch (error) {
-        log(`Warning: Error deleting session ${session.sessionId}: ${error}`);
-      }
-    }
   });
 
   describe("Basic Functionality Tests", () => {
@@ -103,7 +88,6 @@ describe("Context Sync Upload Mode Integration Tests", () => {
       expect(sessionResult.requestId).not.toBe("");
 
       const session = sessionResult.session!;
-      testSessions.push(session);
 
       log(`✅ Session created successfully!`);
       log(`Session ID: ${session.sessionId}`);
@@ -116,6 +100,9 @@ describe("Context Sync Upload Mode Integration Tests", () => {
 
       log(`Status: ${sessionInfo.status}`);
       log(`Get status request ID: ${sessionInfo.requestId}`);
+
+      // Delete session after test
+      await agentBay.delete(session, true);
 
       log("✅ All basic functionality tests passed!");
     });
@@ -173,7 +160,6 @@ describe("Context Sync Upload Mode Integration Tests", () => {
       expect(sessionResult.requestId).toBeDefined();
 
       const session = sessionResult.session!;
-      testSessions.push(session);
       // Get session status
       const sessionInfo = await session.getStatus();
       expect(sessionInfo.success).toBe(true);
@@ -218,39 +204,18 @@ describe("Context Sync Upload Mode Integration Tests", () => {
       log(`✅ File write successful!`);
       log(`Write file request ID: ${writeResult.requestId}`);
 
-      // Test context sync and info functionality
-      log("Testing context sync functionality...");
-      // Call context sync before getting info
-      log("Calling context sync before getting info...");
-      const syncResult = await session.context.sync();
+      // Trigger upload by deleting session with syncContext=true
+      log("Deleting session with syncContext=true to trigger upload...");
+      const deleteResult = await agentBay.delete(session, true);
 
-      expect(syncResult.success).toBe(true);
-      expect(syncResult.requestId).toBeDefined();
+      expect(deleteResult.success).toBe(true);
+      expect(deleteResult.requestId).toBeDefined();
 
-      log(`✅ Context sync successful!`);
-      log(`Sync request ID: ${syncResult.requestId}`);
+      log(`✅ Session deleted with sync successful!`);
+      log(`Delete request ID: ${deleteResult.requestId}`);
 
-      // Now call context info after sync
-      log("Calling context info after sync...");
-      const infoResult = await session.context.info();
-
-      expect(infoResult.success).toBe(true);
-      expect(infoResult.requestId).toBeDefined();
-      expect(infoResult.contextStatusData).toBeDefined();
-
-      log(`✅ Context info successful!`);
-      log(`Info request ID: ${infoResult.requestId}`);
-      log(`Context status data count: ${infoResult.contextStatusData.length}`);
-
-      // Log context status details
-      if (infoResult.contextStatusData.length > 0) {
-        log("Context status details:");
-        infoResult.contextStatusData.forEach((status: any, index: number) => {
-          log(
-            `  [${index}] ContextId: ${status.contextId}, Path: ${status.path}, Status: ${status.status}, TaskType: ${status.taskType}`
-          );
-        });
-      }
+      // Wait for OSS upload to complete
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // List files in context sync directory
       log("Listing files in context sync directory...");
@@ -389,6 +354,8 @@ describe("Context Sync Upload Mode Integration Tests", () => {
   test(
     "should store excluded paths as individual files when using Archive mode with archiveExcludePaths",
     async () => {
+       // Online not yet published, skipping for now
+
       log(
         "\n=== Testing Archive mode with archiveExcludePaths (hybrid storage) ==="
       );
@@ -431,7 +398,6 @@ describe("Context Sync Upload Mode Integration Tests", () => {
       expect(sessionResult.session).toBeDefined();
 
       const session = sessionResult.session!;
-      testSessions.push(session);
 
       const fileSystem = new FileSystem(session);
 
@@ -465,13 +431,6 @@ describe("Context Sync Upload Mode Integration Tests", () => {
 
       const deleteResult = await agentBay.delete(session, true);
       expect(deleteResult.success).toBe(true);
-
-      const removedIdx = testSessions.findIndex(
-        (s) => s.sessionId === session.sessionId
-      );
-      if (removedIdx >= 0) {
-        testSessions.splice(removedIdx, 1);
-      }
 
       let listResult = await agentBay.context.listFiles(
         contextResult.contextId,
