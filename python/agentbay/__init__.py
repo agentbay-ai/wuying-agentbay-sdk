@@ -50,6 +50,7 @@ from ._common.params.session_params import (
     BrowserContext,
     BrowserSyncMode,
     CreateSessionParams,
+    LifecyclePolicy,
     ListSessionParams,
 )
 from ._common.models.response import (
@@ -237,6 +238,7 @@ __all__ = [
     "get_logger",
     "log",
     "CreateSessionParams",
+    "LifecyclePolicy",
     "ListSessionParams",
     "BrowserContext",
     "ContextSync",

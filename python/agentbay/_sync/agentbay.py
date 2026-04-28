@@ -632,8 +632,14 @@ class AgentBay:
             if hasattr(params, "beta_network_id") and params.beta_network_id:
                 request.network_id = params.beta_network_id
 
-            # SDK idle release timeout (seconds)
-            if hasattr(params, "idle_release_timeout") and params.idle_release_timeout is not None:
+            # Lifecycle policy (minutes, full takeover)
+            if hasattr(params, "lifecycle_policy") and params.lifecycle_policy is not None:
+                lp = params.lifecycle_policy
+                request.timeout = lp.idle_release_timeout
+                request.max_runtime = lp.max_runtime
+                request.manual_release = lp.manual_release
+            # Legacy SDK idle release timeout (seconds)
+            elif hasattr(params, "idle_release_timeout") and params.idle_release_timeout is not None:
                 request.timeout = params.idle_release_timeout
 
             # Flag to indicate if we need to wait for context synchronization

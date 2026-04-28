@@ -5,6 +5,7 @@ from agentbay.api.models._create_mcp_session_request import ExtraConfigs
 
 from ..config import _BROWSER_FINGERPRINT_PERSIST_PATH
 from ..logger import get_logger
+from .lifecycle_policy import LifecyclePolicy
 from .context_sync import (
     BWList,
     ContextSync,
@@ -302,9 +303,14 @@ class CreateSessionParams:
         labels (Optional[Dict[str, str]]): Custom labels for the Session. These can be
             used for organizing and filtering sessions.
         idle_release_timeout (Optional[int]): SDK-side idle release timeout in seconds.
+            Deprecated for lifecycle control: use ``lifecycle_policy`` instead.
+            Mutually exclusive with ``lifecycle_policy``.
             This parameter takes effect together with console-side MCP/user interaction
             idle timeouts. The cloud environment is automatically released only when
             all idle timeouts are reached (or when the single-run maximum duration is reached).
+        lifecycle_policy (Optional[LifecyclePolicy]): Full lifecycle control (minutes).
+            Mutually exclusive with ``idle_release_timeout``. When set, SDK takes full
+            control of session lifecycle (console defaults are overridden).
         context_syncs (Optional[List[ContextSync]]): List of context synchronization
             configurations that define how contexts should be synchronized and mounted.
         browser_context (Optional[BrowserContext]): Optional configuration for browser data synchronization.
@@ -322,6 +328,7 @@ class CreateSessionParams:
         labels: Optional[Dict[str, str]] = None,
         image_id: Optional[str] = None,
         idle_release_timeout: Optional[int] = None,
+        lifecycle_policy: Optional[LifecyclePolicy] = None,
         context_syncs: Optional[List[ContextSync]] = None,
         browser_context: Optional[BrowserContext] = None,
         policy_id: Optional[str] = None,
@@ -341,7 +348,9 @@ class CreateSessionParams:
             image_id (Optional[str], optional): ID of the image to use for the session.
                 Defaults to None.
             idle_release_timeout (Optional[int], optional): SDK-side idle release timeout in seconds.
-                Defaults to 300.
+                Mutually exclusive with lifecycle_policy.
+            lifecycle_policy (Optional[LifecyclePolicy], optional): Lifecycle policy (minutes).
+                Mutually exclusive with idle_release_timeout.
             context_syncs (Optional[List[ContextSync]], optional): List of context
                 synchronization configurations. Defaults to None.
             browser_context (Optional[BrowserContext], optional): Browser context configuration.
@@ -360,6 +369,10 @@ class CreateSessionParams:
         """
         self.labels = labels or {}
         self.image_id = image_id
+        if lifecycle_policy is not None and idle_release_timeout is not None:
+            raise ValueError(
+                "idle_release_timeout is deprecated, use lifecycle_policy.idle_release_timeout instead. Cannot set both."
+            )
         if idle_release_timeout is not None:
             if not isinstance(idle_release_timeout, int):
                 raise ValueError(
@@ -367,6 +380,7 @@ class CreateSessionParams:
             if idle_release_timeout <= 0:
                 raise ValueError("idle_release_timeout must be > 0 (seconds)")
         self.idle_release_timeout = idle_release_timeout
+        self.lifecycle_policy = lifecycle_policy
 
         # Start with provided context_syncs
         all_context_syncs = list(context_syncs or [])

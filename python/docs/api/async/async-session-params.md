@@ -215,9 +215,14 @@ Parameters for creating a new session in the AgentBay cloud environment.
 - `labels` _Optional[Dict[str, str]]_ - Custom labels for the Session. These can be
   used for organizing and filtering sessions.
 - `idle_release_timeout` _Optional[int]_ - SDK-side idle release timeout in seconds.
+  Deprecated for lifecycle control: use ``lifecycle_policy`` instead.
+  Mutually exclusive with ``lifecycle_policy``.
   This parameter takes effect together with console-side MCP/user interaction
   idle timeouts. The cloud environment is automatically released only when
   all idle timeouts are reached (or when the single-run maximum duration is reached).
+- `lifecycle_policy` _Optional[LifecyclePolicy]_ - Full lifecycle control (minutes).
+  Mutually exclusive with ``idle_release_timeout``. When set, SDK takes full
+  control of session lifecycle (console defaults are overridden).
 - `context_syncs` _Optional[List[ContextSync]]_ - List of context synchronization
   configurations that define how contexts should be synchronized and mounted.
 - `browser_context` _Optional[BrowserContext]_ - Optional configuration for browser data synchronization.
@@ -235,6 +240,7 @@ Parameters for creating a new session in the AgentBay cloud environment.
 def __init__(self, labels: Optional[Dict[str, str]] = None,
              image_id: Optional[str] = None,
              idle_release_timeout: Optional[int] = None,
+             lifecycle_policy: Optional[LifecyclePolicy] = None,
              context_syncs: Optional[List[ContextSync]] = None,
              browser_context: Optional[BrowserContext] = None,
              policy_id: Optional[str] = None,
@@ -255,7 +261,9 @@ Initialize CreateSessionParams.
 - `image_id` _Optional[str], optional_ - ID of the image to use for the session.
   Defaults to None.
 - `idle_release_timeout` _Optional[int], optional_ - SDK-side idle release timeout in seconds.
-  Defaults to 300.
+  Mutually exclusive with lifecycle_policy.
+- `lifecycle_policy` _Optional[LifecyclePolicy], optional_ - Lifecycle policy (minutes).
+  Mutually exclusive with idle_release_timeout.
 - `context_syncs` _Optional[List[ContextSync]], optional_ - List of context
   synchronization configurations. Defaults to None.
 - `browser_context` _Optional[BrowserContext], optional_ - Browser context configuration.
