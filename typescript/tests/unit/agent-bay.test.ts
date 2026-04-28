@@ -549,7 +549,7 @@ describe("AgentBay", () => {
       const createCallArgs = createMcpSessionStub.getCall(0).args[0];
       expect((createCallArgs as any).timeout).toBe(10);
       expect((createCallArgs as any).maxRuntime).toBe(120);
-      expect((createCallArgs as any).manualRelease).toBe(false);
+      expect((createCallArgs as any).manualRelease).toBeUndefined();
     });
 
     it("should pass manual release lifecyclePolicy to CreateMcpSession request body", async () => {
@@ -570,8 +570,8 @@ describe("AgentBay", () => {
 
       expect(createMcpSessionStub.calledOnce).toBe(true);
       const createCallArgs = createMcpSessionStub.getCall(0).args[0];
-      expect((createCallArgs as any).timeout).toBe(0);
-      expect((createCallArgs as any).maxRuntime).toBe(0);
+      expect((createCallArgs as any).timeout).toBeUndefined();
+      expect((createCallArgs as any).maxRuntime).toBeUndefined();
       expect((createCallArgs as any).manualRelease).toBe(true);
     });
   });

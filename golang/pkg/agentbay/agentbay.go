@@ -262,6 +262,10 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		if lp.ManualRelease {
 			createSessionRequest.ManualRelease = tea.Bool(true)
 		} else {
+			// Validate non-manual policy has valid values
+			if lp.IdleReleaseTimeout <= 0 || lp.MaxRuntime <= 0 {
+				return nil, fmt.Errorf("LifecyclePolicy: IdleReleaseTimeout and MaxRuntime must be positive when ManualRelease is false; use NewLifecyclePolicy() or NewLifecyclePolicyWithValues()")
+			}
 			createSessionRequest.Timeout = tea.Int32(lp.IdleReleaseTimeout)
 			createSessionRequest.MaxRuntime = tea.Int32(lp.MaxRuntime)
 		}
