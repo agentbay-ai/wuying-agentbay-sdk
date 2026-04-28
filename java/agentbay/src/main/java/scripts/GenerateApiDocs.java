@@ -1242,6 +1242,9 @@ public class GenerateApiDocs {
         moduleToClasses.put("session-params", Arrays.asList(
             "com.aliyun.agentbay.session.CreateSessionParams"
         ));
+        moduleToClasses.put("lifecycle-policy", Arrays.asList(
+            "com.aliyun.agentbay.session.LifecyclePolicy"
+        ));
         
         // Basic modules
         moduleToClasses.put("command", Arrays.asList(
@@ -1384,6 +1387,8 @@ public class GenerateApiDocs {
             "The PTY module provides interactive terminal sessions in cloud sandbox environments with real-time streaming, resize, and session lifecycle management."));
         modules.put("env", createModuleConfig("Env", "common-features/basics", "\\uD83C\\uDF10",
             "The Env module provides methods for setting and querying global environment variables within a session sandbox."));
+        modules.put("lifecycle-policy", createModuleConfig("Lifecycle Policy", "common-features/basics", "\\u23F1",
+            "The LifecyclePolicy class provides fine-grained control over session lifecycle with idle release timeout, max runtime, and manual release options. All time values are in minutes."));
         fallbackData.put("modules", modules);
         
         // Add comprehensive global configuration

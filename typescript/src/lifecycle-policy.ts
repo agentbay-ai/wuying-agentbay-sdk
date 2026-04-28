@@ -1,12 +1,33 @@
+/**
+ * Options for creating a LifecyclePolicy.
+ */
 export interface LifecyclePolicyOptions {
+  /** Idle release timeout in minutes (default: 5). Must be a positive integer. */
   idleReleaseTimeout?: number;
+  /** Maximum session runtime in minutes from creation (default: 30). Must be a positive integer. */
   maxRuntime?: number;
+  /** When true, disables all auto-release; the session only ends via delete(). */
   manualRelease?: boolean;
 }
 
+/**
+ * Lifecycle policy for session management.
+ *
+ * Controls how and when a session is automatically released.
+ * When used, SDK takes full control of lifecycle — console defaults are overridden.
+ * All time values are in MINUTES.
+ *
+ * Three control dimensions:
+ * - **idleReleaseTimeout**: Minutes of inactivity before auto-release (default: 5)
+ * - **maxRuntime**: Absolute maximum session duration from creation (default: 30)
+ * - **manualRelease**: Disable all auto-release; session only ends via `delete()`
+ */
 export class LifecyclePolicy {
+  /** Minutes of inactivity before auto-release (default: 5). */
   readonly idleReleaseTimeout: number;
+  /** Maximum session runtime in minutes from creation (default: 30). */
   readonly maxRuntime: number;
+  /** When true, disables all auto-release; session only ends via delete(). */
   readonly manualRelease: boolean;
 
   constructor(options?: LifecyclePolicyOptions) {

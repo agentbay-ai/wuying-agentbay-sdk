@@ -17,6 +17,7 @@ This directory is generated. Run `go run scripts/generate_api_docs.go` to refres
 - `common-features/basics/command.md` – Command
 - `common-features/basics/context.md` – Context
 - `common-features/basics/session-params.md` – Session Params
+- `common-features/basics/lifecycle-policy.md` – Lifecycle Policy
 - `common-features/basics/context-manager.md` – Context Manager
 - `common-features/basics/filesystem.md` – File System
 - `common-features/basics/context-sync.md` – Context Sync

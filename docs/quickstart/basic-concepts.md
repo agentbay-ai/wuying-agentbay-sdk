@@ -82,19 +82,22 @@ agent_bay.delete(session)
 
 **2. Automatic Timeout Release**
 - If not manually deleted, sessions are automatically released after a timeout period
-- You can set an SDK-side idle release timeout during session creation (default: 300 seconds)
+- Use `LifecyclePolicy` for fine-grained control: idle timeout, max runtime, or manual-only release (all in **minutes**)
+- Legacy option: `idle_release_timeout` (seconds, default: 300) — still works but deprecated in favor of `LifecyclePolicy`
 - After timeout, the session is released and cannot be recovered
 
 **Important**: Always manually delete sessions when finished. This is a best practice for resource management.
 
 **Example (Python):**
 ```python
-from agentbay import AgentBay, CreateSessionParams
+from agentbay import AgentBay, CreateSessionParams, LifecyclePolicy
 
 agent_bay = AgentBay()
+
+# Recommended: use LifecyclePolicy (minutes) for new code
 params = CreateSessionParams(
     image_id="linux_latest",
-    idle_release_timeout=300,  # seconds (SDK-side idle release timeout)
+    lifecycle_policy=LifecyclePolicy(idle_release_timeout=10, max_runtime=60),
 )
 session = agent_bay.create(params).session
 ```

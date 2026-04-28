@@ -684,6 +684,41 @@ modules:
     emoji: ⚙️
     category: common-features/basics
 
+  # Lifecycle Policy module
+  lifecycle-policy:
+    python: agentbay._common.params.lifecycle_policy
+    typescript: lifecycle-policy
+    golang: pkg/agentbay
+    java: com.aliyun.agentbay.session
+
+    tutorial:
+      url: ../../../../../docs/guides/common-features/basics/session-management.md
+      text: Session Lifecycle Guide
+      description: Learn how to control session lifecycle with idle release, max runtime, and manual release
+
+    overview: |
+      The LifecyclePolicy class provides fine-grained control over session lifecycle.
+      It supports idle release timeout, maximum runtime, and manual release options.
+      All time values are in minutes. When set, SDK takes full control of session lifecycle
+      and overrides console defaults.
+
+    best_practices:
+      - "Use LifecyclePolicy instead of the deprecated idle_release_timeout parameter for new code"
+      - "Set max_runtime to prevent runaway sessions from consuming resources indefinitely"
+      - "Use manual_release=true for interactive workflows where session duration is unpredictable"
+      - "The backend requires idle_release_timeout >= 3 minutes"
+
+    related_resources:
+      - name: Session Params API Reference
+        module: session-params
+        category: common-features/basics
+      - name: Session API Reference
+        module: session
+        category: common-features/basics
+
+    emoji: ⏱
+    category: common-features/basics
+
   # Git module
   git:
     python: agentbay.git

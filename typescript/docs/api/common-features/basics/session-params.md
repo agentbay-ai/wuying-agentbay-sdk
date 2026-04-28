@@ -39,7 +39,7 @@ contextSync: [`ContextSync`](context-sync.md)[]
 framework: `string`
 idleReleaseTimeout: `number`
 labels: `Record`<`string`, `string`>
-lifecyclePolicy: `undefined` | ``LifecyclePolicy``
+lifecyclePolicy: `undefined` | [`LifecyclePolicy`](lifecycle-policy.md)
 ```
 
 

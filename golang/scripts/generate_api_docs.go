@@ -190,6 +190,19 @@ var mappings = []docMapping{
 		},
 	},
 	{
+		Target:      "common-features/basics/lifecycle-policy.md",
+		Title:       "Lifecycle Policy",
+		PackagePath: "pkg/agentbay",
+		ModuleName:  "lifecycle-policy",
+		TypeNames: []string{
+			"LifecyclePolicy",
+		},
+		FuncNames: []string{
+			"NewLifecyclePolicy",
+			"NewLifecyclePolicyWithValues",
+		},
+	},
+	{
 		Target:      "common-features/basics/context-manager.md",
 		Title:       "Context Manager",
 		PackagePath: "pkg/agentbay",

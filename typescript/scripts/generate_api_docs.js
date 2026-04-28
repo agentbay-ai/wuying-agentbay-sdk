@@ -70,6 +70,11 @@ const docMappings = [
     symbol: 'CreateSessionParams',
     identifiers: ['Class CreateSessionParams', 'CreateSessionParams', 'BrowserContext', 'session-params'],
   },
+  {
+    target: 'common-features/basics/lifecycle-policy.md',
+    symbol: 'LifecyclePolicy',
+    identifiers: ['Class LifecyclePolicy', 'LifecyclePolicy', 'lifecycle-policy'],
+  },
   { target: 'mobile-use/mobile.md', symbol: 'Mobile', identifiers: ['Class Mobile', 'Mobile'] },
   { target: 'common-features/basics/env.md', symbol: 'Env', identifiers: ['Class Env', 'Env', 'EnvResult', 'BoolResult'] },
   {

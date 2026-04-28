@@ -450,7 +450,7 @@ else:
 If you don't manually delete a session, it will be automatically released after a configured timeout period:
 
 - **Configuration**: Timeout duration is set in the [AgentBay Console](https://agentbay.console.aliyun.com/)
-- **SDK Parameter**: You can also set `idle_release_timeout` (seconds) when creating a session (default: 300)
+- **SDK Parameter**: Use `LifecyclePolicy` (recommended, minutes) or the legacy `idle_release_timeout` (deprecated, seconds) when creating a session
 - **Behavior**: Once the timeout is reached, the session is automatically released
 - **Recovery**: After release (manual or automatic), the session cannot be recovered - the session ID becomes invalid
 
@@ -462,15 +462,30 @@ If you set `idle_release_timeout` and want to prevent the session from being rel
 
 Calling keep-alive resets the backend idle timer back to the configured timeout value.
 
-### Lifecycle Policy
+### Lifecycle Policy (Recommended)
+
+> **For new code**, use `LifecyclePolicy` instead of the `idle_release_timeout` parameter.
+> `LifecyclePolicy` provides richer control and uses **minutes** as the time unit (vs seconds for the legacy parameter).
 
 The `LifecyclePolicy` API provides fine-grained control over session lifecycle with three dimensions:
 
-- **Idle Release Timeout** (minutes): Auto-release after inactivity (default: 5 minutes)
-- **Max Runtime** (minutes): Absolute maximum session duration from creation (default: 30 minutes)
-- **Manual Release**: Disable all auto-release; the session only ends via `delete()`
+| Dimension | Type | Default | Description |
+|-----------|------|---------|-------------|
+| **Idle Release Timeout** | int (minutes) | 5 | Auto-release after inactivity. Backend minimum: **3 minutes**. |
+| **Max Runtime** | int (minutes) | 30 | Absolute maximum session duration from creation. |
+| **Manual Release** | bool | false | Disable all auto-release; session only ends via `delete()`. |
 
-When `LifecyclePolicy` is set on create, the SDK sends explicit lifecycle settings to the backend and overrides console defaults for that session.
+When `LifecyclePolicy` is set on create, the SDK sends explicit lifecycle settings to the backend and **overrides console defaults** for that session.
+
+**When to use each mode:**
+
+- **Custom timeouts** — Long-running batch jobs or data pipelines where you know the expected duration
+- **Manual release** — Interactive or human-in-the-loop workflows where session duration is unpredictable
+
+> **Migrating from `idle_release_timeout`:**
+> The legacy `CreateSessionParams.idle_release_timeout` (seconds) and `LifecyclePolicy` are **mutually exclusive**. If you set both, the SDK raises an error. To migrate, replace `idle_release_timeout=300` (seconds) with `LifecyclePolicy(idle_release_timeout=5)` (minutes).
+
+#### Custom Timeout Example
 
 <details open>
 <summary>📘 <strong>Python</strong></summary>
@@ -533,11 +548,51 @@ SessionResult result = agentBay.create(params);
 
 </details>
 
-Manual release only (no automatic idle or max runtime):
+#### Manual Release Example
+
+Use manual release when you want full control over session duration — the session will only end when you explicitly call `delete()`.
+
+<details open>
+<summary>📘 <strong>Python</strong></summary>
 
 ```python
-LifecyclePolicy(manual_release=True)
+policy = LifecyclePolicy(manual_release=True)
+params = CreateSessionParams(lifecycle_policy=policy)
 ```
+
+</details>
+
+<details>
+<summary>⚡ <strong>TypeScript</strong></summary>
+
+```typescript
+const policy = new LifecyclePolicy({ manualRelease: true });
+await agentBay.create({ lifecyclePolicy: policy });
+```
+
+</details>
+
+<details>
+<summary>🔷 <strong>Golang</strong></summary>
+
+```go
+lp := agentbay.NewLifecyclePolicyManualRelease()
+params, _ := agentbay.NewCreateSessionParams().WithLifecyclePolicy(lp)
+```
+
+</details>
+
+<details>
+<summary>☕ <strong>Java</strong></summary>
+
+```java
+LifecyclePolicy policy = LifecyclePolicy.manualRelease();
+params.setLifecyclePolicy(policy);
+```
+
+</details>
+
+> **API Reference**: See the [LifecyclePolicy API docs](../../../../python/docs/api/common/lifecycle-policy.md) for full parameter details and validation rules.
 
 ### Important Notes
 

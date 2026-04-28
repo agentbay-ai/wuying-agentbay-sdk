@@ -26,6 +26,7 @@ These documents are generated automatically using TypeDoc. Run `npm run docs:gen
   - context.md
   - env.md
   - filesystem.md
+  - lifecycle-policy.md
   - logging.md
   - pty.md
   - session-params.md
