@@ -12,6 +12,7 @@ import {
 import { ExtensionOption } from "./extension";
 import { BrowserFingerprintContext } from "./browser";
 import { ExtraConfigs, extraConfigsToJSON } from "./types/extra-configs";
+import { LifecyclePolicy } from "./lifecycle-policy";
 
 // Browser fingerprint persistent path constant (moved from config.ts)
 const BROWSER_FINGERPRINT_PERSIST_PATH = "/tmp/browser_fingerprint";
@@ -313,8 +314,10 @@ export interface CreateSessionParamsInterface {
   labels?: Record<string, string>;
   /** Image ID to use for the session. */
   imageId?: string;
-  /** SDK-side idle release timeout in seconds. Default is 300 seconds. */
+  /** SDK-side idle release timeout in seconds (deprecated). Use lifecyclePolicy (minutes) instead. */
   idleReleaseTimeout?: number;
+  /** Lifecycle policy for session timeout and manual release (minutes). Mutually exclusive with positive idleReleaseTimeout. */
+  lifecyclePolicy?: LifecyclePolicy;
   /** List of context synchronization configurations. */
   contextSync?: ContextSync[];
   /** Optional configuration for browser data synchronization. */
@@ -350,8 +353,11 @@ export class CreateSessionParams implements CreateSessionParamsInterface {
   /** Image ID to use for the session. */
   public imageId?: string;
 
-  /** SDK-side idle release timeout in seconds. Default is 300 seconds. */
+  /** SDK-side idle release timeout in seconds (deprecated). Default 0 when omitted. */
   public idleReleaseTimeout: number;
+
+  /** Lifecycle policy (minutes). Mutually exclusive with positive idleReleaseTimeout. */
+  public lifecyclePolicy: LifecyclePolicy | undefined;
 
   /**
    * List of context synchronization configurations.
@@ -404,6 +410,15 @@ export class CreateSessionParams implements CreateSessionParamsInterface {
       );
     } else {
       this.idleReleaseTimeout = idle;
+    }
+    this.lifecyclePolicy = (params as any)?.lifecyclePolicy || undefined;
+    if (
+      this.lifecyclePolicy &&
+      this.idleReleaseTimeout > 0
+    ) {
+      throw new Error(
+        "lifecyclePolicy cannot be used together with deprecated idleReleaseTimeout (seconds); use lifecyclePolicy only"
+      );
     }
     this.isVpc = params?.isVpc || false;
     // Handle policyId mapping - if policyId is provided, use it, otherwise use mcpPolicyId

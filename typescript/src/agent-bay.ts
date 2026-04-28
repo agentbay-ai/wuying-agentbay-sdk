@@ -30,6 +30,7 @@ import {
   CreateSessionParamsInterface,
   CreateSessionParams as CreateSessionParamsClass,
 } from "./session-params";
+export { LifecyclePolicy, type LifecyclePolicyOptions } from "./lifecycle-policy";
 import { BrowserSyncMode } from "./session-params";
 import { Context } from "./context";
 import { ExtraConfigs } from "./types/extra-configs";
@@ -348,8 +349,15 @@ export class AgentBay {
         (request as any).networkId = (paramsCopy as any).betaNetworkId;
       }
 
-      // SDK idle release timeout (seconds)
-      if (
+      // Lifecycle policy (minutes, full takeover)
+      if ((paramsCopy as any).lifecyclePolicy) {
+        const lp = (paramsCopy as any).lifecyclePolicy;
+        (request as any).timeout = lp.idleReleaseTimeout;
+        (request as any).maxRuntime = lp.maxRuntime;
+        (request as any).manualRelease = lp.manualRelease;
+      }
+      // Legacy SDK idle release timeout (seconds)
+      else if (
         (paramsCopy as any).idleReleaseTimeout !== undefined &&
         (paramsCopy as any).idleReleaseTimeout !== null &&
         (paramsCopy as any).idleReleaseTimeout > 0
@@ -1400,6 +1408,7 @@ export class AgentBay {
         labels: params.labels,
         imageId: params.imageId,
         idleReleaseTimeout: (params as any).idleReleaseTimeout,
+        lifecyclePolicy: (params as any).lifecyclePolicy,
         contextSync: params.contextSync, // Already contains merged extension contexts
         browserContext: params.browserContext,
         isVpc: params.isVpc,

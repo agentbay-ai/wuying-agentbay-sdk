@@ -9,6 +9,8 @@ export {
   AgentBay,
   CreateSessionParams,
   CreateSessionParamsClass,
+  LifecyclePolicy,
+  type LifecyclePolicyOptions,
 } from "./agent-bay";
 export * from "./agent";
 export * from "./api";

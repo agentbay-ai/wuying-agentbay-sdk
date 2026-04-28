@@ -1,4 +1,10 @@
-import { AgentBay, Session, CreateSessionParams } from "../../src";
+import {
+  AgentBay,
+  Session,
+  CreateSessionParams,
+  LifecyclePolicy,
+} from "../../src";
+import { CreateSessionParams as CreateSessionParamsClass } from "../../src/session-params";
 import { APIError } from "../../src/exceptions";
 import * as sinon from "sinon";
 
@@ -121,10 +127,33 @@ describe("Session Parameters", () => {
 
     it("should default idleReleaseTimeout to 0 when not specified", () => {
       const {
-        CreateSessionParams: CreateSessionParamsClass,
+        CreateSessionParams: C,
       } = require("../../src/session-params");
-      const params = new CreateSessionParamsClass({});
+      const params = new C({});
       expect(params.idleReleaseTimeout).toBe(0);
+    });
+  });
+
+  describe("lifecyclePolicy on CreateSessionParams", () => {
+    it("should accept lifecyclePolicy", () => {
+      const lp = new LifecyclePolicy({ idleReleaseTimeout: 10, maxRuntime: 60 });
+      const params = new CreateSessionParamsClass({ lifecyclePolicy: lp });
+      expect(params.lifecyclePolicy).toBe(lp);
+      expect(params.idleReleaseTimeout).toBe(0);
+    });
+
+    it("should throw when lifecyclePolicy is combined with deprecated idleReleaseTimeout > 0", () => {
+      const lp = new LifecyclePolicy({
+        idleReleaseTimeout: 5,
+        maxRuntime: 30,
+      });
+      expect(
+        () =>
+          new CreateSessionParamsClass({
+            lifecyclePolicy: lp,
+            idleReleaseTimeout: 300,
+          })
+      ).toThrow(/deprecated/i);
     });
   });
 

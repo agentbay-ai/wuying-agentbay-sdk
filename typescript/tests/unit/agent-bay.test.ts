@@ -4,6 +4,7 @@ import {
   AuthenticationError,
   APIError,
   ListSessionParams,
+  LifecyclePolicy,
 } from "../../src";
 import { log } from "../../src/utils/logger";
 import * as sinon from "sinon";
@@ -521,6 +522,57 @@ describe("AgentBay", () => {
       expect(createMcpSessionStub.calledOnce).toBe(true);
       const createCallArgs = createMcpSessionStub.getCall(0).args[0];
       expect((createCallArgs as any).timeout).toBe(123);
+    });
+  });
+
+  describe("lifecyclePolicy passthrough", () => {
+    it("should pass lifecyclePolicy fields to CreateMcpSession request body", async () => {
+      const apiKey = "test-api-key";
+      const agentBay = new AgentBay({ apiKey });
+
+      const createMockResponse = {
+        statusCode: 200,
+        body: {
+          data: mockSessionData,
+          requestId: "mock-request-id-create",
+        },
+      };
+      createMcpSessionStub.resolves(createMockResponse);
+
+      const lp = new LifecyclePolicy({
+        idleReleaseTimeout: 10,
+        maxRuntime: 120,
+      });
+      await agentBay.create({ lifecyclePolicy: lp });
+
+      expect(createMcpSessionStub.calledOnce).toBe(true);
+      const createCallArgs = createMcpSessionStub.getCall(0).args[0];
+      expect((createCallArgs as any).timeout).toBe(10);
+      expect((createCallArgs as any).maxRuntime).toBe(120);
+      expect((createCallArgs as any).manualRelease).toBe(false);
+    });
+
+    it("should pass manual release lifecyclePolicy to CreateMcpSession request body", async () => {
+      const apiKey = "test-api-key";
+      const agentBay = new AgentBay({ apiKey });
+
+      const createMockResponse = {
+        statusCode: 200,
+        body: {
+          data: mockSessionData,
+          requestId: "mock-request-id-create",
+        },
+      };
+      createMcpSessionStub.resolves(createMockResponse);
+
+      const lp = new LifecyclePolicy({ manualRelease: true });
+      await agentBay.create({ lifecyclePolicy: lp });
+
+      expect(createMcpSessionStub.calledOnce).toBe(true);
+      const createCallArgs = createMcpSessionStub.getCall(0).args[0];
+      expect((createCallArgs as any).timeout).toBe(0);
+      expect((createCallArgs as any).maxRuntime).toBe(0);
+      expect((createCallArgs as any).manualRelease).toBe(true);
     });
   });
 
