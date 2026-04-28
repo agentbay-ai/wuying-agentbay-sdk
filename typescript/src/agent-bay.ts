@@ -352,9 +352,12 @@ export class AgentBay {
       // Lifecycle policy (minutes, full takeover)
       if ((paramsCopy as any).lifecyclePolicy) {
         const lp = (paramsCopy as any).lifecyclePolicy;
-        (request as any).timeout = lp.idleReleaseTimeout;
-        (request as any).maxRuntime = lp.maxRuntime;
-        (request as any).manualRelease = lp.manualRelease;
+        if (lp.manualRelease) {
+          (request as any).manualRelease = true;
+        } else {
+          (request as any).timeout = lp.idleReleaseTimeout;
+          (request as any).maxRuntime = lp.maxRuntime;
+        }
       }
       // Legacy SDK idle release timeout (seconds)
       else if (

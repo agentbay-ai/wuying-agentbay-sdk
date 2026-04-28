@@ -468,11 +468,15 @@ public class AgentBay {
             // Lifecycle policy (minutes, full takeover)
             LifecyclePolicy lp = params.getLifecyclePolicy();
             if (lp != null) {
-                request.setTimeout(lp.getIdleReleaseTimeout());
-                request.setMaxRuntime(lp.getMaxRuntime());
-                request.setManualRelease(lp.isManualRelease());
-            } else {
-                // Legacy SDK idle release timeout (seconds)
+                if (lp.isManualRelease()) {
+                    request.setManualRelease(true);
+                } else {
+                    request.setTimeout(lp.getIdleReleaseTimeout());
+                    request.setMaxRuntime(lp.getMaxRuntime());
+                }
+            }
+            // Legacy SDK idle release timeout (seconds)
+            else {
                 Integer idleReleaseTimeout = params.getIdleReleaseTimeout();
                 if (idleReleaseTimeout != null) {
                     request.setTimeout(idleReleaseTimeout);

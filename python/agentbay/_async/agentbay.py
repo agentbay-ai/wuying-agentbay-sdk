@@ -633,9 +633,11 @@ class AsyncAgentBay:
             # Lifecycle policy (minutes, full takeover)
             if hasattr(params, "lifecycle_policy") and params.lifecycle_policy is not None:
                 lp = params.lifecycle_policy
-                request.timeout = lp.idle_release_timeout
-                request.max_runtime = lp.max_runtime
-                request.manual_release = lp.manual_release
+                if lp.manual_release:
+                    request.manual_release = True
+                else:
+                    request.timeout = lp.idle_release_timeout
+                    request.max_runtime = lp.max_runtime
             # Legacy SDK idle release timeout (seconds)
             elif hasattr(params, "idle_release_timeout") and params.idle_release_timeout is not None:
                 request.timeout = params.idle_release_timeout

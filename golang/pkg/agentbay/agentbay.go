@@ -256,13 +256,17 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		createSessionRequest.NetworkId = tea.String(params.BetaNetworkId)
 	}
 
-	// Lifecycle policy (minutes); otherwise legacy SDK idle release timeout (seconds).
+	// Lifecycle policy (minutes, full takeover)
 	if params.LifecyclePolicy != nil {
 		lp := params.LifecyclePolicy
-		createSessionRequest.Timeout = tea.Int32(lp.IdleReleaseTimeout)
-		createSessionRequest.MaxRuntime = tea.Int32(lp.MaxRuntime)
-		createSessionRequest.ManualRelease = tea.Bool(lp.ManualRelease)
+		if lp.ManualRelease {
+			createSessionRequest.ManualRelease = tea.Bool(true)
+		} else {
+			createSessionRequest.Timeout = tea.Int32(lp.IdleReleaseTimeout)
+			createSessionRequest.MaxRuntime = tea.Int32(lp.MaxRuntime)
+		}
 	} else if params.IdleReleaseTimeout > 0 {
+		// Legacy SDK idle release timeout (seconds)
 		createSessionRequest.Timeout = tea.Int32(params.IdleReleaseTimeout)
 	}
 
