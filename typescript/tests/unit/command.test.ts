@@ -258,7 +258,10 @@ describe("Command", () => {
 
       expect(result.requestId).toBe("request-123");
       expect(result.success).toBe(false);
-      expect(result.output).toBe("");
+      // After the parseShellPayload fix, non-JSON errorMessage is treated as
+      // raw stdout (consistent with how the backend may return wrapped JSON
+      // in errorMessage for non-zero exit codes).
+      expect(result.output).toBe("Command execution failed");
       expect(result.errorMessage).toBe("Command execution failed");
     });
 

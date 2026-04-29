@@ -121,66 +121,103 @@ public class Command extends BaseService {
             OperationResult result = callMcpTool("shell", args);
 
             if (result.isSuccess()) {
-                try {
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonNode dataJson;
-
-                    if (result.getData() instanceof String) {
-                        dataJson = mapper.readTree((String) result.getData());
-                    } else {
-                        dataJson = mapper.valueToTree(result.getData());
-                    }
-
-                    String stdout = dataJson.has("stdout") ? dataJson.get("stdout").asText() : "";
-                    String stderr = dataJson.has("stderr") ? dataJson.get("stderr").asText() : "";
-                    int exitCode = dataJson.has("exit_code") ? dataJson.get("exit_code").asInt() : 0;
-                    String traceId = dataJson.has("traceId") ? dataJson.get("traceId").asText() : "";
-
-                    boolean success = exitCode == 0;
-                    String output = stdout + stderr;
-
-                    return new CommandResult(result.getRequestId(), success, output, "", exitCode,
-                            stdout, stderr, traceId);
-                } catch (Exception e) {
-                    String output = result.getData() instanceof String ? (String) result.getData() : result.getData().toString();
-                    return new CommandResult(result.getRequestId(), true, output, "", 0, "", "", "");
-                }
+                String rawData = result.getData() == null ? "" : result.getData();
+                ParsedShellPayload parsed = parseShellPayload(rawData);
+                return new CommandResult(result.getRequestId(),
+                        parsed.exitCode == 0,
+                        parsed.stdout + parsed.stderr,
+                        "",
+                        parsed.exitCode,
+                        parsed.stdout,
+                        parsed.stderr,
+                        parsed.traceId);
             } else {
-                try {
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonNode errorData;
-
-                    if (result.getErrorMessage() instanceof String) {
-                        errorData = mapper.readTree((String) result.getErrorMessage());
-                    } else {
-                        errorData = mapper.valueToTree(result.getErrorMessage());
-                    }
-
-                    if (errorData.isObject()) {
-                        String stdout = errorData.has("stdout") ? errorData.get("stdout").asText() : "";
-                        String stderr = errorData.has("stderr") ? errorData.get("stderr").asText() : "";
-                        int exitCode = errorData.has("exit_code") ? errorData.get("exit_code").asInt()
-                                     : errorData.has("errorCode") ? errorData.get("errorCode").asInt() : 0;
-                        String traceId = errorData.has("traceId") ? errorData.get("traceId").asText() : "";
-                        String output = stdout + stderr;
-                        String errorMessage = !stderr.isEmpty() ? stderr
-                                            : (result.getErrorMessage() != null ? result.getErrorMessage() : "Failed to execute command");
-
-                        return new CommandResult(result.getRequestId(), false, output, errorMessage, exitCode,
-                                stdout, stderr, traceId);
-                    }
-                } catch (Exception e) {
-                }
-
-                return new CommandResult(result.getRequestId(), false, "",
-                        result.getErrorMessage() != null ? result.getErrorMessage() : "Failed to execute command", 1,
-                        "", "", "");
+                String rawErr = result.getErrorMessage() == null ? "" : result.getErrorMessage();
+                ParsedShellPayload parsed = parseShellPayload(rawErr);
+                String errorMessage = !parsed.stderr.isEmpty() ? parsed.stderr
+                        : (rawErr.isEmpty() ? "Failed to execute command" : rawErr);
+                int exitCode = parsed.exitCode != 0 ? parsed.exitCode : 1;
+                return new CommandResult(result.getRequestId(), false,
+                        parsed.stdout + parsed.stderr, errorMessage, exitCode,
+                        parsed.stdout, parsed.stderr, parsed.traceId);
             }
 
         } catch (Exception e) {
             return new CommandResult("", false, "", "Failed to execute command: " + e.getMessage(), 1,
                     "", "", "");
         }
+    }
+
+    /**
+     * Parsed payload from a shell-tool MCP response.
+     *
+     * <p>The MCP server's shell tool can return data in different shapes depending on the
+     * sandbox image. The two known shapes are:
+     * <ol>
+     *   <li><b>Wrapped</b>: {@code {"exit_code":0,"stdout":"...","stderr":"...","traceId":"..."}}
+     *       — used by code_latest and similar images.</li>
+     *   <li><b>Raw</b>: the command's stdout returned verbatim with no JSON wrapping
+     *       — used by openclaw / imgc-* and similar custom images.</li>
+     * </ol>
+     *
+     * <p>This method detects the wrapped shape conservatively (requires both an integer
+     * {@code exit_code} field <b>and</b> at least one of {@code stdout}/{@code stderr}, OR
+     * both {@code stdout} and {@code stderr} together). Anything else — including JSON
+     * objects/arrays/scalars and plain text — is treated as raw command output.
+     */
+    private static class ParsedShellPayload {
+        final String stdout;
+        final String stderr;
+        final int exitCode;
+        final String traceId;
+
+        ParsedShellPayload(String stdout, String stderr, int exitCode, String traceId) {
+            this.stdout = stdout;
+            this.stderr = stderr;
+            this.exitCode = exitCode;
+            this.traceId = traceId;
+        }
+    }
+
+    private static ParsedShellPayload parseShellPayload(String rawData) {
+        if (rawData == null || rawData.isEmpty()) {
+            return new ParsedShellPayload("", "", 0, "");
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(rawData);
+            if (looksLikeWrappedShellPayload(node)) {
+                String stdout = node.has("stdout") ? node.get("stdout").asText() : "";
+                String stderr = node.has("stderr") ? node.get("stderr").asText() : "";
+                int exitCode = node.has("exit_code") ? node.get("exit_code").asInt() : 0;
+                String traceId = node.has("traceId") ? node.get("traceId").asText() : "";
+                return new ParsedShellPayload(stdout, stderr, exitCode, traceId);
+            }
+        } catch (Exception ignored) {
+            // Not valid JSON — fall through to raw treatment.
+        }
+        // Raw stdout: return the entire payload verbatim.
+        return new ParsedShellPayload(rawData, "", 0, "");
+    }
+
+    /**
+     * Conservatively determines whether a JSON node looks like the shell-tool wrapped
+     * envelope. We require strong signals to avoid mistaking a user command's JSON output
+     * for the wrapper.
+     */
+    private static boolean looksLikeWrappedShellPayload(JsonNode node) {
+        if (node == null || !node.isObject()) {
+            return false;
+        }
+        boolean hasIntExitCode = node.has("exit_code") && node.get("exit_code").isInt();
+        boolean hasStdout = node.has("stdout") && node.get("stdout").isTextual();
+        boolean hasStderr = node.has("stderr") && node.get("stderr").isTextual();
+        // Strong signal #1: integer exit_code + at least one textual stdout/stderr.
+        if (hasIntExitCode && (hasStdout || hasStderr)) {
+            return true;
+        }
+        // Strong signal #2: both textual stdout and stderr present (exit_code may default to 0).
+        return hasStdout && hasStderr;
     }
 
     /**

@@ -513,8 +513,19 @@ public void setPaths(List<String> paths)
 Defines the white list configuration
 
 Attributes:
-    path: Path to include in the white list
-    excludePaths: Paths to exclude from the white list
+    path: Path to include in the white list.
+        When isPathRegex is false (default), this must be an exact absolute directory path
+        and wildcard characters are not allowed.
+        When isPathRegex is true, this is treated as a regex pattern (e.g. "/home/wuying/.*").
+    excludePaths: Paths to exclude from the white list.
+        When isExcludeRegex is false (default), these must be relative directory paths
+        and wildcard characters are not allowed.
+        When isExcludeRegex is true, these are treated as regex patterns.
+        NOTE: exclude paths are RELATIVE to the white-listed path, not absolute.
+    isPathRegex: If true, path is interpreted as a regex pattern.
+        If false (default), path is an absolute directory path.
+    isExcludeRegex: If true, excludePaths entries are interpreted as regex patterns.
+        If false (default), excludePaths entries are relative directory paths.
 
 ### Constructor
 
@@ -524,6 +535,10 @@ public WhiteList()
 
 ```java
 public WhiteList(String path, List<String> excludePaths)
+```
+
+```java
+public WhiteList(String path, List<String> excludePaths, boolean isPathRegex, boolean isExcludeRegex)
 ```
 
 ### Methods
@@ -538,6 +553,30 @@ public List<String> getExcludePaths()
 
 ```java
 public void setExcludePaths(List<String> excludePaths)
+```
+
+### isPathRegex
+
+```java
+public boolean isPathRegex()
+```
+
+### setPathRegex
+
+```java
+public void setPathRegex(boolean isPathRegex)
+```
+
+### isExcludeRegex
+
+```java
+public boolean isExcludeRegex()
+```
+
+### setExcludeRegex
+
+```java
+public void setExcludeRegex(boolean isExcludeRegex)
 ```
 
 

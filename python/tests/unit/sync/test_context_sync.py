@@ -83,6 +83,8 @@ class TestSyncSyncPolicy(unittest.TestCase):
         self.assertEqual(len(sync_policy.bw_list.white_lists), 1)
         self.assertEqual(sync_policy.bw_list.white_lists[0].path, "")
         self.assertEqual(sync_policy.bw_list.white_lists[0].exclude_paths, [])
+        self.assertEqual(sync_policy.bw_list.white_lists[0].is_path_regex, False)
+        self.assertEqual(sync_policy.bw_list.white_lists[0].is_exclude_regex, False)
 
     @pytest.mark.sync
 
@@ -112,8 +114,6 @@ class TestSyncSyncPolicy(unittest.TestCase):
         self.assertEqual(len(sync_policy.bw_list.white_lists), 1)
         self.assertEqual(sync_policy.bw_list.white_lists[0].path, "/test")
         self.assertEqual(sync_policy.bw_list.white_lists[0].exclude_paths, ["/exclude"])
-        self.assertEqual(sync_policy.bw_list.white_lists[0].is_path_regex, False)
-        self.assertEqual(sync_policy.bw_list.white_lists[0].is_exclude_regex, False)
 
     @pytest.mark.sync
     def test_whitelist_regex_path_and_exclude(self):
@@ -182,6 +182,7 @@ class TestSyncSyncPolicy(unittest.TestCase):
         self.assertTrue(wl_dict["isPathRegex"])
         self.assertEqual(wl_dict["excludePaths"], [r"cache.*"])
         self.assertTrue(wl_dict["isExcludeRegex"])
+
 
     @pytest.mark.sync
 
