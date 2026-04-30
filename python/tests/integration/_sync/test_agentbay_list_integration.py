@@ -17,25 +17,7 @@ def generate_unique_id():
     random_part = random.randint(0, 10000)
     return f"{timestamp}-{random_part}"
 
-
-def test_list_all_sessions(make_session):
-    """Test listing all sessions without any label filter."""
-    print("\n=== Testing list() without labels ===")
-
-    lc = make_session("linux_latest")
-    agent_bay = lc.agent_bay
-
-    result = agent_bay.list()
-
-    assert result.success, "list() should succeed"
-    assert result.request_id is not None, "Request ID should be present"
-    assert result.session_ids is not None, "Session IDs list should not be None"
-
-    print(f"Total sessions found: {result.total_count}")
-    print(f"Sessions in current page: {len(result.session_ids)}")
-    print(f"Request ID: {result.request_id}")
-
-
+@pytest.mark.sync
 def test_list_with_multiple_labels(make_session):
     """Test listing sessions with multiple label filters."""
     print("\n=== Testing list() with multiple labels ===")

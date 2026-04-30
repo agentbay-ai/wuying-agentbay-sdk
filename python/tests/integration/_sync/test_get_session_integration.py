@@ -104,3 +104,12 @@ def test_get_session_api(agent_bay_client):
             print(f"Warning: Failed to delete session: {delete_result.error_message}")
 
 
+@pytest.mark.sync
+def test_get_nonexistent_session(agent_bay_client):
+    """Test getting a non-existent session."""
+    fake_session_id = "s-nonexistent12345"
+    get_result = agent_bay_client.get(fake_session_id)
+
+    # Should fail or return None
+    assert not get_result.success or get_result.session is None
+    print("Correctly handled non-existent session")
