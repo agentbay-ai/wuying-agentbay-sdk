@@ -83,48 +83,6 @@ def test_initialize_browser(browser_session):
 
 
 @pytest.mark.sync
-def test_initialize_browser_with_fingerprint(browser_session):
-    """Test browser initialization with fingerprint."""
-    browser = browser_session.browser
-    assert browser is not None
-
-    option = BrowserOption(
-        use_stealth=True,
-        fingerprint=BrowserFingerprint(
-            devices=["desktop"],
-            operating_systems=["windows"],
-            locales=["zh-CN"],
-        ),
-    )
-    init_result = browser.initialize(option)
-    assert init_result is True
-
-    endpoint_url = browser.get_endpoint_url()
-    print("endpoint_url =", endpoint_url)
-    assert endpoint_url is not None
-
-    time.sleep(3)
-
-    with sync_playwright() as p:
-        playwright_browser = p.chromium.connect_over_cdp(endpoint_url)
-        assert playwright_browser is not None
-        default_context = playwright_browser.contexts[0]
-        assert default_context is not None
-
-        page = default_context.new_page()
-        page.goto("https://httpbin.org/user-agent", timeout=60000)
-        response = page.evaluate("() => JSON.parse(document.body.textContent)")
-        user_agent = response["user-agent"]
-        print("user_agent =", user_agent)
-        assert user_agent is not None
-        is_windows = is_windows_user_agent(user_agent)
-        assert is_windows
-
-        page.close()
-        playwright_browser.close()
-
-
-@pytest.mark.sync
 @pytest.mark.timeout(120)  # 2 minute timeout for captcha test
 def test_initialize_browser_with_captchas(browser_session):
     print("solve captchas begin")

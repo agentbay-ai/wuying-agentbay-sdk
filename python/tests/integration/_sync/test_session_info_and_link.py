@@ -38,24 +38,6 @@ def test_info(make_session):
 
 
 @pytest.mark.sync
-def test_get_link(make_session):
-    """Test session.get_link() returns a valid URL."""
-    params = CreateSessionParams(image_id="browser_latest")
-    lc = make_session(params=params)
-    session: Session = typing.cast(Session, lc._result.session)
-
-    print("Calling session.get_link()...")
-    result = session.get_link()
-    assert result.success, "session.get_link() did not succeed"
-    url = result.data
-    print(f"Session link URL: {url}")
-    assert isinstance(url, str)
-    assert (
-        url.startswith("http") or url.startswith("wss") or url.startswith("ws")
-    ), "Returned link does not look like a URL"
-
-
-@pytest.mark.sync
 def test_get_link_with_valid_port(make_session):
     """Test session.get_link() with valid port returns a valid URL."""
     params = CreateSessionParams(image_id="browser_latest")

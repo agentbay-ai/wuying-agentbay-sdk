@@ -4,11 +4,12 @@
 # ci-stable
 """Integration tests for Context operations."""
 
+import time
 from uuid import uuid4
 
 import pytest
 
-from agentbay import SyncPolicy
+from agentbay import ContextSync, CreateSessionParams, SyncPolicy
 
 
 @pytest.mark.sync
@@ -124,29 +125,70 @@ def test_context_with_session(make_session):
 
 
 @pytest.mark.sync
-def test_context_file_operations(agent_bay_client):
-    """Test context file upload/download URL operations."""
-    context_name = f"test-file-ops-{uuid4().hex[:8]}"
+def test_context_cross_session_persistence(agent_bay_client):
+    """Test context persistence across multiple sessions.
 
-    create_result = agent_bay_client.context.get(name=context_name, create=True)
-    assert create_result.success is True
-    context = create_result.context
+    Session1 writes data and deletes with sync_context=True,
+    then Session2 binds the same context and verifies data persists.
+    """
+    context_name = f"test-cross-session-{uuid4().hex[:8]}"
+    context_result = agent_bay_client.context.get(name=context_name, create=True)
+    assert context_result.success, f"Failed to create context: {context_result.error_message}"
+    context = context_result.context
+    print(f"Created context: {context.name} (ID: {context.id})")
 
     try:
-        upload_url_result = agent_bay_client.context.get_file_upload_url(
-            context.id, "/test_file.txt"
+        test_path = "/tmp/cross_session_test"
+        test_file_path = f"{test_path}/persistence_test.txt"
+        test_content = f"Cross-session test data created at {time.time()}"
+
+        # Session1: write data and delete with sync
+        context_sync = ContextSync(context_id=context.id, path=test_path)
+        session1_result = agent_bay_client.create(
+            params=CreateSessionParams(context_syncs=[context_sync])
         )
-        assert upload_url_result.success is True
-        assert upload_url_result.url is not None
-        assert len(upload_url_result.url) > 0
-        print(f"Got upload URL: {upload_url_result.url[:50]}...")
+        assert session1_result.success, f"Failed to create session1: {session1_result.error_message}"
+        session1 = session1_result.session
+        print(f"Session1 created: {session1.session_id}")
+
+        write_result = session1.file_system.write_file(test_file_path, test_content)
+        assert write_result.success, f"Failed to write test file: {write_result.error_message}"
+
+        session1_delete_result = agent_bay_client.delete(session1, sync_context=True)
+        assert session1_delete_result.success, f"Failed to delete session1: {session1_delete_result.error_message}"
+        print(f"Session1 deleted with context sync")
+
+        # Re-get context by ID to simulate fresh context retrieval
+        context_reget_result = agent_bay_client.context.get(context_id=context.id)
+        assert context_reget_result.success, f"Failed to re-get context: {context_reget_result.error_message}"
+        reget_context = context_reget_result.context
+        assert reget_context.id == context.id
+
+        # Session2: bind same context and verify data persists
+        context_sync2 = ContextSync(context_id=reget_context.id, path=test_path)
+        session2_result = agent_bay_client.create(
+            params=CreateSessionParams(context_syncs=[context_sync2])
+        )
+        assert session2_result.success, f"Failed to create session2: {session2_result.error_message}"
+        session2 = session2_result.session
+        print(f"Session2 created: {session2.session_id}")
 
         try:
-            download_url_result = agent_bay_client.context.get_file_download_url(
-                context.id, "/test_file.txt"
+            read_result = session2.file_system.read_file(test_file_path)
+            assert read_result.success, f"Failed to read test file in session2: {read_result.error_message}"
+            assert read_result.content == test_content, (
+                f"Content mismatch: expected '{test_content}', got '{read_result.content}'"
             )
-            print(f"Download URL result success: {download_url_result.success}")
+            print(f"Data persistence verified: '{read_result.content}'")
+
+            session2_delete_result = agent_bay_client.delete(session2)
+            assert session2_delete_result.success
+            print(f"Session2 deleted")
         except Exception:
-            print("Download URL failed as expected: file not exist")
+            session2.delete()
+            raise
+
     finally:
         agent_bay_client.context.delete(context)
+        print(f"Context deleted: {context.id}")
+

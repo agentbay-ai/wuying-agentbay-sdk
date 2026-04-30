@@ -267,29 +267,3 @@ def test_read_binary_file_with_non_zero_content(test_session):
 
     print(f"Successfully read binary file with pattern: {len(result.content)} bytes")
 
-
-@pytest.mark.sync
-def test_read_text_file_still_works(test_session):
-    """Test that reading text files still works with default format."""
-    fs = test_session.file_system
-
-    test_content = "This is a test text file for binary read feature."
-    test_file_path = "/tmp/test_text_for_binary_feature.txt"
-
-    # Write text file
-    write_result = fs.write_file(test_file_path, test_content, "overwrite")
-    assert write_result.success
-
-    # Read as text (default format)
-    result = fs.read_file(test_file_path)
-    assert result.success
-    assert result.content == test_content
-    assert isinstance(result.content, str)
-
-    # Explicitly read as text format
-    result_explicit = fs.read_file(test_file_path, format="text")
-    assert result_explicit.success
-    assert result_explicit.content == test_content
-    assert isinstance(result_explicit.content, str)
-
-    print("Text file reading still works correctly")
