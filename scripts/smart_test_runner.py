@@ -334,14 +334,16 @@ def discover_python_tests(state: AgentState, pattern: Optional[str]) -> AgentSta
         print(f"📋 内容: {os.listdir(cwd)}") 
     
     # Base command - 优化性能
+    # NOTE: do NOT use --maxfail with --collect-only; a single collection error
+    # (e.g. missing optional dependency) would abort the entire discovery and
+    # skip all remaining valid test files.
     cmd = [sys.executable, "-m", "pytest", "tests/integration", "--collect-only", "-q", 
            "--tb=no",  # 不显示traceback
            "--no-header",  # 不显示header
            "--no-summary",  # 不显示summary
            "-p", "no:warnings",  # 禁用warnings插件
            "-p", "no:cacheprovider",  # 禁用cache
-           "--maxfail=1",  # 快速失败
-           "-c", "/dev/null"]
+           "-c", os.path.join(cwd, "pytest.ini")]  # 必须加载 pytest.ini 以启用 asyncio_mode=auto
     
     # Add specific test pattern if provided (passed to pytest directly for filtering)
     if pattern:
