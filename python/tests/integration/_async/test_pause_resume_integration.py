@@ -89,3 +89,42 @@ async def test_beta_pause_nonexistent_session(agent_bay_client: AsyncAgentBay):
     fake_session_id = f"session-nonexistent-{uuid4().hex[:8]}"
     get_result = await agent_bay.get(fake_session_id)
     assert not get_result.success, f"Expected get() to fail for nonexistent session {get_result.error_message}"
+
+
+@pytest.mark.asyncio
+async def test_pause_already_paused(agent_bay_client: AsyncAgentBay):
+    """Test pausing an already paused session."""
+    s = await _create_test_session(agent_bay_client)
+    try:
+        await s.beta_pause(timeout=600, poll_interval=2.0)
+        print("Session paused first time")
+
+        pause_result = await s.beta_pause(timeout=600, poll_interval=2.0)
+        assert not pause_result.success, (
+            f"Second pause should fail for already paused session: {pause_result.error_message}"
+        )
+        print(f"Second pause result (expected failure): {pause_result.success}")
+    finally:
+        await _safe_cleanup_session(agent_bay_client, s)
+
+
+@pytest.mark.asyncio
+async def test_pause_resume_with_operations(agent_bay_client: AsyncAgentBay):
+    """Test that commands work before pause and after resume."""
+    s = await _create_test_session(agent_bay_client)
+    try:
+        cmd_result1 = await s.command.execute_command("echo 'before pause'")
+        assert cmd_result1.success, f"Command before pause failed: {cmd_result1.error_message}"
+        print("Command executed before pause")
+
+        await s.beta_pause(timeout=600, poll_interval=2.0)
+        print("Session paused")
+
+        await s.beta_resume(timeout=600, poll_interval=2.0)
+        print("Session resumed")
+
+        cmd_result2 = await s.command.execute_command("echo 'after resume'")
+        assert cmd_result2.success, f"Command after resume failed: {cmd_result2.error_message}"
+        print("Command executed after resume")
+    finally:
+        await _safe_cleanup_session(agent_bay_client, s)

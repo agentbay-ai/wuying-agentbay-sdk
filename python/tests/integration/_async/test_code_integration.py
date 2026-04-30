@@ -446,3 +446,22 @@ print(undefined_variable)
     finally:
         # Cleanup session
         await session.delete()
+
+
+@pytest.mark.asyncio
+async def test_run_code_js_with_requires(code_session):
+    """Test JavaScript code with requires (os, process modules)."""
+    code = """
+const os = require('os');
+const data = {
+    platform: os.platform(),
+    arch: os.arch(),
+    nodeVersion: process.version
+};
+console.log(JSON.stringify(data, null, 2));
+"""
+    result = await code_session.run_code(code, "javascript")
+
+    assert result.success, f"JavaScript with requires failed: {result.error_message}"
+    assert result.result is not None
+    assert "platform" in result.result

@@ -339,7 +339,8 @@ public class AgentBayIntegrationTest {
 
         @Test
         public void testCreateSessionWithPatternBwlist() throws AgentBayException, InterruptedException {
-            // Mirrors Python test_create_session_with_pattern_bwlist_linux and Go TestWhiteListPatternBWList.
+            // Skipping: BWList regex feature not yet released
+            org.junit.Assume.assumeTrue("Skipping: BWList regex feature not yet released", false);
             System.out.println("Testing BWList is_path_regex + is_exclude_regex via single-session strategy (Linux)...");
 
             String base = "/home/wuying/testdata";

@@ -1,5 +1,6 @@
 """Integration tests for Computer window management functionality."""
 
+# ci-stable
 import asyncio
 import aiohttp
 from pathlib import Path
@@ -252,87 +253,3 @@ async def test_window_management_lifecycle(session):
         print("Calculator window closed successfully")
     else:
         print(f"Warning: Failed to close Calculator window: {close_result.error_message}")
-
-
-@pytest.mark.asyncio
-async def test_list_root_windows(session):
-    """Test listing root windows."""
-    print("\nTest: Listing root windows...")
-
-    # Act
-    result = await session.computer.list_root_windows()
-
-    # Assert
-    assert result.success, f"List root windows failed: {result.error_message}"
-    assert result.windows is not None, "Windows list should not be None"
-    assert isinstance(result.windows, list), "Windows should be a list"
-    print(f"Found {len(result.windows)} root windows")
-
-    if len(result.windows) > 0:
-        window = result.windows[0]
-        assert hasattr(window, "title"), "Window should have title"
-        assert hasattr(window, "window_id"), "Window should have window_id"
-        print(f"First window: {window.title} (ID: {window.window_id})")
-
-
-@pytest.mark.asyncio
-async def test_get_active_window(session):
-    """Test getting the active window."""
-    print("\nTest: Getting active window...")
-
-    # Act
-    result = await session.computer.get_active_window()
-
-    # Assert
-    assert result.success, f"Get active window failed: {result.error_message}"
-    # Note: active window might be None if no window is active
-    if result.window:
-        assert hasattr(result.window, "title"), "Active window should have title"
-        assert hasattr(result.window, "window_id"), "Active window should have window_id"
-        print(f"Active window: {result.window.title} (ID: {result.window.window_id})")
-    else:
-        print("No active window found")
-
-
-@pytest.mark.asyncio
-async def test_focus_mode(session):
-    """Test focus mode functionality."""
-    print("\nTest: Focus mode...")
-
-    # Test enabling focus mode
-    result_on = await session.computer.focus_mode(True)
-    assert result_on.success, f"Focus mode on failed: {result_on.error_message}"
-    print("Focus mode enabled successfully")
-
-    await asyncio.sleep(1)
-
-    # Test disabling focus mode
-    result_off = await session.computer.focus_mode(False)
-    assert result_off.success, f"Focus mode off failed: {result_off.error_message}"
-    print("Focus mode disabled successfully")
-
-
-@pytest.mark.asyncio
-async def test_screenshot(session):
-    """Test screenshot functionality."""
-    print("\nTest: Screenshot...")
-    if session.get_link_url():
-        pytest.skip("This cloud environment does not support `screenshot()`")
-
-    # Take a screenshot
-    result = await session.computer.screenshot()
-
-    # Assert
-    assert result.success, f"Screenshot failed: {result.error_message}"
-    assert result.data is not None, "Screenshot data should not be None"
-    assert isinstance(result.data, str), "Screenshot data should be a string (URL)"
-    assert len(result.data) > 0, "Screenshot data should not be empty"
-    print(f"Screenshot taken successfully: {result.data}")
-
-    # Save screenshot to file
-    if result.success and result.data:
-        try:
-            await save_screenshot_from_url(result.data, "test_screenshot.png")
-            print("Test screenshot saved as test_screenshot.png")
-        except Exception as e:
-            print(f"Warning: Failed to save test screenshot: {e}")

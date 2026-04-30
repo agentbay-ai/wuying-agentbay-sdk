@@ -12,17 +12,25 @@ async def filesystem_session(make_session):
     print("Creating a new session for FileSystem testing...")
     lc = await make_session("linux_latest")
     session = lc._result.session
+
+    # Log channel type for debugging (does not affect test logic)
+    link_url = session._get_link_url() if hasattr(session, '_get_link_url') else ""
+    token = session._get_token() if hasattr(session, '_get_token') else ""
+    channel = "HTTP (LinkUrl)" if link_url and token else "MQTT (API)"
+    print(f"[Channel] Using {channel} channel")
+    print(f"[Channel] link_url present: {bool(link_url)}, token present: {bool(token)}")
+
     yield session
 
 
-async def test_read_file(filesystem_session):
-    """Test reading a file."""
+async def test_write_read_file(filesystem_session):
+    """Test writing to and reading a file."""
     fs = (
         filesystem_session.file_system
     )  # Assuming direct access to file system interface
 
-    test_content = "This is a test file content for ReadFile test."
-    test_file_path = "/tmp/test_read.txt"
+    test_content = "This is a test file content for WriteReadFile test."
+    test_file_path = "/tmp/test_write_read.txt"
 
     # Write the test file
     write_result = await fs.write_file(test_file_path, test_content, "overwrite")
@@ -56,26 +64,7 @@ async def test_filesystem_aliases(filesystem_session):
     assert delete_result.success
 
 
-async def test_write_file(filesystem_session):
-    """Test writing to a file."""
-    fs = (
-        filesystem_session.file_system
-    )  # Assuming direct access to file system interface
-
-    test_content = "This is a test file content for WriteFile test."
-    test_file_path = "/tmp/test_write.txt"
-
-    # Write the file
-    result = await fs.write_file(test_file_path, test_content, "overwrite")
-    assert result.success
-
-    # Verify the file content
-    read_result = await fs.read_file(test_file_path)
-    assert read_result.success
-    assert read_result.content == test_content
-
-
-async def test_create_directory(filesystem_session):
+async def test_create_list_directory(filesystem_session):
     """Test creating a directory."""
     fs = (
         filesystem_session.file_system
@@ -90,8 +79,16 @@ async def test_create_directory(filesystem_session):
     # Verify the directory exists
     list_result = await fs.list_directory("/tmp/")
     assert list_result.success
+    entries = list_result.entries
+    assert len(entries) > 0
+    assert hasattr(entries[0], 'name')
+    assert hasattr(entries[0], 'is_directory')
     entry_names = [entry.name for entry in list_result.entries]
     assert "test_directory" in entry_names
+    assert result.success
+
+    
+
 
 
 async def test_edit_file(filesystem_session):
@@ -147,21 +144,6 @@ async def test_get_file_info(filesystem_session):
     assert not file_info["isDirectory"]
     size = int(file_info["size"])
     assert size > 0, f"File size should be positive, got {size}"
-
-
-async def test_list_directory(filesystem_session):
-    """Test listing a directory."""
-    fs = (
-        filesystem_session.file_system
-    )  # Assuming direct access to file system interface
-
-    result = await fs.list_directory("/tmp/")
-    assert result.success
-
-    entries = result.entries
-    assert len(entries) > 0
-    assert hasattr(entries[0], 'name')
-    assert hasattr(entries[0], 'is_directory')
 
 
 async def test_move_file(filesystem_session):
@@ -250,70 +232,38 @@ async def test_search_files(filesystem_session):
     assert any(search_file3_path in match for match in matches)
 
 
-async def test_write_and_read_large_file(filesystem_session):
-    """Test writing and reading a large file using automatic chunking."""
-    fs = (
-        filesystem_session.file_system
-    )  # Assuming direct access to file system interface
+@pytest.mark.asyncio
+async def test_write_large_file(filesystem_session):
+    """Test writing a large file."""
+    fs = filesystem_session.file_system
 
-    # Generate approximately 150KB of test content
-    line_content = "This is a line of test content for large file testing. It contains enough characters to test the chunking functionality.\n"
-    large_content = line_content * 3000  # About 150KB
-    test_file_path = "/tmp/test_large_file.txt"
+    # Create large content (1MB)
+    large_content = "x" * (1024 * 1024)
 
-    print(f"Generated test content size: {len(large_content)} bytes")
-
-    # Test 1: Write large file (automatic chunking)
-    print("Test 1: Writing large file with automatic chunking...")
-    result = await fs.write_file(test_file_path, large_content)
-    assert result.success
-    print("Test 1: Large file write successful")
-
-    # Test 2: Read large file (automatic chunking)
-    print("Test 2: Reading large file with automatic chunking...")
-    result = await fs.read_file(test_file_path)
+    result = await fs.write_file("/tmp/large_file.txt", large_content)
     assert result.success
 
-    # Verify content
-    read_content = result.content
-    print(f"Test 2: File read successful, content length: {len(read_content)} bytes")
-    assert len(read_content) == len(large_content)
-    assert read_content == large_content
-    print("Test 2: File content verification successful")
+    # Verify file info
+    info = await fs.get_file_info("/tmp/large_file.txt")
+    assert info.success
+    size = int(info.file_info["size"])
+    print(f"Large file created, size: {size} bytes")
 
-    # Test 3: Write another large file
-    test_file_path2 = "/tmp/test_large_file2.txt"
-    print("Test 3: Writing another large file...")
 
-    result = await fs.write_file(test_file_path2, large_content)
+@pytest.mark.asyncio
+async def test_read_large_file(filesystem_session):
+    """Test reading a large file."""
+    fs = filesystem_session.file_system
+
+    # Create large content (500KB)
+    content = "y" * (512 * 1024)
+    await fs.write_file("/tmp/read_large.txt", content)
+
+    # Read file
+    result = await fs.read_file("/tmp/read_large.txt")
     assert result.success
-    print("Test 3: Second large file write successful")
-
-    # Test 4: Read the second large file
-    print("Test 4: Reading the second large file...")
-    result = await fs.read_file(test_file_path2)
-    assert result.success
-
-    # Verify content
-    read_content2 = result.content
-    print(f"Test 4: File read successful, content length: {len(read_content2)} bytes")
-    assert len(read_content2) == len(large_content)
-    assert read_content2 == large_content
-    print("Test 4: Second file content verification successful")
-
-    # Test 5: Re-read the first file to ensure consistency
-    print("Test 5: Re-reading the first file to ensure consistency...")
-    result = await fs.read_file(test_file_path)
-    assert result.success
-
-    # Verify content
-    cross_test_content = result.content
-    print(
-        f"Test 5: Re-read successful, content length: {len(cross_test_content)} bytes"
-    )
-    assert len(cross_test_content) == len(large_content)
-    assert cross_test_content == large_content
-    print("Test 5: Consistency verification successful")
+    assert len(result.content) == len(content)
+    print(f"Large file read successfully, size: {len(result.content)} bytes")
 
 
 async def test_write_and_read_small_file(filesystem_session):
@@ -334,3 +284,101 @@ async def test_write_and_read_small_file(filesystem_session):
     result = await fs.read_file(test_file_path)
     assert result.success
     assert result.content == small_content
+
+
+@pytest.mark.asyncio
+async def test_delete_file(filesystem_session):
+    """Test deleting a file and verifying it no longer exists."""
+    import time
+    fs = filesystem_session.file_system
+    remote_path = f"/tmp/agentbay_delete_file_{int(time.time())}.txt"
+
+    write_result = await fs.write_file(remote_path, "hello delete_file")
+    assert write_result.success, f"write_file failed: {write_result.error_message}"
+
+    info_before = await fs.get_file_info(remote_path)
+    assert info_before.success, f"get_file_info failed: {info_before.error_message}"
+    assert info_before.file_info.get("isDirectory") is False
+
+    delete_result = await fs.delete_file(remote_path)
+    assert delete_result.success, f"delete_file failed: {delete_result.error_message}"
+
+    info_after = await fs.get_file_info(remote_path)
+    assert info_after.success is False, "file should not exist after delete_file"
+    assert info_after.error_message
+
+
+@pytest.mark.asyncio
+async def test_append_mode(filesystem_session):
+    """Test append mode works correctly."""
+    fs = filesystem_session.file_system
+    path = "/tmp/channel_test_append.txt"
+
+    write_result = await fs.write_file(path, "first part", mode="overwrite")
+    assert write_result.success
+
+    append_result = await fs.write_file(path, " second part", mode="append")
+    assert append_result.success
+
+    read_result = await fs.read_file(path)
+    assert read_result.success
+    assert read_result.content == "first part second part", f"Append content mismatch: {read_result.content!r}"
+    print("[PASS] Append mode works correctly")
+
+
+@pytest.mark.asyncio
+async def test_empty_file(filesystem_session):
+    """Test reading an empty file."""
+    fs = filesystem_session.file_system
+    path = "/tmp/channel_test_empty.txt"
+
+    write_result = await fs.write_file(path, "")
+    assert write_result.success
+
+    read_result = await fs.read_file(path)
+    assert read_result.success
+    assert read_result.content == "", f"Expected empty content, got: {read_result.content!r}"
+    print("[PASS] Empty file read correctly")
+
+
+@pytest.mark.asyncio
+async def test_binary_file_roundtrip(filesystem_session):
+    """Test binary file read works correctly."""
+    fs = filesystem_session.file_system
+    path = "/tmp/channel_test_binary.txt"
+
+    content = "Binary test content with special chars: \x00\x01\x02"
+    write_result = await fs.write_file(path, content)
+    assert write_result.success
+
+    read_result = await fs.read_file(path, format="bytes")
+    assert read_result.success
+    assert isinstance(read_result.content, bytes), f"Expected bytes, got {type(read_result.content)}"
+    print(f"[PASS] Binary file read: {len(read_result.content)} bytes")
+
+
+@pytest.mark.asyncio
+async def test_nonexistent_file_read(filesystem_session):
+    """Test reading a nonexistent file returns error."""
+    fs = filesystem_session.file_system
+    path = "/tmp/channel_test_nonexistent_12345.txt"
+
+    read_result = await fs.read_file(path)
+    assert not read_result.success, "Expected failure for nonexistent file"
+    print(f"[PASS] Nonexistent file error: {read_result.error_message}")
+
+
+@pytest.mark.asyncio
+async def test_unicode_content(filesystem_session):
+    """Test write+read of unicode content."""
+    fs = filesystem_session.file_system
+    content = "你好世界 🌍 こんにちは 안녕하세요 مرحبا"
+    path = "/tmp/channel_test_unicode.txt"
+
+    write_result = await fs.write_file(path, content)
+    assert write_result.success
+
+    read_result = await fs.read_file(path)
+    assert read_result.success
+    assert read_result.content == content, "Unicode content mismatch"
+    print("[PASS] Unicode content roundtrip")

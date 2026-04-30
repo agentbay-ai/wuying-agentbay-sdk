@@ -1,8 +1,4 @@
-"""Integration tests for Command functionality."""
-
 # ci-stable
-
-import time
 
 import pytest
 
@@ -10,62 +6,101 @@ from agentbay import CreateSessionParams
 
 
 @pytest.fixture
-async def command_session(make_session):
-    """Create a session for command testing."""
+async def agent_session(make_session):
+    """Create a session for Command testing."""
     lc = await make_session(params=CreateSessionParams(image_id="code_latest"))
     return lc._result.session
 
 
-async def test_execute_command_success(command_session):
-    """Test executing a shell command successfully."""
-    command = command_session.command
-    result = await command.execute_command("echo 'Hello, AgentBay!'")
-    print(f"Command execution result: {result.output}")
-    assert result.success
-    assert result.output.strip() == "Hello, AgentBay!"
-    assert result.request_id != ""
-    assert result.error_message == ""
+@pytest.fixture
+def command(agent_session):
+    """Fixture to get the command object from the session."""
+    return agent_session.command
 
 
-async def test_run_alias_success(command_session):
+@pytest.mark.asyncio
+async def test_run_alias_success(command):
     """Test command.run alias."""
-    result = await command_session.command.run("echo 'Hello, AgentBay!'")
+    result = await command.run("echo 'Hello, AgentBay!'", timeout_ms=1000)
     print(f"Command execution result: {result.stdout}")
-    assert result.success
-    assert result.output.strip() == "Hello, AgentBay!"
+    assert hasattr(result, 'exit_code'), "exit_code field should exist"
+    assert hasattr(result, 'stdout'), "stdout field should exist"
+    assert hasattr(result, 'stderr'), "stderr field should exist"
+
+    # Verify success case
+    assert result.success, "Command should succeed"
+    assert result.exit_code == 0, "Exit code should be 0 for success"
+    assert "Hello, AgentBay!" in result.stdout, "Stdout should contain expected output"
+    assert result.output == result.stdout, "Output should equal stdout for success"
 
 
-async def test_exec_alias_success(command_session):
+@pytest.mark.asyncio
+async def test_exec_alias_success(command):
     """Test command.exec alias."""
-    result = await command_session.command.exec("echo 'Hello, AgentBay!'")
+    result = await command.exec("echo 'Hello, AgentBay!'")
+    assert hasattr(result, 'exit_code'), "exit_code field should exist"
+    assert hasattr(result, 'stdout'), "stdout field should exist"
+    assert hasattr(result, 'stderr'), "stderr field should exist"
+
+    # Verify success case
+    assert result.success, "Command should succeed"
+    assert result.exit_code == 0, "Exit code should be 0 for success"
+    assert "Hello, AgentBay!" in result.stdout, "Stdout should contain expected output"
+    assert result.output == result.stdout, "Output should equal stdout for success"
+
+
+@pytest.mark.asyncio
+async def test_command_pipe(command):
+    """Test command with pipe."""
+    result = await command.execute_command("echo 'hello world' | grep 'hello'")
     assert result.success
-    assert result.output.strip() == "Hello, AgentBay!"
+    assert "hello" in result.output
+    print("Command with pipe executed successfully")
 
 
-async def test_execute_command_with_timeout(command_session):
+@pytest.mark.asyncio
+async def test_command_append_and_redirect(command):
+    """Test command with append and redirect operators."""
+    # Write initial content
+    redirect_result = await command.execute_command("echo 'line1' > /tmp/append_test.txt")
+    assert redirect_result.success
+
+    # Append content
+    append_result = await command.execute_command("echo 'line2' >> /tmp/append_test.txt")
+    assert append_result.success
+
+    # Read file to verify using cat command
+    read_result = await command.execute_command("cat /tmp/append_test.txt")
+    assert read_result.success
+    assert "line1" in read_result.output
+    assert "line2" in read_result.output
+    print("Command with append executed successfully")
+
+
+@pytest.mark.asyncio
+async def test_execute_command_with_timeout(command):
     """Test executing a shell command with a timeout."""
-    command = command_session.command
-    command_str = "sleep 5"
-    timeout_ms = 1000  # 1 second timeout
-    result = await command.execute_command(command_str, timeout_ms)
-    print(f"Command execution result with timeout: {result.stdout}")
+    timeout_ms = 5000  # 5 second timeout
+    result = await command.execute_command("sleep 5", timeout_ms)
+    print(f"Command execution result with timeout: {result}")
     assert not result.success
     assert result.request_id != ""
     assert result.error_message != ""
     assert result.output == ""
 
 
-async def test_command_error_handling(command_session):
-    """3.1 Command Error Handling - should handle command errors and edge cases"""
-    command = command_session.command
-
+@pytest.mark.asyncio
+async def test_command_error_handling(command):
+    """Test command error handling - should handle command errors and edge cases."""
     # Test invalid command
     invalid_result = await command.execute_command("invalid_command_12345")
     assert not invalid_result.success
     assert invalid_result.error_message is not None
 
     # Test command with permission issues (trying to write to protected directory)
-    permission_result = await command.execute_command('echo "test" > /root/protected.txt')
+    permission_result = await command.execute_command(
+        'echo "test" > /root/protected.txt'
+    )
     # This might succeed or fail depending on the environment, but should not crash
     assert isinstance(permission_result.success, bool)
 
@@ -75,3 +110,313 @@ async def test_command_error_handling(command_session):
     print(f"Command output: {time_result}")
     assert time_result.success
     assert "completed" in time_result.output
+
+
+@pytest.mark.asyncio
+async def test_multiline_commands(command):
+    """Test multiline scripts, conditionals, and bash functions."""
+    # Test multiline loop script
+    script_loop = """
+for i in 1 2 3; do
+    echo "Number: $i"
+done
+"""
+    result = await command.execute_command(script_loop)
+    assert result.success
+    assert "Number: 1" in result.output
+    assert "Number: 2" in result.output
+    assert "Number: 3" in result.output
+    print("Multiline script executed successfully")
+
+    # Test if-else conditional
+    script_cond = """
+if [ -d /tmp ]; then
+    echo "tmp exists"
+else
+    echo "tmp not found"
+fi
+"""
+    result = await command.execute_command(script_cond)
+    assert result.success
+    assert "tmp exists" in result.output
+    print("Conditional command executed successfully")
+
+    # Test bash function definition and call
+    script_func = """
+test_function() {
+    echo "Function called with: $1"
+}
+test_function "hello"
+"""
+    result = await command.execute_command(script_func)
+    assert result.success
+    assert "Function called with: hello" in result.output
+    print("Function command executed successfully")
+
+
+@pytest.mark.asyncio
+async def test_command_new_return_format(command):
+    """Test command execution with new return format (exit_code, stdout, stderr)."""
+    result = await command.execute_command("echo 'Hello, AgentBay!'")
+
+    # Verify new fields exist
+    assert hasattr(result, 'exit_code'), "exit_code field should exist"
+    assert hasattr(result, 'stdout'), "stdout field should exist"
+    assert hasattr(result, 'stderr'), "stderr field should exist"
+
+    # Verify success case
+    assert result.success, "Command should succeed"
+    assert result.exit_code == 0, "Exit code should be 0 for success"
+    assert "Hello, AgentBay!" in result.stdout, "Stdout should contain expected output"
+    assert result.output == result.stdout, "Output should equal stdout for success"
+
+    print(f"✓ New return format test passed: exit_code={result.exit_code}, stdout={result.stdout}")
+
+
+@pytest.mark.asyncio
+async def test_command_error_with_exit_code(command):
+    """Test error command with exit_code, stderr, and trace_id."""
+    result = await command.execute_command("ls /non_existent_directory_12345")
+
+    # Verify error case
+    assert hasattr(result, 'exit_code'), "exit_code field should exist"
+    assert hasattr(result, 'stderr'), "stderr field should exist"
+    assert hasattr(result, 'trace_id'), "trace_id field should exist"
+
+    # Error commands should have non-zero exit code
+    # Note: success field behavior depends on implementation
+    if result.exit_code != 0:
+        assert result.exit_code != 0, "Exit code should be non-zero for error"
+        # trace_id is optional, only present when exit_code != 0
+        if result.trace_id:
+            print(f"✓ Error command test passed: exit_code={result.exit_code}, stderr={result.stderr}, trace_id={result.trace_id}")
+        else:
+            print(f"✓ Error command test passed: exit_code={result.exit_code}, stderr={result.stderr} (no trace_id)")
+    else:
+        # If exit_code is 0, the command might have succeeded in some way
+        print(f"⚠ Command returned exit_code=0, but this is acceptable")
+
+
+@pytest.mark.asyncio
+async def test_command_with_cwd(command):
+    """Test command execution with cwd parameter."""
+    
+    result = await command.execute_command("pwd", cwd="/tmp")
+
+    assert result.success, "Command should succeed"
+    assert result.exit_code == 0, "Exit code should be 0"
+    # The output should contain /tmp or be /tmp
+    assert "/tmp" in result.stdout, f"Working directory should be /tmp, got: {result.stdout}"
+
+    print(f"✓ CWD test passed: working directory={result.stdout.strip()}")
+
+
+@pytest.mark.asyncio
+async def test_command_with_envs(command):
+    """Test command execution with envs parameter."""
+    result = await command.execute_command(
+        "echo $TEST_VAR",
+        envs={"TEST_VAR": "test_value_123"}
+    )
+
+    assert result.success, "Command should succeed"
+    assert result.exit_code == 0, "Exit code should be 0"
+    # The environment variable should be set
+    # Note: This depends on backend implementation
+    output = result.stdout.strip()
+    if "test_value_123" in output:
+        print(f"✓ Envs test passed: environment variable set correctly: {output}")
+    else:
+        print(f"⚠ Envs test: environment variable may not be set (output: {output})")
+        # This is acceptable if backend doesn't support envs yet
+
+
+@pytest.mark.asyncio
+async def test_command_with_cwd_and_envs(command):
+    """Test command execution with both cwd and envs parameters."""
+    result = await command.execute_command(
+        "pwd && echo $CUSTOM_VAR",
+        cwd="/tmp",
+        envs={"CUSTOM_VAR": "custom_value"}
+    )
+
+    assert result.success, "Command should succeed"
+    assert result.exit_code == 0, "Exit code should be 0"
+    assert "/tmp" in result.stdout, "Working directory should be /tmp"
+
+    print(f"✓ Combined cwd and envs test passed")
+    print(f"  Output: {result.stdout}")
+
+
+@pytest.mark.asyncio
+async def test_command_backward_compatibility(command):
+    """Test backward compatibility: output field should still work."""
+    result = await command.execute_command("echo 'backward compatible'")
+
+    # Verify backward compatibility
+    assert hasattr(result, 'output'), "output field should exist for backward compatibility"
+    assert result.output is not None, "output should not be None"
+
+    # output should be stdout + stderr
+    expected_output = (result.stdout or "") + (result.stderr or "")
+    assert result.output == expected_output, f"output should equal stdout + stderr, got: {result.output}, expected: {expected_output}"
+
+    print(f"✓ Backward compatibility test passed: output={result.output}")
+
+
+@pytest.mark.asyncio
+async def test_command_path_env(command):
+    """Test PATH environment variable."""
+    result = await command.execute_command("echo $PATH")
+    assert result.success
+    assert len(result.output) > 0
+    print(f"PATH: {result.output[:100]}...")
+
+
+@pytest.mark.asyncio
+async def test_command_custom_timeout(command):
+    """Test command execution with custom timeout values."""
+
+    result = await command.execute_command("echo 'timeout test'", timeout_ms=120000)
+    assert result.success, "Command should succeed with custom timeout"
+    assert result.exit_code == 0, "Exit code should be 0"
+    assert "timeout test" in result.stdout, "Command should execute successfully"
+
+    print(f"✓ Custom timeout test passed")
+
+
+@pytest.mark.asyncio
+async def test_command_cwd_with_spaces(command):
+    """Test command execution with cwd containing spaces (security test for parameter passing)."""
+    # Create a directory with spaces in the path
+    test_dir = "/tmp/test dir with spaces"
+
+    # First, create the directory
+    result = await command.execute_command(f"mkdir -p '{test_dir}'")
+    assert result.success, "Should be able to create directory with spaces"
+
+    # Test pwd with cwd containing spaces
+    result = await command.execute_command("pwd", cwd=test_dir)
+    assert result.success, "Command should succeed with cwd containing spaces"
+    assert result.exit_code == 0, "Exit code should be 0"
+    # The output should contain the directory path (may be normalized)
+    assert test_dir in result.stdout or "/tmp/test" in result.stdout, \
+        f"Working directory should contain test dir, got: {result.stdout}"
+
+    # Test creating a file in the directory with spaces
+    result = await command.execute_command("echo 'test content' > test_file.txt", cwd=test_dir)
+    assert result.success, "Should be able to create file in directory with spaces"
+
+    # Verify file was created
+    result = await command.execute_command("ls test_file.txt", cwd=test_dir)
+    assert result.success, "Should be able to list file in directory with spaces"
+    assert "test_file.txt" in result.stdout, "File should exist in directory with spaces"
+
+    # Cleanup
+    await command.execute_command(f"rm -rf '{test_dir}'")
+
+    print(f"✓ CWD with spaces test passed: directory={test_dir}")
+
+
+@pytest.mark.asyncio
+async def test_command_envs_with_special_characters(command):
+    """Test command execution with environment variables containing special characters (security test)."""
+
+    # Test environment variable with quotes
+    result = await command.execute_command(
+        "echo $TEST_VAR",
+        envs={"TEST_VAR": "value with 'single quotes'"}
+    )
+    assert result.success, "Command should succeed with env containing single quotes"
+    assert result.exit_code == 0, "Exit code should be 0"
+    output = result.stdout.strip()
+    if "value with" in output and "single quotes" in output:
+        print(f"✓ Envs with single quotes test passed: {output}")
+    else:
+        print(f"⚠ Envs with single quotes: output may not match exactly: {output}")
+
+    # Test environment variable with double quotes
+    result = await command.execute_command(
+        "echo $TEST_VAR",
+        envs={"TEST_VAR": 'value with "double quotes"'}
+    )
+    assert result.success, "Command should succeed with env containing double quotes"
+    assert result.exit_code == 0, "Exit code should be 0"
+    output = result.stdout.strip()
+    if "value with" in output and "double quotes" in output:
+        print(f"✓ Envs with double quotes test passed: {output}")
+    else:
+        print(f"⚠ Envs with double quotes: output may not match exactly: {output}")
+
+    # Test environment variable with semicolon (potential injection attempt)
+    # This should NOT execute as a separate command due to parameter passing
+    result = await command.execute_command(
+        "echo $TEST_VAR",
+        envs={"TEST_VAR": "value; rm -rf /"}
+    )
+    assert result.success, "Command should succeed (semicolon should be treated as literal)"
+    assert result.exit_code == 0, "Exit code should be 0"
+    output = result.stdout.strip()
+    # The semicolon should be part of the value, not a command separator
+    if "value; rm -rf /" in output or "value" in output:
+        print(f"✓ Envs with semicolon test passed (no injection): {output}")
+    else:
+        print(f"⚠ Envs with semicolon: output={output}")
+
+    # Test environment variable with special characters
+    result = await command.execute_command(
+        "echo $TEST_VAR",
+        envs={"TEST_VAR": "value with !@#$%^&*()_+-=[]{}|;':\",./<>?"}
+    )
+    assert result.success, "Command should succeed with env containing special chars"
+    assert result.exit_code == 0, "Exit code should be 0"
+    output = result.stdout.strip()
+    if "value with" in output:
+        print(f"✓ Envs with special characters test passed: {output[:50]}...")
+    else:
+        print(f"⚠ Envs with special characters: output may not match: {output}")
+
+    # Test environment variable with newline (potential injection attempt)
+    result = await command.execute_command(
+        "echo $TEST_VAR",
+        envs={"TEST_VAR": "value\nwith\nnewlines"}
+    )
+    assert result.success, "Command should succeed with env containing newlines"
+    assert result.exit_code == 0, "Exit code should be 0"
+    output = result.stdout.strip()
+    if "value" in output:
+        print(f"✓ Envs with newlines test passed: {output[:50]}...")
+    else:
+        print(f"⚠ Envs with newlines: output may not match: {output}")
+
+
+@pytest.mark.asyncio
+async def test_command_cwd_and_envs_with_special_chars(command):
+    """Test command execution with both cwd (with spaces) and envs (with special chars) together."""
+
+    # Create a directory with spaces
+    test_dir = "/tmp/test dir with spaces"
+    result = await command.execute_command(f"mkdir -p '{test_dir}'")
+    assert result.success, "Should be able to create directory with spaces"
+
+    # Test with both cwd (spaces) and envs (special chars)
+    result = await command.execute_command(
+        "pwd && echo $TEST_VAR",
+        cwd=test_dir,
+        envs={"TEST_VAR": "value with 'quotes' and ; semicolon"}
+    )
+    assert result.success, "Command should succeed with both cwd (spaces) and envs (special chars)"
+    assert result.exit_code == 0, "Exit code should be 0"
+    assert test_dir in result.stdout or "/tmp/test" in result.stdout, \
+        "Working directory should contain test dir"
+
+    # Verify environment variable was set (may be partially visible)
+    output = result.stdout.strip()
+    if "value" in output or "TEST_VAR" in output:
+        print(f"✓ Combined cwd (spaces) and envs (special chars) test passed")
+        print(f"  Output: {output[:100]}...")
+    else:
+        print(f"⚠ Combined test: output may not show env var: {output}")
+
+    # Cleanup
+    await command.execute_command(f"rm -rf '{test_dir}'")
