@@ -78,7 +78,6 @@ TEST_PATTERNS = [
     "test_agent_integration",   # Agent integration tests
     "agent-integration",        # Agent integration related tests
     "agent_test",              # Agent test files
-    "test_network_integration",
     "network_integration_test",
     "network.integration.test",
     # Image ID is not supported in CI/CD, requires local integration test execution
@@ -96,14 +95,11 @@ TEST_PATTERNS = [
     # Tests that call screenshot() which fails when session has link_url;
     # beta_take_screenshot coverage exists in separate test files
     "test_computer_screen.py",                     # Python: uses screenshot() on windows_latest
-    "test_computer_window.py",                     # Python: uses screenshot() on windows_latest
     "test_functional_computer_test.py",            # Python: safe_screenshot_async uses screenshot()
     # Browser operator and browser-dependency tests that require Playwright/Chrome
     # installation or specific browser environment not available in CI
     "test_browser_fingerprint_integration",        # Python: requires local Chrome
     "test_browser_operator",                       # Python: browser captcha tests
-    "test_extension_browser_integration",          # Python: browser extension tests
-    "browser_hybrid_usage_integration",            # TypeScript: browser hybrid usage
     "browser-proxy.test",                          # TypeScript: browser proxy tests
     "browser-fingerprint.test",                    # TypeScript: browser fingerprint tests
     "TestBrowserContext_CookiePersistence",         # Golang: browser context persistence
