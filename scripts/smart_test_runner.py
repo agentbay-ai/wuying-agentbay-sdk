@@ -337,13 +337,19 @@ def discover_python_tests(state: AgentState, pattern: Optional[str]) -> AgentSta
     # NOTE: do NOT use --maxfail with --collect-only; a single collection error
     # (e.g. missing optional dependency) would abort the entire discovery and
     # skip all remaining valid test files.
+    # NOTE: -c pytest.ini is required to load asyncio_mode=auto so that async
+    # test functions are collected.  However, pytest.ini also defines addopts
+    # with -v which changes --collect-only output to a tree format (no "::")
+    # that our parser cannot handle.  Use -o addopts= to override addopts while
+    # keeping the rest of the config (asyncio_mode, markers, etc.).
     cmd = [sys.executable, "-m", "pytest", "tests/integration", "--collect-only", "-q", 
            "--tb=no",  # 不显示traceback
            "--no-header",  # 不显示header
            "--no-summary",  # 不显示summary
            "-p", "no:warnings",  # 禁用warnings插件
            "-p", "no:cacheprovider",  # 禁用cache
-           "-c", os.path.join(cwd, "pytest.ini")]  # 必须加载 pytest.ini 以启用 asyncio_mode=auto
+           "-c", os.path.join(cwd, "pytest.ini"),  # 必须加载 pytest.ini 以启用 asyncio_mode=auto
+           "-o", "addopts="]  # 清空 addopts 避免其 -v 改变 collect-only 输出格式
     
     # Add specific test pattern if provided (passed to pytest directly for filtering)
     if pattern:
