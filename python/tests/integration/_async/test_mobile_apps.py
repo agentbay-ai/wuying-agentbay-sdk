@@ -1,5 +1,5 @@
 """Integration tests for Mobile application management functionality."""
-
+# ci-stable
 import pytest
 import pytest_asyncio
 
@@ -42,14 +42,3 @@ async def test_start_app(session):
     assert result.success, f"Start app failed: {result.error_message}"
     assert result.data is not None, "Process list should not be None"
     print(f"Started {len(result.data)} process(es)")
-
-
-@pytest.mark.asyncio
-async def test_get_adb_url(session):
-    """Test getting ADB connection URL."""
-    # Arrange
-    print("\nTest: Getting ADB URL...")
-
-    # Note: This test requires an ADB public key
-    # For now, we'll skip if not available
-    pytest.skip("ADB URL test requires ADB public key configuration")

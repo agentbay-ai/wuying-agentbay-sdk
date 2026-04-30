@@ -783,6 +783,7 @@ func collectAllFiles(t *testing.T, ab *agentbay.AgentBay, contextID string, fold
 // IsPathRegex and IsExcludeRegex fields.
 // Mirrors Python test_create_session_with_pattern_bwlist_linux.
 func TestWhiteListPatternBWList(t *testing.T) {
+	t.Skip("Skipping: BWList regex feature not yet released")
 	apiKey := os.Getenv("AGENTBAY_API_KEY")
 	if apiKey == "" || os.Getenv("CI") != "" {
 		t.Skip("Skipping integration test: No API key available or running in CI")
