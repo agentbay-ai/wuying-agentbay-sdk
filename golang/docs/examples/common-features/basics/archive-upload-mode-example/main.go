@@ -195,12 +195,13 @@ func archiveUploadModeExample(ab *agentbay.AgentBay, uniqueID string) error {
 	// Use the sync directory path
 	syncDirPath := "/tmp/archive-mode-test"
 
-	listResult, err := ab.Context.ListFiles(contextResult.ContextID, syncDirPath, 1, 10)
+	maxResultsBasic := int32(10)
+	listResult, err := ab.Context.ListFilesWithPagination(contextResult.ContextID, syncDirPath, &maxResultsBasic, nil)
 	if err != nil {
 		return fmt.Errorf("list files failed: %v", err)
 	}
 
-	// Verify ListFiles success
+	// Verify listing success
 	if !listResult.Success {
 		return fmt.Errorf("list files failed: %s", listResult.ErrorMessage)
 	}
@@ -208,6 +209,9 @@ func archiveUploadModeExample(ab *agentbay.AgentBay, uniqueID string) error {
 	fmt.Printf("✅ List files successful!\n")
 	fmt.Printf("   Request ID: %s\n", listResult.RequestID)
 	fmt.Printf("   Total files found: %d\n", len(listResult.Entries))
+	if listResult.NextToken != "" {
+		fmt.Printf("   NextToken: present\n")
+	}
 
 	if len(listResult.Entries) > 0 {
 		fmt.Println("\n📋 Files in context sync directory:")
@@ -319,7 +323,8 @@ func archiveExcludePathsExample(ab *agentbay.AgentBay, uniqueID string) error {
 	fmt.Printf("✅ Context sync OK (request %s)\n", syncResult.RequestID)
 
 	fmt.Println("\n🔍 Step 7: Listing files...")
-	listResult, err := ab.Context.ListFiles(contextResult.ContextID, syncBase, 1, 20)
+	maxResultsExclude := int32(20)
+	listResult, err := ab.Context.ListFilesWithPagination(contextResult.ContextID, syncBase, &maxResultsExclude, nil)
 	if err != nil {
 		return fmt.Errorf("list files failed: %v", err)
 	}

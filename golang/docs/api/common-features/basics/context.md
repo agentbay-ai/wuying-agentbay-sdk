@@ -367,7 +367,8 @@ result, _ := client.Context.List(nil)
 func (cs *ContextService) ListFiles(contextID string, parentFolderPath string, pageNumber int32, pageSize int32) (*ContextFileListResult, error)
 ```
 
-ListFiles lists files under a specific folder path in a context.
+ListFiles lists files under a specific folder path in a context using PageNumber/PageSize
+pagination.
 
 Parameters:
   - contextID: The ID of the context
@@ -386,6 +387,16 @@ client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 contextResult, _ := client.Context.Get("my-context", true)
 fileList, _ := client.Context.ListFiles(contextResult.ContextID, "/", 1, 10)
 ```
+
+### ListFilesWithPagination
+
+```go
+func (cs *ContextService) ListFilesWithPagination(contextID string, parentFolderPath string, maxResults *int32, nextToken *string) (*ContextFileListResult, error)
+```
+
+ListFilesWithPagination lists files using MaxResults/NextToken pagination (token mode). Set
+maxResults and/or a non-empty nextToken (pass a non-nil pointer to a non-empty string). When using
+this method, PageNumber/PageSize are omitted on the API request, matching the pop API contract.
 
 ### Update
 
@@ -473,6 +484,8 @@ type ContextFileListResult struct {
 	Success		bool
 	Entries		[]*ContextFileEntry
 	Count		*int32
+	NextToken	string
+	MaxResults	*int32
 	ErrorMessage	string
 }
 ```

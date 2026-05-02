@@ -171,7 +171,7 @@ async function archiveUploadModeExample(): Promise<void> {
     // Use the sync directory path
     const syncDirPath = "/tmp/archive-mode-test";
     
-    const listResult = await agentBay.context.listFiles(contextResult.contextId, syncDirPath, 1, 10);
+    const listResult = await agentBay.context.listFiles(contextResult.contextId, syncDirPath, 1, 10, 10);
     
     if (!listResult.success) {
       throw new Error(`List files failed: ${listResult.errorMessage || 'Unknown error'}`);
@@ -180,6 +180,9 @@ async function archiveUploadModeExample(): Promise<void> {
     console.log(`✅ List files successful!`);
     console.log(`   Request ID: ${listResult.requestId}`);
     console.log(`   Total files found: ${listResult.entries.length}`);
+    if (listResult.nextToken) {
+      console.log(`   Next token: present (pagination)`);
+    }
     
     if (listResult.entries.length > 0) {
       console.log("\n📋 Files in context sync directory:");

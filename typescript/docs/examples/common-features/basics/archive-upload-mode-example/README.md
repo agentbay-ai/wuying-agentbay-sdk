@@ -90,10 +90,10 @@ infoResult.contextStatusData.forEach((status, index) => {
 ### File Listing in Context Directory
 
 ```typescript
-// List files in context sync directory
-const listResult = await agentBay.context.listFiles(contextId, syncDirPath, 1, 10);
+// List files in context sync directory (optional 5th/6th args: maxResults, nextToken for token pagination)
+const listResult = await agentBay.context.listFiles(contextId, syncDirPath, 1, 10, 10);
 
-// Display file entries
+// Display file entries; use listResult.nextToken for the next page when using token pagination
 listResult.entries.forEach((entry, index) => {
   console.log(`FilePath: ${entry.filePath}`);
   console.log(`FileType: ${entry.fileType}`);

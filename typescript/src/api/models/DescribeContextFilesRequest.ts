@@ -7,6 +7,8 @@ export class DescribeContextFilesRequest extends $dara.Model {
   pageSize?: number;
   parentFolderPath?: string;
   contextId?: string;
+  maxResults?: number;
+  nextToken?: string;
   static names(): { [key: string]: string } {
     return {
       authorization: 'Authorization',
@@ -14,6 +16,8 @@ export class DescribeContextFilesRequest extends $dara.Model {
       pageSize: 'PageSize',
       parentFolderPath: 'ParentFolderPath',
       contextId: 'ContextId',
+      maxResults: 'MaxResults',
+      nextToken: 'NextToken',
     };
   }
 
@@ -24,6 +28,8 @@ export class DescribeContextFilesRequest extends $dara.Model {
       pageSize: 'number',
       parentFolderPath: 'string',
       contextId: 'string',
+      maxResults: 'number',
+      nextToken: 'string',
     };
   }
 
@@ -34,4 +40,4 @@ export class DescribeContextFilesRequest extends $dara.Model {
   constructor(map?: { [key: string]: any }) {
     super(map);
   }
-} 
+}

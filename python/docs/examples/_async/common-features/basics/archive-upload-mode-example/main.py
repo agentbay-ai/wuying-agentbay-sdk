@@ -185,7 +185,7 @@ async def archive_upload_mode_example(agent_bay, unique_id):
         # Use the sync directory path
         sync_dir_path = "/tmp/archive-mode-test"
         
-        list_result = await agent_bay.context.list_files(context_result.context_id, sync_dir_path, page_number=1, page_size=10)
+        list_result = await agent_bay.context.list_files(context_result.context_id, sync_dir_path, max_results=10)
         
         if not list_result.success:
             raise Exception(f"List files failed: {list_result.error_message if hasattr(list_result, 'error_message') else 'Unknown error'}")
@@ -294,7 +294,7 @@ async def archive_exclude_paths_example(agent_bay, unique_id):
             print("✅ Context sync completed")
 
         list_result = await agent_bay.context.list_files(
-            context_result.context_id, sync_path, page_number=1, page_size=20
+            context_result.context_id, sync_path, max_results=20
         )
 
         if list_result.success:

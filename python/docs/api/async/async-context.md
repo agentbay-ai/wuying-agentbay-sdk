@@ -158,7 +158,8 @@ Result of file listing operation.
 def __init__(self, request_id: str = "",
              success: bool = False,
              entries: Optional[List[ContextFileEntry]] = None,
-             count: Optional[int] = None)
+             count: Optional[int] = None,
+             next_token: Optional[str] = None)
 ```
 
 ## ClearContextResult
@@ -510,10 +511,13 @@ delete_result = await agent_bay.context.delete_file(ctx_result.context_id, "/pat
 ### list_files
 
 ```python
-async def list_files(context_id: str,
-                     parent_folder_path: str,
-                     page_number: int = 1,
-                     page_size: int = 50) -> ContextFileListResult
+async def list_files(
+        context_id: str,
+        parent_folder_path: str,
+        page_number: int = 1,
+        page_size: int = 50,
+        max_results: Optional[int] = None,
+        next_token: Optional[str] = None) -> ContextFileListResult
 ```
 
 List files under a specific folder path in a context.
@@ -522,21 +526,31 @@ List files under a specific folder path in a context.
 
 - `context_id` _str_ - The ID of the context.
 - `parent_folder_path` _str_ - The parent folder path to list files from.
-- `page_number` _int_ - The page number for pagination. Default is 1.
-- `page_size` _int_ - The number of items per page. Default is 50.
+- `page_number` _int_ - Deprecated. Use max_results/next_token instead.
+- `page_size` _int_ - Deprecated. Use max_results/next_token instead.
+- `max_results` _int, optional_ - Maximum number of entries to return per request.
+- `next_token` _str, optional_ - Pagination token from a previous response.
   
 
 **Returns**:
 
-    ContextFileListResult: A result object containing the list of files and request ID.
+    ContextFileListResult: A result object containing the list of files,
+  request ID, and next_token for pagination.
   
 
 **Example**:
 
 ```python
 ctx_result = await agent_bay.context.get(name="my-context", create=True)
-files_result = await agent_bay.context.list_files(ctx_result.context_id, "/")
+files_result = await agent_bay.context.list_files(
+  ctx_result.context_id, "/", max_results=50
+)
 print(f"Found {len(files_result.entries)} files")
+if files_result.next_token:
+  next_page = await agent_bay.context.list_files(
+      ctx_result.context_id, "/",
+      max_results=50, next_token=files_result.next_token
+  )
 ```
 
 ### clear_async

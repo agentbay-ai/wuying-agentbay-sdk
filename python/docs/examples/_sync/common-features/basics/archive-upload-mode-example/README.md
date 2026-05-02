@@ -91,7 +91,7 @@ for index, status in enumerate(info_result.context_status_data):
 
 ```python
 # List files in context sync directory
-list_result = agent_bay.context.list_files(context_id, sync_dir_path, page_number=1, page_size=10)
+list_result = agent_bay.context.list_files(context_id, sync_dir_path, max_results=10)
 
 # Display file entries
 for index, entry in enumerate(list_result.entries):

@@ -776,8 +776,10 @@ export class ContextService {
    *
    * @param contextId - The ID of the context.
    * @param parentFolderPath - The parent folder path to list files from.
-   * @param pageNumber - Page number for pagination (default: 1).
-   * @param pageSize - Number of files per page (default: 50).
+   * @param pageNumber - Page number for pagination (default: 1). Ignored when `maxResults` or `nextToken` is set.
+   * @param pageSize - Number of files per page (default: 50). Ignored when `maxResults` or `nextToken` is set.
+   * @param maxResults - Maximum entries per request (token-based pagination). When set with or without `nextToken`, token pagination is used instead of page number/size.
+   * @param nextToken - Pagination token from a previous response.
    * @returns ContextFileListResult with file entries and total count.
    *
    * @example
@@ -795,18 +797,26 @@ export class ContextService {
     contextId: string,
     parentFolderPath: string,
     pageNumber = 1,
-    pageSize = 50
+    pageSize = 50,
+    maxResults?: number,
+    nextToken?: string
   ): Promise<ContextFileListResult> {
+    const useTokenPagination =
+      maxResults !== undefined || nextToken !== undefined;
     logAPICall("DescribeContextFiles");
     logDebug(
-      `Request: ContextId=${contextId}, ParentFolderPath=${parentFolderPath}, PageNumber=${pageNumber}, PageSize=${pageSize}`
+      useTokenPagination
+        ? `Request: ContextId=${contextId}, ParentFolderPath=${parentFolderPath}, MaxResults=${maxResults}, NextToken=${nextToken}`
+        : `Request: ContextId=${contextId}, ParentFolderPath=${parentFolderPath}, PageNumber=${pageNumber}, PageSize=${pageSize}`
     );
     const req = new $_client.DescribeContextFilesRequest({
       authorization: `Bearer ${this.agentBay.getAPIKey()}`,
-      pageNumber,
-      pageSize,
       parentFolderPath,
       contextId,
+      pageNumber: useTokenPagination ? undefined : pageNumber,
+      pageSize: useTokenPagination ? undefined : pageSize,
+      maxResults: useTokenPagination ? maxResults : undefined,
+      nextToken: useTokenPagination ? nextToken : undefined,
     });
     const resp = await this.agentBay.getClient().describeContextFiles(req);
     const requestId = extractRequestId(resp) || "";
@@ -828,6 +838,7 @@ export class ContextService {
         success: false,
         entries: [],
         count: undefined,
+        nextToken: undefined,
         errorMessage,
       };
     }
@@ -851,9 +862,14 @@ export class ContextService {
       context_id: contextId,
       parent_folder_path: parentFolderPath,
       file_count: entries.length,
-      page_number: pageNumber,
-      page_size: pageSize,
     };
+    if (useTokenPagination) {
+      keyFields.max_results = maxResults;
+      keyFields.next_token = nextToken;
+    } else {
+      keyFields.page_number = pageNumber;
+      keyFields.page_size = pageSize;
+    }
     if (body?.count !== undefined) {
       keyFields.count = body.count;
     }
@@ -871,6 +887,7 @@ export class ContextService {
       success,
       entries,
       count: body?.count,
+      nextToken: body?.nextToken,
       errorMessage: undefined,
     };
   }

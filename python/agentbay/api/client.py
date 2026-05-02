@@ -2477,6 +2477,11 @@ class Client(OpenApiClient):
         runtime: RuntimeOptions,
     ) -> main_models.DescribeContextFilesResponse:
         request.validate()
+        query = {}
+        if not DaraCore.is_null(request.max_results):
+            query["MaxResults"] = request.max_results
+        if not DaraCore.is_null(request.next_token):
+            query["NextToken"] = request.next_token
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
@@ -2488,7 +2493,9 @@ class Client(OpenApiClient):
             body["ParentFolderPath"] = request.parent_folder_path
         if not DaraCore.is_null(request.context_id):
             body["ContextId"] = request.context_id
-        req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
+        req = open_api_util_models.OpenApiRequest(
+            query=Utils.query(query), body=Utils.parse_to_map(body)
+        )
         params = open_api_util_models.Params(
             action="DescribeContextFiles",
             version="2025-05-06",
@@ -2511,6 +2518,11 @@ class Client(OpenApiClient):
         runtime: RuntimeOptions,
     ) -> main_models.DescribeContextFilesResponse:
         request.validate()
+        query = {}
+        if not DaraCore.is_null(request.max_results):
+            query["MaxResults"] = request.max_results
+        if not DaraCore.is_null(request.next_token):
+            query["NextToken"] = request.next_token
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
@@ -2522,7 +2534,9 @@ class Client(OpenApiClient):
             body["ParentFolderPath"] = request.parent_folder_path
         if not DaraCore.is_null(request.context_id):
             body["ContextId"] = request.context_id
-        req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
+        req = open_api_util_models.OpenApiRequest(
+            query=Utils.query(query), body=Utils.parse_to_map(body)
+        )
         params = open_api_util_models.Params(
             action="DescribeContextFiles",
             version="2025-05-06",

@@ -219,12 +219,13 @@ class ContextFileTransfer:
         stats: dict,
     ) -> None:
         """Recursively list and download files from a context directory."""
-        page_number = 1
-        page_size = 50
-
+        next_token = None
         while True:
             result = self._agent_bay.context.list_files(
-                context_id, source_path, page_number=page_number, page_size=page_size
+                context_id,
+                source_path,
+                max_results=50,
+                next_token=next_token,
             )
             if not result.success:
                 stats["errors"].append(
@@ -253,6 +254,6 @@ class ContextFileTransfer:
                         stats["failed"] += 1
                         stats["errors"].append(f"{file_source}: {e}")
 
-            if len(result.entries) < page_size:
+            if not result.next_token:
                 break
-            page_number += 1
+            next_token = result.next_token

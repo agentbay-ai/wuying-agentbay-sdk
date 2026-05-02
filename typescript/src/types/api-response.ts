@@ -682,6 +682,8 @@ export interface ContextFileListResult extends ApiResponse {
   entries: ContextFileEntry[];
   /** Optional total count returned by backend */
   count?: number;
+  /** Token for the next page when using MaxResults/NextToken pagination */
+  nextToken?: string;
   /** Optional error message if the operation failed */
   errorMessage?: string;
 }

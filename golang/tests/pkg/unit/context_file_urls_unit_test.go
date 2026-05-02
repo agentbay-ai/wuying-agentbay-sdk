@@ -30,6 +30,10 @@ func (f *fakeContext) ListFiles(contextID string, parentFolderPath string, pageN
 	return f.listFilesRes, nil
 }
 
+func (f *fakeContext) ListFilesWithPagination(contextID string, parentFolderPath string, maxResults *int32, nextToken *string) (*agentbay.ContextFileListResult, error) {
+	return f.listFilesRes, nil
+}
+
 func (f *fakeContext) DeleteFile(contextID string, filePath string) (*agentbay.ContextFileDeleteResult, error) {
 	return f.deleteFileRes, nil
 }

@@ -108,6 +108,30 @@ describe("Context File URLs - Unit", () => {
     expect(res.count).toBeUndefined();
   });
 
+  test("listFiles uses MaxResults/NextToken and omits page params", async () => {
+    const { context, clientMock } = makeAgentBayWithMocks();
+    clientMock.describeContextFiles = jest.fn().mockResolvedValue({
+      body: {
+        success: true,
+        count: 2,
+        nextToken: "token-2",
+        data: [],
+        requestId: "req-list-token",
+      },
+    });
+
+    await context.listFiles(contextId, "/", 1, 50, 10, "token-1");
+    expect(clientMock.describeContextFiles).toHaveBeenCalledTimes(1);
+    const req = clientMock.describeContextFiles.mock.calls[0][0];
+    expect(req.maxResults).toBe(10);
+    expect(req.nextToken).toBe("token-1");
+    expect(req.pageNumber).toBeUndefined();
+    expect(req.pageSize).toBeUndefined();
+
+    const res = await context.listFiles(contextId, "/tmp", 1, 50, 10);
+    expect(res.nextToken).toBe("token-2");
+  });
+
   test("deleteFile success", async () => {
     const { context, clientMock } = makeAgentBayWithMocks();
     clientMock.deleteContextFile = jest.fn().mockResolvedValue({

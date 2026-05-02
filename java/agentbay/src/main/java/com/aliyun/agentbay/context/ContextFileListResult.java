@@ -12,6 +12,7 @@ public class ContextFileListResult extends ApiResponse {
     private boolean success;
     private List<FileInfo> entries;
     private Integer count;
+    private String nextToken;
     private String errorMessage;
 
     public ContextFileListResult() {
@@ -20,10 +21,16 @@ public class ContextFileListResult extends ApiResponse {
     }
 
     public ContextFileListResult(String requestId, boolean success, List<FileInfo> entries, Integer count, String errorMessage) {
+        this(requestId, success, entries, count, null, errorMessage);
+    }
+
+    public ContextFileListResult(String requestId, boolean success, List<FileInfo> entries, Integer count,
+        String nextToken, String errorMessage) {
         super(requestId);
         this.success = success;
         this.entries = entries != null ? entries : new ArrayList<>();
         this.count = count;
+        this.nextToken = nextToken;
         this.errorMessage = errorMessage;
     }
 
@@ -49,6 +56,14 @@ public class ContextFileListResult extends ApiResponse {
 
     public void setCount(Integer count) {
         this.count = count;
+    }
+
+    public String getNextToken() {
+        return nextToken;
+    }
+
+    public void setNextToken(String nextToken) {
+        this.nextToken = nextToken;
     }
 
     public String getErrorMessage() {

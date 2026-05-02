@@ -292,7 +292,7 @@ async function archiveExcludePathsExample(): Promise<void> {
     console.log(`✅ Context sync OK (request ${syncResult.requestId})`);
 
     console.log("\n🔍 Step 7: Listing files...");
-    const listResult = await agentBay.context.listFiles(contextResult.contextId, syncBase, 1, 20);
+    const listResult = await agentBay.context.listFiles(contextResult.contextId, syncBase, 1, 20, 20);
     if (!listResult.success) {
       throw new Error(`listFiles failed: ${listResult.errorMessage}`);
     }

@@ -186,11 +186,13 @@ class ContextFileListResult(ApiResponse):
         success: bool = False,
         entries: Optional[List[ContextFileEntry]] = None,
         count: Optional[int] = None,
+        next_token: Optional[str] = None,
     ):
         super().__init__(request_id)
         self.success = success
         self.entries = entries or []
         self.count = count
+        self.next_token = next_token
 
 
 class ClearContextResult(OperationResult):
@@ -893,6 +895,8 @@ class ContextService:
         parent_folder_path: str,
         page_number: int = 1,
         page_size: int = 50,
+        max_results: Optional[int] = None,
+        next_token: Optional[str] = None,
     ) -> ContextFileListResult:
         """
         List files under a specific folder path in a context.
@@ -900,30 +904,46 @@ class ContextService:
         Args:
             context_id (str): The ID of the context.
             parent_folder_path (str): The parent folder path to list files from.
-            page_number (int): The page number for pagination. Default is 1.
-            page_size (int): The number of items per page. Default is 50.
+            page_number (int): Deprecated. Use max_results/next_token instead.
+            page_size (int): Deprecated. Use max_results/next_token instead.
+            max_results (int, optional): Maximum number of entries to return per request.
+            next_token (str, optional): Pagination token from a previous response.
 
         Returns:
-            ContextFileListResult: A result object containing the list of files and request ID.
+            ContextFileListResult: A result object containing the list of files,
+                request ID, and next_token for pagination.
 
         Example:
             ```python
             ctx_result = agent_bay.context.get(name="my-context", create=True)
-            files_result = agent_bay.context.list_files(ctx_result.context_id, "/")
+            files_result = agent_bay.context.list_files(
+                ctx_result.context_id, "/", max_results=50
+            )
             print(f"Found {len(files_result.entries)} files")
+            if files_result.next_token:
+                next_page = agent_bay.context.list_files(
+                    ctx_result.context_id, "/",
+                    max_results=50, next_token=files_result.next_token
+                )
             ```
         """
+        use_token_pagination = max_results is not None or next_token is not None
         _log_api_call(
             "DescribeContextFiles",
             f"ContextId={context_id}, ParentFolderPath={parent_folder_path}, "
+            f"MaxResults={max_results}, NextToken={next_token}"
+            if use_token_pagination
+            else f"ContextId={context_id}, ParentFolderPath={parent_folder_path}, "
             f"PageNumber={page_number}, PageSize={page_size}",
         )
         req = DescribeContextFilesRequest(
             authorization=f"Bearer {self.agent_bay.api_key}",
-            page_number=page_number,
-            page_size=page_size,
             parent_folder_path=parent_folder_path,
             context_id=context_id,
+            max_results=max_results if use_token_pagination else None,
+            next_token=next_token if use_token_pagination else None,
+            page_number=page_number if not use_token_pagination else None,
+            page_size=page_size if not use_token_pagination else None,
         )
         client = self.agent_bay.client
         resp = client.describe_context_files(req)
@@ -955,6 +975,7 @@ class ContextService:
             success=bool(body and getattr(body, "success", False)),
             entries=entries,
             count=(getattr(body, "count", None) if body else None),
+            next_token=(getattr(body, "next_token", None) if body else None),
         )
 
     def clear_async(self, context_id: str) -> ClearContextResult:
