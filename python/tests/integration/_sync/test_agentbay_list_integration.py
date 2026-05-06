@@ -6,6 +6,8 @@
 import random
 import time
 
+import pytest
+
 from agentbay import CreateSessionParams
 
 # make_session factory fixture is provided by conftest.py (auto-loaded by pytest)
