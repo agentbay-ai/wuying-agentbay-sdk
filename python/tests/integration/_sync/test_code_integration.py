@@ -151,6 +151,36 @@ System.out.println("CONTEXT_VALUE:" + (x + 1));
 
 
 @pytest.mark.sync
+def test_run_code_python_context_persistence(code_session):
+    """Test that Python execution context is preserved within the same session (Jupyter-like behavior)."""
+    setup_code = """
+x = 41
+
+def add(a, b):
+    return a + b
+
+print("CONTEXT_SETUP_DONE")
+""".strip()
+
+    setup_result = code_session.run_code(setup_code, "python")
+    assert setup_result.success, f"Setup failed: {setup_result.error_message}"
+    assert "CONTEXT_SETUP_DONE" in setup_result.result
+
+    use_code = """
+print(f"CONTEXT_VALUE:{x + 1}")
+print(f"CONTEXT_FUNC:{add(1, 2)}")
+""".strip()
+
+    use_result = code_session.run_code(use_code, "python")
+    assert use_result.success, f"Context use failed: {use_result.error_message}"
+    assert "CONTEXT_VALUE:42" in use_result.result
+    assert "CONTEXT_FUNC:3" in use_result.result
+
+    if setup_result.execution_count is not None and use_result.execution_count is not None:
+        assert use_result.execution_count == setup_result.execution_count + 1
+
+
+@pytest.mark.sync
 def test_run_code_unsupported_language(code_session):
     """Test code execution with unsupported language."""
     code = "print('Hello, world!')"
@@ -468,3 +498,21 @@ console.log(JSON.stringify(data, null, 2));
     assert result.success, f"JavaScript with requires failed: {result.error_message}"
     assert result.result is not None
     assert "platform" in result.result
+
+@pytest.mark.sync
+def test_js_error_handling(code_session):
+    """Test JavaScript error handling."""
+    # Arrange
+    print("\nTest: JavaScript error handling...")
+    code = "throw new Error('Test error');"
+    # Act
+    result = code_session.run_code(code, "javascript")
+
+    # Assert
+    # The execution should fail or return error in result
+    if not result.success:
+        print(f"Expected error: {result.error_message}")
+        assert (
+            "Error" in result.error_message or "error" in result.error_message.lower()
+        )
+    assert not result.success
