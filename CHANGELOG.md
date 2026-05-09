@@ -2,7 +2,7 @@
 
 All notable changes to the Wuying AgentBay SDK will be documented in this file.
 
-## [Unreleased]
+## [0.20.0] - 2026-05-09
 
 ### Added
 
@@ -10,7 +10,16 @@ All notable changes to the Wuying AgentBay SDK will be documented in this file.
   - `idle_release_timeout` (minutes): Auto-release after inactivity (default: 5 min)
   - `max_runtime` (minutes): Absolute maximum session duration (default: 30 min)
   - `manual_release`: Disable all auto-release, session only ends via `delete()`
-  - Supports "full takeover" semantics — when set, console defaults are overridden
+  - Supports "full takeover" semantics: when set, console defaults are overridden
+- **PTY terminal module** (All SDKs): Added interactive terminal support for long-running shell sessions and streaming command interaction.
+- **Session environment module** (All SDKs): Added `session.env` support for managing global environment variables inside sessions.
+- **Context sync archive exclusions** (All SDKs): Added `archiveExcludePaths` to `UploadPolicy` for hybrid context storage workflows.
+- **Context file pagination** (All SDKs): Added `MaxResults` / `NextToken` cursor-based pagination to `DescribeContextFiles`.
+
+### Changed
+
+- **Context sync path filters**: Added regex support for whitelist paths and exclude paths.
+- **Java BrowserOperator**: Refined sync/async API behavior.
 
 ### Deprecated
 

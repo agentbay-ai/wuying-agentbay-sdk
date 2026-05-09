@@ -7,7 +7,7 @@
 // Resolve SDK source when running from the repo (avoids stale dist/ without session.env).
 import { AgentBay } from "../../../../../src";
 
-const IMAGE_ID = "AIO_ubuntu2404";
+const IMAGE_ID = "linux_latest";
 
 async function main() {
   const apiKey = process.env.AGENTBAY_API_KEY;

@@ -18,7 +18,7 @@ def main():
     agent_bay = AgentBay(api_key=api_key)
     session = None
     try:
-        params = CreateSessionParams(image_id="AIO_ubuntu2404")
+        params = CreateSessionParams(image_id="linux_latest")
         result = agent_bay.create(params)
         if not result.success or not result.session:
             raise RuntimeError(f"Failed to create session: {result.error_message}")

@@ -23,7 +23,7 @@ export AGENTBAY_API_KEY="your-api-key-here"
 python main.py
 ```
 
-The session is created with `image_id="AIO_ubuntu2404"` so env tools are available.
+The session is created with `image_id="linux_latest"` so env tools are available.
 
 ## Expected output
 
