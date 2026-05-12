@@ -755,25 +755,36 @@ public class AgentBay {
                 ContextInfoResult infoResult = session.getContext().info();
 
                 boolean hasFailure = false;
-                Map<String, String> statusByContextId = new HashMap<>();
+                boolean allCompleted = true;
+                boolean hasSyncTasks = false;
+
+                // Collect all contextIds that appear in the status data
+                Set<String> seenContextIds = new HashSet<>();
 
                 for (ContextStatusData item : infoResult.getContextStatusData()) {
                     if (!waitContextIds.contains(item.getContextId())) {
                         continue;
                     }
-                    statusByContextId.put(item.getContextId(), item.getStatus());
+                    seenContextIds.add(item.getContextId());
+                    hasSyncTasks = true;
+
+                    // If any task for a waited context is not in terminal state, mark as incomplete
+                    if (!"Success".equals(item.getStatus()) && !"Failed".equals(item.getStatus())) {
+                        allCompleted = false;
+                    }
 
                     if ("Failed".equals(item.getStatus())) {
                         hasFailure = true;
                     }
                 }
 
-                boolean allCompleted = true;
-                for (String ctxId : waitContextIds) {
-                    String st = statusByContextId.get(ctxId);
-                    if (st == null || (!"Success".equals(st) && !"Failed".equals(st))) {
-                        allCompleted = false;
-                        break;
+                // Also check if all waited contextIds have been seen in the status data
+                if (allCompleted) {
+                    for (String ctxId : waitContextIds) {
+                        if (!seenContextIds.contains(ctxId)) {
+                            allCompleted = false;
+                            break;
+                        }
                     }
                 }
 

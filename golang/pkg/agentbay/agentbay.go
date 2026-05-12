@@ -525,14 +525,20 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 			}
 
 			hasFailure := false
-			statusByContextID := map[string]string{}
+			allCompleted := true
+			seenContextIDs := map[string]bool{}
 
 			for _, item := range infoResult.ContextStatusData {
 				if _, ok := waitContextIDs[item.ContextId]; !ok {
 					continue
 				}
-				statusByContextID[item.ContextId] = item.Status
+				seenContextIDs[item.ContextId] = true
 				LogDebug(fmt.Sprintf("Context %s status: %s, path: %s", item.ContextId, item.Status, item.Path))
+
+				// If any task for a waited context is not in terminal state, mark as incomplete
+				if item.Status != "Success" && item.Status != "Failed" {
+					allCompleted = false
+				}
 
 				if item.Status == "Failed" {
 					hasFailure = true
@@ -540,12 +546,13 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 				}
 			}
 
-			allCompleted := true
-			for ctxID := range waitContextIDs {
-				st, ok := statusByContextID[ctxID]
-				if !ok || (st != "Success" && st != "Failed") {
-					allCompleted = false
-					break
+			// Also check if all waited contextIds have been seen in the status data
+			if allCompleted {
+				for ctxID := range waitContextIDs {
+					if !seenContextIDs[ctxID] {
+						allCompleted = false
+						break
+					}
 				}
 			}
 
