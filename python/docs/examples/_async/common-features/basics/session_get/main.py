@@ -1,4 +1,5 @@
 """
+ci-stable
 Example demonstrating how to use the Get API to retrieve a session by its ID.
 
 This example shows:

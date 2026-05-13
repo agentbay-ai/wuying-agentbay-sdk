@@ -1,4 +1,8 @@
-"""Session Keep-Alive Example"""
+"""
+ci-stable
+Session Keep-Alive Example
+"""
+
 import asyncio
 import os
 import sys

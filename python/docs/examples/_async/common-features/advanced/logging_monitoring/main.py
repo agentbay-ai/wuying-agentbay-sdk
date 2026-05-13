@@ -1,4 +1,5 @@
 """
+ci-stable
 Example demonstrating logging and monitoring with AgentBay SDK.
 
 This example shows how to:

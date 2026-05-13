@@ -1,4 +1,5 @@
 """
+ci-stable
 Python Development Environment Example
 
 This example demonstrates:

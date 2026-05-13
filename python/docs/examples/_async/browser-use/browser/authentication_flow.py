@@ -6,6 +6,7 @@ This example demonstrates:
 2. Managing authentication state
 3. Working with authenticated sessions
 4. Handling logout
+ci-skip
 """
 
 import asyncio

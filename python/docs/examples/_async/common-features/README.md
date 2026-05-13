@@ -14,55 +14,69 @@ common-features/
 
 Essential features that every AgentBay user should know:
 
-### [session_creation](basics/session_creation/)
+### [session_operations](basics/session_operations/)
 Session lifecycle management examples:
 - Creating sessions with default parameters
-- Session creation with labels
-- Session creation with context synchronization
-- Browser context for cookie persistence
-- Mobile configuration with app management
+- Session creation with labels and context
+- Getting session link URLs
+- Label management (CRUD + filtering)
+- Keep-alive operations
+
+### [session_get](basics/session_get/)
+Session retrieval:
+- Getting session by ID
+- Session information retrieval
+
+### [session_pause_resume](basics/session_pause_resume/)
+Session pause and resume operations
+
+### [command_operations](basics/command_operations/)
+Command execution patterns:
+- Executing shell commands
+- Command output handling
+
+### [pty_operations](basics/pty_operations/)
+PTY terminal operations:
+- Interactive terminal sessions
+- Command streaming
 
 ### [file_system](basics/file_system/)
 File operations in cloud environments:
 - Reading and writing files
 - Directory operations
-- File information retrieval
-- File editing and moving
-- File searching
-- Large file operations with chunking
-- Practical filesystem use cases:
-  - **file_transfer_example.py**: File transfer between local and cloud
-  - **watch_directory_example.py**: Directory monitoring and change detection
+- File transfer between local and cloud
+- Directory monitoring and change detection
 
 ### [context_management](basics/context_management/)
 Context creation and management:
 - Creating and managing contexts
 - Data storage and retrieval
 - Cross-session data sharing
+- Paginated context listing
+
+### [context_file_transfer](basics/context_file_transfer/)
+Context-based file transfer:
+- Upload/download files via presigned URLs
+- Upload/download directories
 
 ### [data_persistence](basics/data_persistence/)
 Data persistence across sessions:
-- Storing data across sessions
-- Data retrieval patterns
+- SyncPolicy and RecyclePolicy configuration
+- Archive upload mode
+- BWList (whitelist/blacklist) filtering
 - Context synchronization demonstration
-- Recycle policy configuration
 
-### [label_management](basics/label_management/)
-Session organization with labels:
-- Adding labels to sessions
-- Filtering and searching sessions
-- Label-based session management
+### [dynamic_context_binding](basics/dynamic_context_binding/)
+Dynamic context binding:
+- Binding contexts to sessions at runtime
 
-### [list_sessions](basics/list_sessions/)
-Session listing and filtering:
-- Listing all sessions
-- Filtering by labels
-- Session status monitoring
+### [env_management](basics/env_management/)
+Environment management:
+- Environment variable configuration
 
-### [get](basics/get/)
-Session retrieval:
-- Getting session by ID
-- Session information retrieval
+### [mcp_tool_direct_call](basics/mcp_tool_direct_call/)
+MCP tool direct calls:
+- Invoking MCP tools directly
 
 ## Advanced
 
@@ -86,6 +100,15 @@ Screenshot capture and download:
 - Taking screenshots
 - Downloading screenshots locally
 - Image format handling
+
+### [session_metrics](advanced/session_metrics/)
+Session metrics and monitoring:
+- Collecting session usage metrics
+- Performance tracking
+
+### [link_url_session](advanced/link_url_session/)
+Link URL session management:
+- Using link URLs for session access
 
 ## Prerequisites
 

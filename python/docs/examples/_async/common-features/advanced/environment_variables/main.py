@@ -1,4 +1,6 @@
 """
+ci-stable
+
 Example demonstrating environment variables management with AgentBay SDK.
 
 This example shows how to:

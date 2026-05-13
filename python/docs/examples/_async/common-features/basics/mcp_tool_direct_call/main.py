@@ -1,4 +1,5 @@
 """
+ci-stable
 Example: List MCP Tools and Call a Tool
 
 This example demonstrates:

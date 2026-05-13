@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+ci-stable
+
 Mobile BoundsRect Example (Async)
 
 This example demonstrates the recommended `bounds_rect` field on UI elements returned by:

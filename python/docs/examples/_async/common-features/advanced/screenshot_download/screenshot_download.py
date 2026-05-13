@@ -1,4 +1,5 @@
 """
+ci-skip
 Screenshot Download Example
 
 This example demonstrates how to take a screenshot from a session

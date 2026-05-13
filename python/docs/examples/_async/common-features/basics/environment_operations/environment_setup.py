@@ -1,4 +1,7 @@
-"""Environment Setup Example"""
+"""
+ci-stable
+Environment Setup Example
+"""
 import asyncio
 import os
 import sys

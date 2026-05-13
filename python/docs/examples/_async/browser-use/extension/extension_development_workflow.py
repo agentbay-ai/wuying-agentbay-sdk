@@ -1,4 +1,5 @@
 """
+ci-stable
 Extension Development Workflow Example
 
 This example demonstrates a complete development workflow for browser extensions,
@@ -246,33 +247,39 @@ async def development_workflow_example():
         initial_extension = "/Users/liyuebing/Projects/wuying-agentbay-sdk/tmp/test-extension.zip"
         updated_extension = "/Users/liyuebing/Projects/wuying-agentbay-sdk/tmp/test-extension-v2.zip"
         
-        # Check if files exist
+        import zipfile
+        ext_dir = os.path.dirname(__file__)
+        created_paths = []
+
+        # Create initial extension ZIP if not found
         if not os.path.exists(initial_extension):
-            print(f"❌ Initial extension not found: {initial_extension}")
-            print("💡 Please update the file paths in the example")
-            return False
+            print(f"⚠️ Initial extension not found: {initial_extension}")
+            print("📦 Creating a test extension ZIP in the current directory...")
+            initial_extension = os.path.join(ext_dir, "test-extension.zip")
+            with zipfile.ZipFile(initial_extension, "w") as zf:
+                zf.writestr("manifest.json", '{"manifest_version": 2, "name": "test-extension", "version": "1.0"}')
+            created_paths.append(initial_extension)
+            print(f"✅ Created test extension: {initial_extension}")
         
+        # Create updated extension ZIP if not found
         if not os.path.exists(updated_extension):
-            print(f"⚠️  Updated extension not found: {updated_extension}")
-            print("💡 Will demonstrate single version workflow")
-            
-            # Single version workflow
-            await workflow.upload_extension(initial_extension)
-            session = await workflow.create_test_session("single_version_test")
-            
-            print("\n🎯 Single version development completed!")
-            print(f"   - Session ID: {session.session_id}")
-            
-        else:
-            # Full development cycle
-            session1, session2 = await workflow.run_development_cycle(
-                initial_extension, 
-                updated_extension
-            )
-            
-            print("\n🎯 Full development cycle completed!")
-            print(f"   - Initial version session: {session1.session_id}")
-            print(f"   - Updated version session: {session2.session_id}")
+            print(f"⚠️ Updated extension not found: {updated_extension}")
+            print("📦 Creating a test extension ZIP in the current directory...")
+            updated_extension = os.path.join(ext_dir, "test-extension-v2.zip")
+            with zipfile.ZipFile(updated_extension, "w") as zf:
+                zf.writestr("manifest.json", '{"manifest_version": 2, "name": "test-extension-v2", "version": "2.0"}')
+            created_paths.append(updated_extension)
+            print(f"✅ Created test extension: {updated_extension}")
+
+        # Full development cycle
+        session1, session2 = await workflow.run_development_cycle(
+            initial_extension, 
+            updated_extension
+        )
+        
+        print("\n🎯 Full development cycle completed!")
+        print(f"   - Initial version session: {session1.session_id}")
+        print(f"   - Updated version session: {session2.session_id}")
         
         # List all extensions
         print("\n📋 Current extensions:")
@@ -286,62 +293,24 @@ async def development_workflow_example():
     finally:
         # Always cleanup
         await workflow.cleanup()
-
-
-async def quick_test_workflow_example():
-    """Quick workflow for testing a single extension."""
-    
-    api_key = os.getenv("AGENTBAY_API_KEY")
-    if not api_key:
-        print("❌ Please set AGENTBAY_API_KEY environment variable")
-        return False
-    
-    workflow = ExtensionDevelopmentWorkflow(api_key, "quick_test")
-    
-    try:
-        print("🚀 Quick test workflow...")
-        
-        # Quick test with single extension
-        extension_path = "/Users/liyuebing/Projects/wuying-agentbay-sdk/tmp/test-extension.zip"  # Test extension
-        
-        if not os.path.exists(extension_path):
-            print(f"❌ Extension not found: {extension_path}")
-            print("💡 Please update the extension_path variable")
-            return False
-        
-        # Upload and create test session
-        await workflow.upload_extension(extension_path)
-        session = await workflow.create_test_session("quick_test")
-        
-        print(f"\n✅ Quick test session ready!")
-        print(f"   - Session ID: {session.session_id}")
-        print(f"   - Extension available at: /tmp/extensions/")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Quick test failed: {e}")
-        return False
-    finally:
-        await workflow.cleanup()
+        # 清理本地创建的测试 ZIP 文件
+        for path in created_paths:
+            if os.path.exists(path):
+                os.remove(path)
 
 
 if __name__ == "__main__":
     import asyncio
     
     async def main():
-        print("Extension Development Workflow Examples")
+        print("Extension Development Workflow Example")
         print("=" * 60)
         
         print("\n1. Full Development Cycle Example")
         print("-" * 40)
         await development_workflow_example()
         
-        print("\n2. Quick Test Workflow Example")
-        print("-" * 40)
-        await quick_test_workflow_example()
-        
-        print("\n🎯 Development workflow examples completed!")
+        print("\n🎯 Development workflow example completed!")
         print("\n💡 Tips for extension development:")
         print("   - Use descriptive project names for different extensions")
         print("   - Test each version thoroughly before updating")

@@ -1,4 +1,5 @@
 """
+ci-stable
 Mobile Agent Streaming Example
 
 This example demonstrates:

@@ -1,4 +1,6 @@
 """
+ci-stable
+
 Mobile App Operations Example
 
 This example demonstrates:

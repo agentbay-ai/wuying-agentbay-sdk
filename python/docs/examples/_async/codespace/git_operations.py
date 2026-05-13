@@ -1,4 +1,5 @@
 """
+ci-stable
 Git Operations Example
 
 This example demonstrates:

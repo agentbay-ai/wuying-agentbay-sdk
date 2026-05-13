@@ -1,4 +1,5 @@
 """
+ci-stable
 Build Automation Example
 
 This example demonstrates:

@@ -1,4 +1,5 @@
 """
+ci-stable
 Text Processing Example
 
 This example demonstrates:

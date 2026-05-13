@@ -1,3 +1,9 @@
+"""
+ci-stable
+Mobile Beta Screenshot Example
+
+This example demonstrates how to take a screenshot of a mobile device using the AgentBay API.
+"""
 import asyncio
 import os
 
@@ -25,7 +31,7 @@ async def main() -> None:
     session = None
     try:
         result = await agent_bay.create(
-            CreateSessionParams(image_id="mobile-use-android-12-gw")
+            CreateSessionParams(image_id="mobile_latest")
         )
         if not result.success or not result.session:
             raise RuntimeError(f"Failed to create session: {result.error_message}")

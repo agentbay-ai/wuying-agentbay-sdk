@@ -1,4 +1,5 @@
 """
+ci-stable
 Concurrent Sessions Example
 
 This example demonstrates:

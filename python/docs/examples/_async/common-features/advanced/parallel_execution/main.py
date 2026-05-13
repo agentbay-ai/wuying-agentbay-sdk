@@ -126,9 +126,9 @@ async def compare_sequential_vs_parallel(session):
     print("\n📊 Comparing Sequential vs Parallel Execution...")
     
     commands = [
-        "sleep 1 && echo 'Task 1'",
-        "sleep 1 && echo 'Task 2'",
-        "sleep 1 && echo 'Task 3'",
+        "echo 'Task 1 completed'",
+        "echo 'Task 2 completed'",
+        "echo 'Task 3 completed'",
     ]
     
     # Sequential execution

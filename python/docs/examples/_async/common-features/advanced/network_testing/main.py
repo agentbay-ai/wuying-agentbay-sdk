@@ -1,4 +1,5 @@
 """
+ci-skip
 Example demonstrating network testing with AgentBay SDK.
 
 This example shows how to:

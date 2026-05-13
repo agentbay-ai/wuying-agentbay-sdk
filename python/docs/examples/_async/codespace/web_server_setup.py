@@ -1,4 +1,5 @@
 """
+ci-stable
 Web Server Setup Example
 
 This example demonstrates:

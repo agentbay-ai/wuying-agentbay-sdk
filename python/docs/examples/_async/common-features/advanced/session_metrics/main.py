@@ -1,3 +1,10 @@
+
+"""
+ci-stable
+Session Metrics Example
+
+This example demonstrates how to retrieve metrics for a session.
+"""
 import asyncio
 import json
 

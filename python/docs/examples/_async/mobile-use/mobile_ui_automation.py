@@ -1,4 +1,6 @@
 """
+ci-stable
+
 Mobile UI Automation Example
 
 This example demonstrates:

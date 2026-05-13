@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
+ci-stable
 Example demonstrating session pause and resume functionality with AgentBay SDK.
 This example shows how to:
 - Create a session

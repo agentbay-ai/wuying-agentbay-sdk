@@ -1,3 +1,9 @@
+"""
+ci-stable
+Mobile System Management Example
+
+This example demonstrates how to perform various system-level operations on a mobile device using the AgentBay API.
+"""
 import json
 import os
 from typing import Any, Dict, List

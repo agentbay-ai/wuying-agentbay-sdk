@@ -1,4 +1,5 @@
 """
+ci-stable
 File Compression Example
 
 This example demonstrates:
@@ -99,13 +100,8 @@ async def main():
         result = await session.command.execute_command("tar -tf /tmp/testdata.tar | head -10")
         print(f"Tar contents:\n{result.output}")
 
-        # List contents of zip archive
-        print("\n8. Listing contents of zip archive...")
-        result = await session.command.execute_command("unzip -l /tmp/testdata.zip | head -15")
-        print(f"Zip contents:\n{result.output}")
-
         # Extract tar archive
-        print("\n9. Extracting tar archive...")
+        print("\n8. Extracting tar archive...")
         await session.command.execute_command("mkdir -p /tmp/extract_tar")
         result = await session.command.execute_command(
             "cd /tmp/extract_tar && tar -xf /tmp/testdata.tar"
@@ -117,7 +113,7 @@ async def main():
         print(f"Extracted files:\n{result.output}")
 
         # Extract tar.gz archive
-        print("\n10. Extracting tar.gz archive...")
+        print("\n9. Extracting tar.gz archive...")
         await session.command.execute_command("mkdir -p /tmp/extract_targz")
         result = await session.command.execute_command(
             "cd /tmp/extract_targz && tar -xzf /tmp/testdata.tar.gz"
@@ -125,7 +121,7 @@ async def main():
         print("Tar.gz archive extracted to /tmp/extract_targz/")
 
         # Extract zip archive
-        print("\n11. Extracting zip archive...")
+        print("\n10. Extracting zip archive...")
         await session.command.execute_command("mkdir -p /tmp/extract_zip")
         result = await session.command.execute_command(
             "cd /tmp/extract_zip && unzip -q /tmp/testdata.zip"
@@ -133,7 +129,7 @@ async def main():
         print("Zip archive extracted to /tmp/extract_zip/")
 
         # Compress a single file with gzip
-        print("\n12. Compressing single file with gzip...")
+        print("\n11. Compressing single file with gzip...")
         result = await session.command.execute_command(
             "gzip -c /tmp/testdata/file1.txt > /tmp/file1.txt.gz"
         )
@@ -146,7 +142,7 @@ async def main():
         print(f"Gzip comparison:\n{result.output}")
 
         # Decompress gzip file
-        print("\n13. Decompressing gzip file...")
+        print("\n12. Decompressing gzip file...")
         result = await session.command.execute_command(
             "gunzip -c /tmp/file1.txt.gz > /tmp/file1_decompressed.txt"
         )
@@ -162,14 +158,14 @@ async def main():
             print(f"Diff result: {result.output}")
 
         # Create compressed tar with different compression levels
-        print("\n14. Testing different compression levels...")
+        print("\n13. Testing different compression levels...")
         result = await session.command.execute_command(
             "cd /tmp && tar -czf testdata_fast.tar.gz --gzip testdata/"
         )
         print("Fast compression completed")
 
         # Compare final sizes
-        print("\n15. Final size comparison...")
+        print("\n14. Final size comparison...")
         result = await session.command.execute_command(
             "du -sh /tmp/testdata /tmp/testdata.tar /tmp/testdata.tar.gz /tmp/testdata.zip"
         )

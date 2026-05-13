@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+ci-stable
 AgentBay SDK - CodeSpace Example
 
 This example demonstrates how to use AgentBay SDK code execution features:

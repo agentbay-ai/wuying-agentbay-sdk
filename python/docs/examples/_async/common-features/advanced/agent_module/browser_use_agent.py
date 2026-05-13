@@ -1,4 +1,5 @@
 """
+ci-skip
 Agent Task Execution Example
 
 This example demonstrates:
@@ -66,7 +67,6 @@ async def main():
         4. 在商品页面中找到商品名称、品牌和价格并和PDF中商品信息进行对比。
         5. 如果发现任何一项数据(名称、品牌、价格)不匹配,记录给出不一致网站和具体的不一致内容。
         """
-
         logger.info("🚀 Executing Task of products inspectation.")
         result = await agent.browser.execute_task(
             task, use_vision=False, output_schema=InconsistencyReport

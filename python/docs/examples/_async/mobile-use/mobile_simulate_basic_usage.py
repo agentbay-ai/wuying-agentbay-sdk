@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 """
+ci-stable
 Mobile Simulate Example
 
 This example demonstrates how to use the mobile simulate feature to simulate

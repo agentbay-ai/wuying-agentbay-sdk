@@ -78,109 +78,100 @@ Located in `browser-use/browser/` and `browser-use/extension/`
 **Real-world Examples:**
 - `search_agentbay_doc*.py` - Documentation search examples
 - `game_*.py` - Game automation examples
-- Various domain-specific examples
 
 ### 2. Codespace Examples
 
 Located in `codespace/`
 
-**Development Environments:**
 - `python_development.py` - Python environment setup and package management
 - `nodejs_development.py` - Node.js environment and npm operations
-
-**Version Control:**
 - `git_operations.py` - Git repository initialization and commits
-
-**Containerization:**
-- `docker_operations.py` - Docker container management
-
-**Data Management:**
 - `database_operations.py` - SQLite database operations
-
-**Text Processing:**
 - `text_processing.py` - Text manipulation with grep/sed/awk
-
-**System Operations:**
 - `system_monitoring.py` - System resource monitoring
 - `file_compression.py` - File compression and archiving
-
-**Web Development:**
 - `web_server_setup.py` - HTTP server setup and configuration
-
-**Build Systems:**
 - `build_automation.py` - Build automation with Makefiles
-
-**Code Execution:**
 - `code_execution_example.py` - Code execution patterns
-- `jupyter_context_persistence.py` - Jupyter-like Python context persistence across consecutive `run_code()` calls within the same session
+- `enhanced_code_execution.py` - Advanced code execution with streaming
+- `jupyter_context_persistence.py` - Jupyter-like Python context persistence
+- `jupyter_context_persistence_r_java.py` - R/Java context persistence
+- `run_code_streaming_beta.py` - Streaming code execution (beta)
 
 ### 3. Common-features Examples
 
 Located in `common-features/basics/` and `common-features/advanced/`
 
-**Basic Operations:**
-- `session_creation/` - Creating and managing sessions
-- `command_execution_patterns.py` - Various command execution patterns
-- `file_operations_patterns.py` - File operation patterns
-- `file_system/` - File system operations
-- `session_info.py` - Session information retrieval
-- `working_directory.py` - Working directory management
-- `environment_setup.py` - Environment variable configuration
-- `process_management.py` - Process monitoring and management
-- `data_transfer.py` - Data transfer operations
+**Session Operations (`basics/session_operations/`):**
+- `session_creation.py` - Creating sessions with various configurations
+- `session_link_example.py` - Getting session link URLs
+- `session_label_management.py` - Managing session labels (CRUD + filtering)
+- `session_keep_alive.py` - Keeping sessions alive
 
-**Session Management:**
-- `list_sessions/` - Listing sessions
-- `get/` - Getting session information
+**Session Management (`basics/`):**
+- `session_get/` - Getting session by ID
 - `session_pause_resume/` - Pausing and resuming sessions
-- `label_management/` - Managing session labels
 
-**Data Persistence:**
-- `data_persistence/` - Context synchronization and data persistence
-- `context_management/` - Context management
-- `archive-upload-mode-example/` - Archive upload modes
+**Command & PTY (`basics/`):**
+- `command_operations/` - Command execution patterns
+- `pty_operations/` - PTY terminal operations
 
-**Advanced Features:**
-- `concurrent_sessions.py` - Managing multiple sessions concurrently
-- `resource_cleanup.py` - Proper resource cleanup patterns
-- `error_recovery.py` - Error handling and recovery
-- `error_handling/` - Comprehensive error handling
-- `batch_operations/` - Batch operations
-- `parallel_execution/` - Parallel execution patterns
-- `multi_session_management/` - Multi-session coordination
+**File System (`basics/file_system/`):**
+- `basic_file_operations_example.py` - File read/write/list operations
+- `file_transfer_example.py` - Session-based file upload/download
+- `watch_directory_example.py` - File change monitoring
 
-**Testing and Monitoring:**
-- `api_testing/` - API testing patterns
-- `network_testing/` - Network diagnostics
-- `logging_monitoring/` - Logging and monitoring
-- `performance_monitoring/` - Performance monitoring
-- `screenshot_download/` - Screenshot operations
+**Context & Data Persistence (`basics/`):**
+- `context_management/` - Context CRUD, listing with pagination, session binding
+- `context_file_transfer/` - Context-based file transfer via presigned URLs
+- `data_persistence/` - SyncPolicy, RecyclePolicy, Archive mode, BWList
+- `dynamic_context_binding/` - Dynamic context binding during session
 
-**Infrastructure:**
-- `environment_variables/` - Environment variable management
-- `retry_mechanism/` - Retry patterns with circuit breaker
-- `session_pooling/` - Session pooling for efficiency
-- `oss_management/` - OSS operations
+**Environment (`basics/`):**
+- `env_management/` - Environment variable management
+- `environment_operations/` - Environment operations
 
-**Filesystem:**
-- `filesystem_example/` - Advanced filesystem operations
+**Other (`basics/`):**
 - `mcp_tool_direct_call/` - MCP tool direct calls
 
-**Agent Integration:**
+**Advanced Features (`advanced/`):**
 - `agent_module/` - Agent module usage
+- `batch_operations/` - Batch operations
+- `error_handling/` - Comprehensive error handling
+- `link_url_session/` - Link URL session management
+- `logging_monitoring/` - Logging and monitoring
+- `multi_session_management/` - Multi-session coordination
+- `network_testing/` - Network diagnostics
+- `oss_management/` - OSS operations
+- `parallel_execution/` - Parallel execution patterns
+- `performance_monitoring/` - Performance monitoring
+- `retry_mechanism/` - Retry patterns with circuit breaker
+- `screenshot_download/` - Screenshot operations
+- `session_metrics/` - Session metrics
+- `session_pooling/` - Session pooling for efficiency
+- `environment_variables/` - Environment variable management
 
 ### 4. Computer-use Examples
 
 Located in `computer-use/computer/`
 
+- `screen_operations.py` - Screenshot capture using `computer.beta_take_screenshot()`
 - `windows_app_management_example.py` - Windows application management
 
 ### 5. Mobile-use Examples
 
 Located in `mobile-use/`
 
+- `mobile_agent_streaming.py` - Mobile Agent task execution with streaming output
+- `mobile_app_operations.py` - Mobile app operations
+- `mobile_beta_screenshot.py` - Mobile screenshot capture
+- `mobile_bounds_rect.py` - Mobile UI bounds/rect operations
 - `mobile_get_adb_url_example.py` - Getting ADB connection URL
+- `mobile_simulate_basic_usage.py` - Mobile simulate basic usage
+- `mobile_simulate_with_ctx.py` - Mobile simulate with context
+- `mobile_ui_automation.py` - Mobile UI automation
 - `mobile_system/` - Mobile system operations
+- `get_all_ui_elements_xml/` - Get all UI elements as XML
 
 ## Getting Started
 

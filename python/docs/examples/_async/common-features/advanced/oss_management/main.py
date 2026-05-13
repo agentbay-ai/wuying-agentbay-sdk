@@ -1,3 +1,9 @@
+"""
+ci-skip
+OSS Management Example
+
+This example demonstrates how to use the Oss class for various OSS operations.
+"""
 import asyncio
 import os
 

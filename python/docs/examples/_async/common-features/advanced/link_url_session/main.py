@@ -1,3 +1,10 @@
+
+"""
+ci-stable
+Link URL Session Example
+
+This example demonstrates how to create a session using a link URL.
+"""
 import os
 
 from agentbay import AsyncAgentBay, CreateSessionParams

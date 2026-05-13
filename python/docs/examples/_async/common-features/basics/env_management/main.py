@@ -1,4 +1,5 @@
 """
+ci-stable
 Example: session-scoped environment variables via the Env module.
 
 Demonstrates set, get (all and filtered), overwrite, and shell visibility.

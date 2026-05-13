@@ -1,4 +1,5 @@
 """
+ci-stable
 Database Operations Example
 
 This example demonstrates:

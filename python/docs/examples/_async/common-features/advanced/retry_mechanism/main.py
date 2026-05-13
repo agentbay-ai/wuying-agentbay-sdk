@@ -159,25 +159,46 @@ async def demonstrate_circuit_breaker(session):
     
     circuit_breaker = CircuitBreaker(failure_threshold=3, timeout=5.0)
     
+    # Use a counter to simulate an operation that initially fails then recovers
+    call_count = 0
+
     async def unreliable_operation():
-        # Simulate an operation that fails
-        raise Exception("Simulated failure")
+        nonlocal call_count
+        call_count += 1
+        # First 4 calls fail, then recover
+        if call_count <= 4:
+            raise Exception(f"Simulated failure (call {call_count})")
+        return f"Success on call {call_count}"
     
-    # Try multiple times to trigger circuit breaker
+    # Phase 1: Trigger circuit breaker with failures
+    print("\n  Phase 1: Triggering failures...")
     for i in range(5):
         print(f"\n  Call {i + 1}:")
         try:
-            await circuit_breaker.call(unreliable_operation)
+            result = await circuit_breaker.call(unreliable_operation)
+            print(f"  ✅ Result: {result}")
         except Exception as e:
             print(f"  ❌ Call failed: {e}")
         
         await asyncio.sleep(0.5)
     
-    # Wait for circuit to potentially close
-    print("\n  Waiting for circuit breaker timeout...")
+    # Phase 2: Wait for circuit breaker timeout, then test recovery
+    print("\n  Phase 2: Waiting for circuit breaker timeout (5s)...")
     await asyncio.sleep(5.5)
     
     print(f"\n  Circuit breaker state: {circuit_breaker.state}")
+    print("\n  Testing recovery after timeout:")
+    for i in range(3):
+        print(f"\n  Recovery call {i + 1}:")
+        try:
+            result = await circuit_breaker.call(unreliable_operation)
+            print(f"  ✅ Result: {result}")
+        except Exception as e:
+            print(f"  ❌ Call failed: {e}")
+        
+        await asyncio.sleep(0.5)
+    
+    print(f"\n  Final circuit breaker state: {circuit_breaker.state}")
 
 
 async def main():

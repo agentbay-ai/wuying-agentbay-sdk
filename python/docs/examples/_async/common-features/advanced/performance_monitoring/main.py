@@ -1,4 +1,6 @@
 """
+ci-stable
+
 Example demonstrating performance monitoring with AgentBay SDK.
 
 This example shows how to:

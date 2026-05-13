@@ -1,4 +1,6 @@
 """
+ci-stable
+
 Node.js Development Environment Example
 
 This example demonstrates:

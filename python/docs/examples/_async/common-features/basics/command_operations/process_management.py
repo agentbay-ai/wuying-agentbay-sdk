@@ -1,4 +1,7 @@
-"""Process Management Example"""
+"""
+ci-stable
+Process Management Example
+"""
 import asyncio
 import os
 import sys

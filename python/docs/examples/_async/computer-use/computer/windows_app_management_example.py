@@ -1,4 +1,5 @@
 """
+# ci-stable
 Complete Windows Application Management Example
 
 This example demonstrates the full workflow for managing desktop applications

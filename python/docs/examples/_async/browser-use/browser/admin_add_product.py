@@ -3,6 +3,7 @@
 打开管理后台
 通过变量注入填写表单并提交
 重点：ActOptions.variagentbayles 批量字段
+ci-skip
 """
 
 import asyncio

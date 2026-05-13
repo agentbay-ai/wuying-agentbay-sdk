@@ -1,4 +1,5 @@
 """
+ci-stable
 Basic example of using the Agent module to execute tasks.
 This example demonstrates:
 - Creating a session with Agent capabilities

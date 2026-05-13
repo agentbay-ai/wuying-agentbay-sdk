@@ -326,6 +326,7 @@ class BrowserOperator(BaseService):
                 )
                 _logger.info(f"Task {task_id}:{task_name} in progress. {task_status}")
             elapsed = time.monotonic() - start_ts
+            print(f"Elapsed time: {result.error_message}s")
             timeout_s = client_timeout if client_timeout is not None else 300
             if elapsed >= timeout_s:
                 error_msg = f"Task {task_id}:{task_name} timeout after {timeout_s}s"

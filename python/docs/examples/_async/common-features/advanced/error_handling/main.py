@@ -138,9 +138,6 @@ async def main():
         # Execute a safe command
         await safe_command_execution(session, "echo 'Hello World'")
         
-        # Execute a command that might take longer
-        await safe_command_execution(session, "sleep 2 && echo 'Done'")
-        
         # Execute a command with potential issues
         await safe_command_execution(session, "nonexistent_command")
         

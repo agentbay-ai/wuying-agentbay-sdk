@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 """
+ci-stable
 Mobile Simulate with User Specific Context Example
 
 This example demonstrates how to use the mobile simulate feature with a user specific context to simulate mobile devices across sessions.

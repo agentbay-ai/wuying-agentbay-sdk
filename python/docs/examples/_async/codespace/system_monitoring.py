@@ -1,4 +1,5 @@
 """
+ci-stable
 System Monitoring Example
 
 This example demonstrates:

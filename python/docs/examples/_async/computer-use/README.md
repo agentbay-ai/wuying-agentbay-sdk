@@ -13,6 +13,13 @@ Computer Use environment (`windows_latest` image) provides cloud-based Windows d
 
 ## Examples
 
+### screen_operations.py
+
+Screenshot capture example demonstrating:
+- Using `computer.beta_take_screenshot()` API to capture screen
+- Saving screenshots to local files (JPG format)
+- Uses `linux_latest` image (no GUI required for screenshot API)
+
 ### windows_app_management_example.py
 
 Comprehensive Windows application management example demonstrating:
