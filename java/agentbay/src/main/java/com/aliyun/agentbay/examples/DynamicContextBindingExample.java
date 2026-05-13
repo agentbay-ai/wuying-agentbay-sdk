@@ -112,6 +112,50 @@ public class DynamicContextBindingExample {
                 }
             }
 
+            // Step 8: Bind context with ARCHIVE upload mode
+            System.out.println("\n📦 Step 8: Binding context with ARCHIVE upload mode...");
+            ContextResult ctxResArchive = agentBay.getContext().get("dynamic-bind-archive-demo", true);
+            if (ctxResArchive.isSuccess() && ctxResArchive.getContext() != null) {
+                UploadPolicy archiveUploadPolicy = new UploadPolicy();
+                archiveUploadPolicy.setUploadMode(UploadMode.ARCHIVE);
+                archiveUploadPolicy.setArchiveExcludePaths(Arrays.asList("logs/", "*.tmp"));
+
+                SyncPolicy archiveSyncPolicy = new SyncPolicy();
+                archiveSyncPolicy.setUploadPolicy(archiveUploadPolicy);
+
+                ContextSync archiveContextSync = ContextSync.create(
+                    ctxResArchive.getContext().getId(), "/tmp/ctx-archive", archiveSyncPolicy);
+
+                ContextBindResult archiveBindResult = session.getContext().bind(archiveContextSync);
+                if (archiveBindResult.isSuccess()) {
+                    System.out.println("✅ ARCHIVE mode context bound successfully");
+                } else {
+                    System.out.println("❌ ARCHIVE mode bind failed: " + archiveBindResult.getErrorMessage());
+                }
+
+                // Verify the binding shows up
+                bindingsResult = session.getContext().listBindings();
+                if (bindingsResult.isSuccess()) {
+                    System.out.println("   Total bindings after ARCHIVE bind: " + bindingsResult.getBindings().size());
+                    for (ContextBinding b : bindingsResult.getBindings()) {
+                        System.out.println("   - " + b.getContextName() + " -> " + b.getPath());
+                    }
+                }
+
+                // Write and read data to verify ARCHIVE context is usable
+                CommandResult archiveWriteCmd = session.getCommand().executeCommand(
+                    "mkdir -p /tmp/ctx-archive && echo 'Archive mode test' > /tmp/ctx-archive/archive-test.txt", 5000);
+                if (archiveWriteCmd.isSuccess()) {
+                    System.out.println("✅ Data written to ARCHIVE context path");
+                }
+
+                CommandResult archiveReadCmd = session.getCommand().executeCommand(
+                    "cat /tmp/ctx-archive/archive-test.txt", 5000);
+                if (archiveReadCmd.isSuccess()) {
+                    System.out.println("✅ Data read from ARCHIVE context: " + archiveReadCmd.getOutput().trim());
+                }
+            }
+
             // Cleanup
             System.out.println("\n🧹 Cleaning up...");
             agentBay.delete(session, true);
