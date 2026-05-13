@@ -73,8 +73,7 @@ jobs:
           echo "🐍 Setting up Python..."
           python -m pip install --upgrade pip
           python -m pip install -e ./python/
-          python -m pip install pytest playwright python-dotenv langchain-openai langgraph langchain-core
-          playwright install chromium || echo "⚠️ Playwright install failed"
+          python -m pip install pytest python-dotenv langchain-openai langgraph langchain-core
           if [ -f "python/requirements.txt" ]; then
             python -m pip install -r python/requirements.txt
           fi
@@ -88,7 +87,6 @@ jobs:
             npm link
             npm link wuying-agentbay-sdk
             npm install --no-save ts-node
-            npx playwright install chromium || echo "⚠️ Playwright install failed"
             cd ..
           fi
           
@@ -98,7 +96,6 @@ jobs:
             cd golang
             go env -w GOPROXY=https://goproxy.cn,direct
             go mod download
-            go run github.com/playwright-community/playwright-go/cmd/playwright@latest install chromium || echo "⚠️ Playwright install failed"
             cd ..
           fi
           
