@@ -1911,6 +1911,15 @@ export class Client extends OpenApi {
     runtime: $dara.RuntimeOptions
   ): Promise<$_model.DescribeContextFilesResponse> {
     request.validate();
+    const query: { [key: string]: any } = {};
+    if (!$dara.isNull(request.maxResults)) {
+      query["MaxResults"] = request.maxResults;
+    }
+
+    if (!$dara.isNull(request.nextToken)) {
+      query["NextToken"] = request.nextToken;
+    }
+
     const body: { [key: string]: any } = {};
     if (!$dara.isNull(request.authorization)) {
       body["Authorization"] = request.authorization;
@@ -1933,6 +1942,7 @@ export class Client extends OpenApi {
     }
 
     const req = new $OpenApiUtil.OpenApiRequest({
+      query: OpenApiUtil.query(query),
       body: OpenApiUtil.parseToMap(body),
     });
     const params = new $OpenApiUtil.Params({

@@ -22,6 +22,10 @@ type iDescribeContextFilesResponseBody interface {
 	GetRequestId() *string
 	SetSuccess(v bool) *DescribeContextFilesResponseBody
 	GetSuccess() *bool
+	SetNextToken(v string) *DescribeContextFilesResponseBody
+	GetNextToken() *string
+	SetMaxResults(v int32) *DescribeContextFilesResponseBody
+	GetMaxResults() *int32
 }
 
 type DescribeContextFilesResponseBody struct {
@@ -32,6 +36,8 @@ type DescribeContextFilesResponseBody struct {
 	Message        *string                                 `json:"Message,omitempty" xml:"Message,omitempty"`
 	RequestId      *string                                 `json:"RequestId,omitempty" xml:"RequestId,omitempty"`
 	Success        *bool                                   `json:"Success,omitempty" xml:"Success,omitempty"`
+	NextToken      *string                                 `json:"NextToken,omitempty" xml:"NextToken,omitempty"`
+	MaxResults     *int32                                  `json:"MaxResults,omitempty" xml:"MaxResults,omitempty"`
 }
 
 func (s DescribeContextFilesResponseBody) String() string {
@@ -70,6 +76,14 @@ func (s *DescribeContextFilesResponseBody) GetSuccess() *bool {
 	return s.Success
 }
 
+func (s *DescribeContextFilesResponseBody) GetNextToken() *string {
+	return s.NextToken
+}
+
+func (s *DescribeContextFilesResponseBody) GetMaxResults() *int32 {
+	return s.MaxResults
+}
+
 func (s *DescribeContextFilesResponseBody) SetCode(v string) *DescribeContextFilesResponseBody {
 	s.Code = &v
 	return s
@@ -102,6 +116,16 @@ func (s *DescribeContextFilesResponseBody) SetRequestId(v string) *DescribeConte
 
 func (s *DescribeContextFilesResponseBody) SetSuccess(v bool) *DescribeContextFilesResponseBody {
 	s.Success = &v
+	return s
+}
+
+func (s *DescribeContextFilesResponseBody) SetNextToken(v string) *DescribeContextFilesResponseBody {
+	s.NextToken = &v
+	return s
+}
+
+func (s *DescribeContextFilesResponseBody) SetMaxResults(v int32) *DescribeContextFilesResponseBody {
+	s.MaxResults = &v
 	return s
 }
 

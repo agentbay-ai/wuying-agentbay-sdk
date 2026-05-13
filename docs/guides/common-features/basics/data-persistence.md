@@ -435,12 +435,11 @@ agent_bay = AgentBay()
 # Get context
 context = agent_bay.context.get("my-project", create=True).context
 
-# List files in root directory
+# List files in root directory (token-based pagination recommended)
 list_result = agent_bay.context.list_files(
     context_id=context.id,
     parent_folder_path="/",
-    page_number=1,
-    page_size=50
+    max_results=50,
 )
 
 if list_result.success:
@@ -456,16 +455,16 @@ if list_result.success:
 else:
     print(f"Failed to list files: {list_result.error_message}")
 
-# List files with pagination
-page_number = 1
-page_size = 10
+# List files with token-based pagination
+next_token = None
+page_index = 1
 
 while True:
     list_result = agent_bay.context.list_files(
         context_id=context.id,
         parent_folder_path="/data",
-        page_number=page_number,
-        page_size=page_size
+        max_results=10,
+        next_token=next_token,
     )
     
     if not list_result.success:
@@ -476,11 +475,14 @@ while True:
         print("No more files")
         break
     
-    print(f"Page {page_number}: {len(list_result.entries)} files")
+    print(f"Page {page_index}: {len(list_result.entries)} files")
     for entry in list_result.entries:
         print(f"  - {entry.file_name} ({entry.size} bytes)")
     
-    page_number += 1
+    if not list_result.next_token:
+        break
+    next_token = list_result.next_token
+    page_index += 1
 ```
 
 ### Deleting Files
@@ -933,7 +935,7 @@ if sync_result.success:
             print(f"Context ID: {status.context_id}, Path: {status.path}, Status: {status.status}")
 
     # List files in context sync directory
-    list_result = agent_bay.context.list_files(context.id, "/tmp/data", page_number=1, page_size=10)
+    list_result = agent_bay.context.list_files(context.id, "/tmp/data", max_results=10)
     if list_result.success:
         print(f"Total files found: {len(list_result.entries)}")
         for entry in list_result.entries:

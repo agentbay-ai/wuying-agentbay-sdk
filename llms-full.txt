@@ -294,7 +294,7 @@ Before using the SDK, you need to:
 <dependency>
     <groupId>com.aliyun</groupId>
     <artifactId>agentbay-sdk</artifactId>
-    <version>0.19.0</version>
+    <version>0.20.0</version>
 </dependency>
 ```
 
@@ -1048,6 +1048,7 @@ This directory is generated. Run `go run scripts/generate_api_docs.go` to refres
 - `common-features/basics/command.md` – Command
 - `common-features/basics/context.md` – Context
 - `common-features/basics/session-params.md` – Session Params
+- `common-features/basics/lifecycle-policy.md` – Lifecycle Policy
 - `common-features/basics/context-manager.md` – Context Manager
 - `common-features/basics/filesystem.md` – File System
 - `common-features/basics/context-sync.md` – Context Sync
@@ -1468,10 +1469,12 @@ for index, status := range infoResult.ContextStatusData {
 ### File Listing in Context Directory
 
 ```go
-// List files in context sync directory
-listResult, err := ab.Context.ListFiles(contextID, syncDirPath, 1, 10)
+// List files via MaxResults/NextToken pagination
+maxResults := int32(10)
+listResult, err := ab.Context.ListFilesWithPagination(contextID, syncDirPath, &maxResults, nil)
 
-// Display file entries
+// Display file entries; for the next page when listResult.NextToken is non-empty:
+// next := listResult.NextToken; ab.Context.ListFilesWithPagination(contextID, syncDirPath, nil, &next)
 for index, entry := range listResult.Entries {
     fmt.Printf("FilePath: %s\n", entry.FilePath)
     fmt.Printf("FileType: %s\n", entry.FileType)
@@ -1870,7 +1873,7 @@ export AGENTBAY_API_KEY="your-api-key"
 go run main.go
 ```
 
-The session uses `imageId` `AIO_ubuntu2404`.
+The session uses `imageId` `linux_latest`.
 
 ## Expected output (illustrative)
 
@@ -3772,6 +3775,10 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		if lp.ManualRelease {
 			createSessionRequest.ManualRelease = tea.Bool(true)
 		} else {
+			// Validate non-manual policy has valid values
+			if lp.IdleReleaseTimeout <= 0 || lp.MaxRuntime <= 0 {
+				return nil, fmt.Errorf("LifecyclePolicy: IdleReleaseTimeout and MaxRuntime must be positive when ManualRelease is false; use NewLifecyclePolicy() or NewLifecyclePolicyWithValues()")
+			}
 			createSessionRequest.Timeout = tea.Int32(lp.IdleReleaseTimeout)
 			createSessionRequest.MaxRuntime = tea.Int32(lp.MaxRuntime)
 		}
@@ -4092,19 +4099,8 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 
 // waitForMobileSimulate waits for mobile simulate command to complete.
 func (a *AgentBay) waitForMobileSimulate(session *Session, mobileSimPath string, mobileSimMode models.MobileSimulateMode) error {
-	LogInfo("⏳ Mobile simulate: Waiting for completion")
 
-	if session.Mobile == nil {
-		LogWarn("Mobile module not found in session, skipping mobile simulate")
-		return nil
-	}
-	if session.Command == nil {
-		LogWarn("Command module not found in session, skipping mobile simulate")
-		return nil
-	}
-	if mobileSimPath == "" {
-
-... [truncated, 28,344 chars remaining] ...
+... [truncated, 28,603 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func NewListSessionParams() *ListSessionParams {
@@ -4982,106 +4978,110 @@ func (c *Command) executeCommandInternal(
 	}
 
 	if result.Success {
-		// Try to parse the new JSON format response
-		var dataJson map[string]interface{}
-		if err := json.Unmarshal([]byte(result.Data), &dataJson); err != nil {
-			// Fallback to old format if JSON parsing fails
-			return &CommandResult{
-				ApiResponse: models.ApiResponse{
-					RequestID: result.RequestID,
-				},
-				Success: true,
-				Output:  result.Data,
-			}, nil
-		}
-
-		// Extract fields from new format
-		stdout := ""
-		if val, ok := dataJson["stdout"].(string); ok {
-			stdout = val
-		}
-		stderr := ""
-		if val, ok := dataJson["stderr"].(string); ok {
-			stderr = val
-		}
-		exitCode := 0
-		if val, ok := dataJson["exit_code"].(float64); ok {
-			exitCode = int(val)
-		}
-		traceID := ""
-		if val, ok := dataJson["traceId"].(string); ok {
-			traceID = val
-		}
-
-		// Determine success based on exit_code (0 means success)
-		success := exitCode == 0
-
-		// For backward compatibility, output should be stdout + stderr
-		output := stdout + stderr
-
+		parsed := parseShellPayload(result.Data)
 		return &CommandResult{
 			ApiResponse: models.ApiResponse{
 				RequestID: result.RequestID,
 			},
-			Success:      success,
-			Output:       output,
-			ExitCode:     exitCode,
-			Stdout:       stdout,
-			Stderr:       stderr,
-			TraceID:      traceID,
+			Success:      parsed.exitCode == 0,
+			Output:       parsed.stdout + parsed.stderr,
+			ExitCode:     parsed.exitCode,
+			Stdout:       parsed.stdout,
+			Stderr:       parsed.stderr,
+			TraceID:      parsed.traceID,
 			ErrorMessage: result.ErrorMessage,
 		}, nil
 	} else {
-		// Try to parse error message as JSON (in case backend returns JSON in error)
-		var errorData map[string]interface{}
-		if err := json.Unmarshal([]byte(result.ErrorMessage), &errorData); err == nil {
-			// Successfully parsed JSON from error message
-			stdout := ""
-			if val, ok := errorData["stdout"].(string); ok {
-				stdout = val
-			}
-			stderr := ""
-			if val, ok := errorData["stderr"].(string); ok {
-				stderr = val
-			}
-			exitCode := 0
-			// Backend may return either "exit_code" or "errorCode", support both
-			if val, ok := errorData["exit_code"].(float64); ok {
-				exitCode = int(val)
-			} else if val, ok := errorData["errorCode"].(float64); ok {
-				exitCode = int(val)
-			}
-			traceID := ""
-			if val, ok := errorData["traceId"].(string); ok {
-				traceID = val
-			}
-			// For backward compatibility, output should be stdout + stderr
-			output := stdout + stderr
-
-			return &CommandResult{
-				ApiResponse: models.ApiResponse{
-					RequestID: result.RequestID,
-				},
-				Success:      false,
-				Output:       output,
-				ExitCode:     exitCode,
-				Stdout:       stdout,
-				Stderr:       stderr,
-				TraceID:      traceID,
-				ErrorMessage: stderr,
-			}, nil
+		rawErr := result.ErrorMessage
+		parsed := parseShellPayload(rawErr)
+		effectiveExitCode := parsed.exitCode
+		if effectiveExitCode == 0 {
+			effectiveExitCode = 1
 		}
-
-		// If parsing fails, return error
+		effectiveError := parsed.stderr
+		if effectiveError == "" {
+			effectiveError = rawErr
+		}
+		if effectiveError == "" {
+			effectiveError = "Failed to execute command"
+		}
 		return &CommandResult{
 			ApiResponse: models.ApiResponse{
 				RequestID: result.RequestID,
 			},
 			Success:      false,
-			Output:       "",
-			ErrorMessage: result.ErrorMessage,
+			Output:       parsed.stdout + parsed.stderr,
+			ExitCode:     effectiveExitCode,
+			Stdout:       parsed.stdout,
+			Stderr:       parsed.stderr,
+			TraceID:      parsed.traceID,
+			ErrorMessage: effectiveError,
 		}, nil
 	}
+}
+
+// parsedShellPayload holds the parsed fields from a shell-tool MCP response.
+type parsedShellPayload struct {
+	stdout  string
+	stderr  string
+	exitCode int
+	traceID string
+}
+
+// looksLikeWrappedShellPayload conservatively determines whether a parsed JSON
+// map looks like the shell-tool wrapped envelope {exit_code, stdout, stderr}.
+//
+// Different sandbox images return data in different shapes:
+//   - Wrapped (code_latest): {"exit_code":0,"stdout":"...","stderr":"..."}
+//   - Raw (imgc-* / openclaw): the command's stdout returned verbatim
+//
+// We require strong signals to avoid mistaking user command JSON output
+// for the wrapper:
+//  1. Integer exit_code + at least one string stdout/stderr, OR
+//  2. Both string stdout and stderr present.
+func looksLikeWrappedShellPayload(data map[string]interface{}) bool {
+	_, hasStdout := data["stdout"].(string)
+	_, hasStderr := data["stderr"].(string)
+	exitCodeVal, hasExitCode := data["exit_code"]
+	hasIntExitCode := false
+	if hasExitCode {
+		if floatVal, ok := exitCodeVal.(float64); ok {
+			hasIntExitCode = floatVal == float64(int(floatVal))
+		}
+	}
+	if hasIntExitCode && (hasStdout || hasStderr) {
+		return true
+	}
+	return hasStdout && hasStderr
+}
+
+// parseShellPayload parses a shell-tool MCP response payload.
+// It detects the wrapped format conservatively; anything else is treated
+// as raw command output returned verbatim.
+func parseShellPayload(rawData string) parsedShellPayload {
+	if rawData == "" {
+		return parsedShellPayload{}
+	}
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal([]byte(rawData), &dataMap); err == nil {
+		if looksLikeWrappedShellPayload(dataMap) {
+			stdout, _ := dataMap["stdout"].(string)
+			stderr, _ := dataMap["stderr"].(string)
+			exitCode := 0
+			if val, ok := dataMap["exit_code"].(float64); ok {
+				exitCode = int(val)
+			}
+			traceID, _ := dataMap["traceId"].(string)
+			return parsedShellPayload{
+				stdout:   stdout,
+				stderr:   stderr,
+				exitCode: exitCode,
+				traceID:  traceID,
+			}
+		}
+	}
+	// Raw stdout: return the entire payload verbatim.
+	return parsedShellPayload{stdout: rawData}
 }
 
 
@@ -5829,6 +5829,7 @@ package agentbay
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -6381,6 +6382,8 @@ type ContextFileListResult struct {
 	Success      bool
 	Entries      []*ContextFileEntry
 	Count        *int32
+	NextToken    string
+	MaxResults   *int32
 	ErrorMessage string
 }
 
@@ -6502,13 +6505,14 @@ func (cs *ContextService) GetFileDownloadUrl(contextID string, filePath string) 
 //
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
 //	contextResult, _ := client.Context.Get("my-context", true)
-//	urlResult, _ := client.Context.GetFileUploadUrl(contextResult.ContextID, "/data/file.txt")
 
-... [truncated, 18,224 chars remaining] ...
+... [truncated, 20,790 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func (cs *ContextService) GetFileUploadUrl(contextID string, filePath string) (*ContextFileUrlResult, error) {
 func (cs *ContextService) ListFiles(contextID string, parentFolderPath string, pageNumber int32, pageSize int32) (*Co...
+func (cs *ContextService) ListFilesWithPagination(contextID string, parentFolderPath string, maxResults *int32, nextT...
+func (cs *ContextService) describeContextFiles(
 func (cs *ContextService) DeleteFile(contextID string, filePath string) (*ContextFileDeleteResult, error) {
 func (cs *ContextService) ClearAsync(contextID string) (*ContextClearResult, error) {
 func (cs *ContextService) GetClearStatus(contextID string) (*ContextClearResult, error) {
@@ -8873,6 +8877,7 @@ This directory is generated. Run `mvn exec:java` in `java/agentbay` to refresh i
 - [common-features/basics/context.md](common-features/basics/context.md)
 - [common-features/basics/env.md](common-features/basics/env.md)
 - [common-features/basics/filesystem.md](common-features/basics/filesystem.md)
+- [common-features/basics/lifecycle-policy.md](common-features/basics/lifecycle-policy.md)
 - [common-features/basics/pty.md](common-features/basics/pty.md)
 - [common-features/basics/session-params.md](common-features/basics/session-params.md)
 - [common-features/basics/session.md](common-features/basics/session.md)
@@ -12200,7 +12205,7 @@ class AsyncCode(AsyncBaseService):
 FILE: python/agentbay/_async/command.py
 ================================================
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from .._common.exceptions import AgentBayError, CommandError
 from .._common.logger import get_logger
@@ -12210,6 +12215,69 @@ from .base_service import AsyncBaseService
 
 # Initialize _logger for this module
 _logger = get_logger("command")
+
+
+def _looks_like_wrapped_shell_payload(data_obj: Any) -> bool:
+    """Conservatively determine whether a parsed JSON object looks like the
+    shell-tool wrapper envelope ``{"exit_code": int, "stdout": str, "stderr": str}``.
+
+    The check is intentionally strict: a single ``stdout`` field is not enough,
+    because user commands can legitimately produce JSON that happens to contain
+    a ``stdout`` field. We require either:
+      * an integer ``exit_code`` plus at least one textual ``stdout``/``stderr``, or
+      * both textual ``stdout`` and ``stderr`` (``exit_code`` may default to 0).
+    """
+    if not isinstance(data_obj, dict):
+        return False
+    has_int_exit_code = isinstance(data_obj.get("exit_code"), int) and not isinstance(
+        data_obj.get("exit_code"), bool
+    )
+    has_stdout = isinstance(data_obj.get("stdout"), str)
+    has_stderr = isinstance(data_obj.get("stderr"), str)
+    if has_int_exit_code and (has_stdout or has_stderr):
+        return True
+    return has_stdout and has_stderr
+
+
+def _parse_shell_payload(raw: Any) -> Tuple[str, str, int, str]:
+    """Parse a shell-tool MCP response payload into ``(stdout, stderr, exit_code, trace_id)``.
+
+    Different sandbox images return data in different shapes:
+
+    * **Wrapped** (``code_latest`` and similar): ``{"exit_code": 0, "stdout": "...", "stderr": "..."}``
+    * **Raw** (``imgc-*`` / openclaw and similar): the command's stdout returned verbatim
+      with no JSON wrapping at all (whether or not it happens to be valid JSON)
+
+    The wrapped shape is detected via :func:`_looks_like_wrapped_shell_payload`.
+    Anything else — including JSON objects/arrays/scalars and plain text — is
+    treated as raw command output.
+    """
+    if raw is None:
+        return "", "", 0, ""
+    if isinstance(raw, str):
+        if not raw:
+            return "", "", 0, ""
+        try:
+            data_obj = json.loads(raw)
+        except (ValueError, TypeError):
+            return raw, "", 0, ""
+    else:
+        data_obj = raw
+
+    if _looks_like_wrapped_shell_payload(data_obj):
+        return (
+            data_obj.get("stdout", ""),
+            data_obj.get("stderr", ""),
+            data_obj.get("exit_code", 0)
+            if isinstance(data_obj.get("exit_code"), int)
+            else data_obj.get("errorCode", 0)
+            if isinstance(data_obj.get("errorCode"), int)
+            else 0,
+            data_obj.get("traceId", ""),
+        )
+
+    # Raw payload: return the original string verbatim, or its repr as fallback.
+    return (raw if isinstance(raw, str) else str(raw)), "", 0, ""
 
 
 class AsyncCommand(AsyncBaseService):
@@ -12303,79 +12371,33 @@ class AsyncCommand(AsyncBaseService):
             _logger.debug(f"Execute command response: {result}")
 
             if result.success:
-                # Try to parse the new JSON format response
-                try:
-                    # Parse JSON string from result.data
-                    if isinstance(result.data, str):
-                        data_json = json.loads(result.data)
-                    else:
-                        data_json = result.data
-
-                    # Extract fields from new format
-                    stdout = data_json.get("stdout", "")
-                    stderr = data_json.get("stderr", "")
-                    exit_code = data_json.get("exit_code", 0)
-                    trace_id = data_json.get("traceId", "")
-
-                    # Determine success based on exit_code (0 means success)
-                    success = exit_code == 0
-
-                    # For backward compatibility, output should be stdout + stderr
-                    output = stdout + stderr
-
-                    return CommandResult(
-                        request_id=result.request_id,
-                        success=success,
-                        output=output,
-                        exit_code=exit_code,
-                        stdout=stdout,
-                        stderr=stderr,
-                        trace_id=trace_id,
-                    )
-                except (json.JSONDecodeError, TypeError, AttributeError) as e:
-                    # Fallback to old format if JSON parsing fails
-                    _logger.debug(f"Failed to parse JSON response, using old format: {e}")
-                    return CommandResult(
-                        request_id=result.request_id,
-                        success=True,
-                        output=result.data if isinstance(result.data, str) else str(result.data),
-                    )
+                stdout, stderr, exit_code, trace_id = _parse_shell_payload(result.data)
+                return CommandResult(
+                    request_id=result.request_id,
+                    success=exit_code == 0,
+                    output=stdout + stderr,
+                    exit_code=exit_code,
+                    stdout=stdout,
+                    stderr=stderr,
+                    trace_id=trace_id,
+                )
             else:
-                # Try to parse error message as JSON (in case backend returns JSON in error_message)
-                try:
-                    if isinstance(result.error_message, str):
-                        error_data = json.loads(result.error_message)
-                    else:
-                        error_data = result.error_message
-
-                    if isinstance(error_data, dict):
-                        # Extract fields from error JSON
-                        stdout = error_data.get("stdout", "")
-                        stderr = error_data.get("stderr", "")
-                        # Backend may return either "exit_code" or "errorCode", support both
-                        exit_code = error_data.get("exit_code") or error_data.get("errorCode", 0)
-                        trace_id = error_data.get("traceId", "")
-                        # For backward compatibility, output should be stdout + stderr
-                        output = stdout + stderr
-
-                        return CommandResult(
-                            request_id=result.request_id,
-                            success=False,
-                            output=output,
-                            exit_code=exit_code,
-                            stdout=stdout,
-                            stderr=stderr,
-                            trace_id=trace_id,
-                            error_message=stderr or result.error_message or "Failed to execute command",
-                        )
-                except (json.JSONDecodeError, TypeError, AttributeError):
-                    # If parsing fails, use original error message
-                    pass
-
+                stdout, stderr, exit_code, trace_id = _parse_shell_payload(result.error_message)
+                effective_exit_code = exit_code if exit_code != 0 else 1
+                effective_error = (
+                    stderr
+                    if stderr
+                    else (result.error_message or "Failed to execute command")
+                )
                 return CommandResult(
                     request_id=result.request_id,
                     success=False,
-                    error_message=result.error_message or "Failed to execute command",
+                    output=stdout + stderr,
+                    exit_code=effective_exit_code,
+                    stdout=stdout,
+                    stderr=stderr,
+                    trace_id=trace_id,
+                    error_message=effective_error,
                 )
         except Exception as e:
             return CommandResult(
@@ -13235,11 +13257,13 @@ class ContextFileListResult(ApiResponse):
         success: bool = False,
         entries: Optional[List[ContextFileEntry]] = None,
         count: Optional[int] = None,
+        next_token: Optional[str] = None,
     ):
         super().__init__(request_id)
         self.success = success
         self.entries = entries or []
         self.count = count
+        self.next_token = next_token
 
 
 class ClearContextResult(OperationResult):
@@ -13594,10 +13618,8 @@ class AsyncContextService:
         Returns:
             ContextResult: The created ContextResult object with request ID.
 
-        Example:
-            ```python
 
-... [truncated, 26,713 chars remaining] ...
+... [truncated, 27,905 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     async def update(self, context: Context) -> OperationResult:
@@ -15509,6 +15531,7 @@ Shared classes used by both sync and async APIs are in the `common/` directory:
 - [Exceptions](common/exceptions.md) - `agentbay._common.exceptions`
 - [Logging](common/logging.md) - `agentbay._common.logger`
 - [Context Sync](common/context-sync.md) - `agentbay._common.params.context_sync`
+- [Lifecycle Policy](common/lifecycle-policy.md) - `agentbay._common.params.lifecycle_policy`
 - [Code Execution Models](common/code-models.md) - `agentbay._common.models.code`
 - [Browser Models](common/browser-models.md) - `agentbay._common.models.browser`
 - [Response Models](common/response-models.md) - `agentbay._common.models.response`
@@ -16185,7 +16208,7 @@ for index, status in enumerate(info_result.context_status_data):
 
 ```python
 # List files in context sync directory
-list_result = await agent_bay.context.list_files(context_id, sync_dir_path, page_number=1, page_size=10)
+list_result = await agent_bay.context.list_files(context_id, sync_dir_path, max_results=10)
 
 # Display file entries
 for index, entry in enumerate(list_result.entries):
@@ -16561,7 +16584,7 @@ export AGENTBAY_API_KEY="your-api-key-here"
 python main.py
 ```
 
-The session is created with `image_id="AIO_ubuntu2404"` so env tools are available.
+The session is created with `image_id="linux_latest"` so env tools are available.
 
 ## Expected output
 
@@ -17416,7 +17439,7 @@ FILE: python/pyproject.toml
 ================================================
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.19.0"
+version = "0.20.0"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
@@ -17637,6 +17660,7 @@ These documents are generated automatically using TypeDoc. Run `npm run docs:gen
   - context.md
   - env.md
   - filesystem.md
+  - lifecycle-policy.md
   - logging.md
   - pty.md
   - session-params.md
@@ -18630,10 +18654,10 @@ infoResult.contextStatusData.forEach((status, index) => {
 ### File Listing in Context Directory
 
 ```typescript
-// List files in context sync directory
-const listResult = await agentBay.context.listFiles(contextId, syncDirPath, 1, 10);
+// List files in context sync directory (optional 5th/6th args: maxResults, nextToken for token pagination)
+const listResult = await agentBay.context.listFiles(contextId, syncDirPath, 1, 10, 10);
 
-// Display file entries
+// Display file entries; use listResult.nextToken for the next page when using token pagination
 listResult.entries.forEach((entry, index) => {
   console.log(`FilePath: ${entry.filePath}`);
   console.log(`FileType: ${entry.fileType}`);
@@ -19045,7 +19069,7 @@ npx ts-node docs/examples/common-features/basics/env-management/main.ts
 
 ## Expected output (illustrative)
 
-- Session is created with `imageId` `AIO_ubuntu2404`.
+- Session is created with `imageId` `linux_latest`.
 - Logs for set, get-all, get-by-keys, overwrite, and `echo $DEMO_APP` showing `agentbay`.
 - Session is deleted at the end.
 
@@ -19602,7 +19626,7 @@ FILE: typescript/package.json
 ================================================
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.19.0",
+    "version": "0.20.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",
@@ -22407,6 +22431,69 @@ import { Session } from "../session";
 import { CommandResult } from "../types/api-response";
 
 /**
+ * Parsed result from a shell-tool MCP response payload.
+ */
+interface ParsedShellPayload {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  traceId: string;
+}
+
+/**
+ * Conservatively determines whether a parsed JSON object looks like the
+ * shell-tool wrapped envelope `{exit_code, stdout, stderr}`.
+ *
+ * Different sandbox images return data in different shapes:
+ * - **Wrapped** (code_latest): `{"exit_code":0,"stdout":"...","stderr":"..."}`
+ * - **Raw** (imgc-* / openclaw): the command's stdout returned verbatim
+ *
+ * We require strong signals to avoid mistaking user command JSON output
+ * for the wrapper:
+ * 1. Integer `exit_code` + at least one string `stdout`/`stderr`, OR
+ * 2. Both string `stdout` and `stderr` present.
+ */
+function looksLikeWrappedShellPayload(obj: any): boolean {
+  if (obj == null || typeof obj !== "object" || Array.isArray(obj)) {
+    return false;
+  }
+  const hasIntExitCode =
+    typeof obj.exit_code === "number" && Number.isInteger(obj.exit_code);
+  const hasStdout = typeof obj.stdout === "string";
+  const hasStderr = typeof obj.stderr === "string";
+  if (hasIntExitCode && (hasStdout || hasStderr)) {
+    return true;
+  }
+  return hasStdout && hasStderr;
+}
+
+/**
+ * Parses a shell-tool MCP response payload into a structured result.
+ * Detects the wrapped format conservatively; anything else is treated
+ * as raw command output returned verbatim.
+ */
+function parseShellPayload(rawData: string): ParsedShellPayload {
+  if (!rawData) {
+    return { stdout: "", stderr: "", exitCode: 0, traceId: "" };
+  }
+  try {
+    const parsed = JSON.parse(rawData);
+    if (looksLikeWrappedShellPayload(parsed)) {
+      return {
+        stdout: parsed.stdout || "",
+        stderr: parsed.stderr || "",
+        exitCode:
+          typeof parsed.exit_code === "number" ? parsed.exit_code : 0,
+        traceId: parsed.traceId || "",
+      };
+    }
+  } catch {
+    // Not valid JSON — fall through to raw treatment.
+  }
+  return { stdout: rawData, stderr: "", exitCode: 0, traceId: "" };
+}
+
+/**
  * Handles command execution operations in the AgentBay cloud environment.
  */
 export class Command {
@@ -22531,87 +22618,38 @@ export class Command {
       const result = await this.session.callMcpTool("shell", args, false);
 
       if (result.success) {
-        // Try to parse the new JSON format response
-        try {
-          // Parse JSON string from result.data
-          let dataJson: any;
-          if (typeof result.data === "string") {
-            dataJson = JSON.parse(result.data);
-          } else {
-            dataJson = result.data;
-          }
-
-          // Extract fields from new format
-          const stdout = dataJson.stdout || "";
-          const stderr = dataJson.stderr || "";
-          const exitCode = dataJson.exit_code || 0;
-          const traceId = dataJson.traceId || "";
-
-          // Determine success based on exit_code (0 means success)
-          const success = exitCode === 0;
-
-          // For backward compatibility, output should be stdout + stderr
-          const output = stdout + stderr;
-
-          return {
-            requestId: result.requestId,
-            success,
-            output,
-            exitCode: exitCode,
-            stdout,
-            stderr,
-            traceId: traceId || undefined,
-            errorMessage: result.errorMessage,
-          };
-        } catch (parseError) {
-          // Fallback to old format if JSON parsing fails
-          return {
-            requestId: result.requestId,
-            success: true,
-            output:
-              typeof result.data === "string"
-                ? result.data
-                : String(result.data),
-            errorMessage: result.errorMessage,
-          };
-        }
+        const rawData =
+          result.data == null
+            ? ""
+            : typeof result.data === "string"
+              ? result.data
+              : String(result.data);
+        const parsed = parseShellPayload(rawData);
+        return {
+          requestId: result.requestId,
+          success: parsed.exitCode === 0,
+          output: parsed.stdout + parsed.stderr,
+          exitCode: parsed.exitCode,
+          stdout: parsed.stdout,
+          stderr: parsed.stderr,
+          traceId: parsed.traceId || undefined,
+          errorMessage: result.errorMessage,
+        };
       } else {
-        // Try to parse error message as JSON (in case backend returns JSON in error)
-        try {
-          const errorData =
-            typeof result.errorMessage === "string"
-              ? JSON.parse(result.errorMessage)
-              : result.errorMessage;
-
-          if (errorData && typeof errorData === "object") {
-            const stdout = errorData.stdout || "";
-            const stderr = errorData.stderr || "";
-            // Backend may return either "exit_code" or "errorCode", support both
-            const exitCode = errorData.exit_code || errorData.errorCode || 0;
-            const traceId = errorData.traceId || "";
-            // For backward compatibility, output should be stdout + stderr
-            const output = stdout + stderr;
-
-            return {
-              requestId: result.requestId,
-              success: false,
-              output,
-              exitCode: exitCode,
-              stdout,
-              stderr,
-              traceId: traceId || undefined,
-              errorMessage: stderr || result.errorMessage,
-            };
-          }
-        } catch {
-          // If parsing fails, use original error message
-        }
-
+        const rawErr = result.errorMessage || "";
+        const parsed = parseShellPayload(rawErr);
+        const effectiveExitCode = parsed.exitCode !== 0 ? parsed.exitCode : 1;
+        const effectiveError =
+          parsed.stderr || rawErr || "Failed to execute command";
         return {
           requestId: result.requestId,
           success: false,
-          output: "",
-          errorMessage: result.errorMessage || "Failed to execute command",
+          output: parsed.stdout + parsed.stderr,
+          exitCode: effectiveExitCode,
+          stdout: parsed.stdout,
+          stderr: parsed.stderr,
+          traceId: parsed.traceId || undefined,
+          errorMessage: effectiveError,
         };
       }
     } catch (error) {
@@ -24104,7 +24142,7 @@ export class ContextService {
    * @param contextId - The ID of the context.
    * @param filePath - The path to the file to delete.
 
-... [truncated, 15,676 chars remaining] ...
+... [truncated, 16,741 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
   async deleteFile(
@@ -24116,6 +24154,7 @@ export class ContextService {
     logDebug(
     if (body?.success === false && body.code) {
       logAPIResponseWithDetails(
+    if (useTokenPagination) {
     if (body?.count !== undefined) {
     logAPIResponseWithDetails(
   async clearAsync(contextId: string): Promise<ClearContextResult> {

@@ -3,6 +3,7 @@ package agentbay
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -555,6 +556,8 @@ type ContextFileListResult struct {
 	Success      bool
 	Entries      []*ContextFileEntry
 	Count        *int32
+	NextToken    string
+	MaxResults   *int32
 	ErrorMessage string
 }
 
@@ -755,7 +758,7 @@ func (cs *ContextService) GetFileUploadUrl(contextID string, filePath string) (*
 	}, nil
 }
 
-// ListFiles lists files under a specific folder path in a context.
+// ListFiles lists files under a specific folder path in a context using PageNumber/PageSize pagination.
 //
 // Parameters:
 //   - contextID: The ID of the context
@@ -780,8 +783,53 @@ func (cs *ContextService) ListFiles(contextID string, parentFolderPath string, p
 		ParentFolderPath: tea.String(parentFolderPath),
 		ContextId:        tea.String(contextID),
 	}
+	logSummary := fmt.Sprintf("ContextId=%s, ParentFolderPath=%s, PageNumber=%d, PageSize=%d", contextID, parentFolderPath, pageNumber, pageSize)
+	return cs.describeContextFiles(req, logSummary, contextID, parentFolderPath, pageNumber, pageSize)
+}
 
-	logAPICall("DescribeContextFiles", fmt.Sprintf("ContextId=%s, ParentFolderPath=%s, PageNumber=%d, PageSize=%d", contextID, parentFolderPath, pageNumber, pageSize))
+// ListFilesWithPagination lists files using MaxResults/NextToken pagination (token mode).
+// Set maxResults and/or a non-empty nextToken (pass a non-nil pointer to a non-empty string).
+// When using this method, PageNumber/PageSize are omitted on the API request, matching the pop API contract.
+func (cs *ContextService) ListFilesWithPagination(contextID string, parentFolderPath string, maxResults *int32, nextToken *string) (*ContextFileListResult, error) {
+	useTok := maxResults != nil || (nextToken != nil && *nextToken != "")
+	if !useTok {
+		return nil, fmt.Errorf("ListFilesWithPagination: provide maxResults and/or non-empty nextToken")
+	}
+	req := &mcp.DescribeContextFilesRequest{
+		Authorization:    tea.String("Bearer " + cs.AgentBay.APIKey),
+		ParentFolderPath: tea.String(parentFolderPath),
+		ContextId:        tea.String(contextID),
+	}
+	if maxResults != nil {
+		req.MaxResults = tea.Int32(*maxResults)
+	}
+	if nextToken != nil && *nextToken != "" {
+		req.NextToken = tea.String(*nextToken)
+	}
+	parts := []string{
+		fmt.Sprintf("ContextId=%s", contextID),
+		fmt.Sprintf("ParentFolderPath=%s", parentFolderPath),
+	}
+	if maxResults != nil {
+		parts = append(parts, fmt.Sprintf("MaxResults=%d", *maxResults))
+	}
+	if nextToken != nil && *nextToken != "" {
+		parts = append(parts, fmt.Sprintf("NextToken=%s", *nextToken))
+	}
+	logSummary := strings.Join(parts, ", ")
+	return cs.describeContextFiles(req, logSummary, contextID, parentFolderPath, 0, 0)
+}
+
+// describeContextFiles calls DescribeContextFiles and maps the response; pageNumber/pageSize are for logging only when >0.
+func (cs *ContextService) describeContextFiles(
+	req *mcp.DescribeContextFilesRequest,
+	logSummary string,
+	contextID string,
+	parentFolderPath string,
+	pageNumber int32,
+	pageSize int32,
+) (*ContextFileListResult, error) {
+	logAPICall("DescribeContextFiles", logSummary)
 
 	resp, err := cs.AgentBay.Client.DescribeContextFiles(req)
 	if err != nil {
@@ -795,6 +843,8 @@ func (cs *ContextService) ListFiles(contextID string, parentFolderPath string, p
 	success := false
 	var count *int32
 	var errorMessage string
+	var nextTok string
+	var maxRes *int32
 
 	if resp != nil && resp.Body != nil {
 		if resp.Body.Success != nil {
@@ -816,12 +866,20 @@ func (cs *ContextService) ListFiles(contextID string, parentFolderPath string, p
 				Success:      false,
 				Entries:      []*ContextFileEntry{},
 				Count:        nil,
+				NextToken:    "",
+				MaxResults:   nil,
 				ErrorMessage: errorMessage,
 			}, nil
 		}
 
 		if resp.Body.Count != nil {
 			count = resp.Body.Count
+		}
+		if resp.Body.NextToken != nil {
+			nextTok = *resp.Body.NextToken
+		}
+		if resp.Body.MaxResults != nil {
+			maxRes = resp.Body.MaxResults
 		}
 		for _, it := range resp.Body.Data {
 			if it == nil {
@@ -858,12 +916,21 @@ func (cs *ContextService) ListFiles(contextID string, parentFolderPath string, p
 		keyFields := map[string]interface{}{
 			"context_id":         contextID,
 			"parent_folder_path": parentFolderPath,
-			"page_number":        pageNumber,
-			"page_size":          pageSize,
 			"entry_count":        len(entries),
+		}
+		if pageNumber > 0 || pageSize > 0 {
+			keyFields["page_number"] = pageNumber
+			keyFields["page_size"] = pageSize
 		}
 		if count != nil {
 			keyFields["total_count"] = *count
+		}
+		if nextTok != "" {
+			keyFields["has_next_page"] = true
+			keyFields["next_token_length"] = len(nextTok)
+		}
+		if maxRes != nil {
+			keyFields["max_results"] = *maxRes
 		}
 		respJSON, _ := json.MarshalIndent(resp.Body, "", "  ")
 		logAPIResponseWithDetails("DescribeContextFiles", requestID, true, keyFields, string(respJSON))
@@ -874,6 +941,8 @@ func (cs *ContextService) ListFiles(contextID string, parentFolderPath string, p
 		Success:      success,
 		Entries:      entries,
 		Count:        count,
+		NextToken:    nextTok,
+		MaxResults:   maxRes,
 		ErrorMessage: "",
 	}, nil
 }

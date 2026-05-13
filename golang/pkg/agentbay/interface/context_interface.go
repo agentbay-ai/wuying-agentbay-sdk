@@ -29,8 +29,11 @@ type ContextInterface interface {
 	// GetFileUploadUrl gets a presigned upload URL for a context file
 	GetFileUploadUrl(contextID string, filePath string) (*agentbay.ContextFileUrlResult, error)
 
-	// ListFiles lists files under a specific folder path in a context
+	// ListFiles lists files under a specific folder path in a context (PageNumber/PageSize)
 	ListFiles(contextID string, parentFolderPath string, pageNumber int32, pageSize int32) (*agentbay.ContextFileListResult, error)
+
+	// ListFilesWithPagination lists files using MaxResults/NextToken (token pagination)
+	ListFilesWithPagination(contextID string, parentFolderPath string, maxResults *int32, nextToken *string) (*agentbay.ContextFileListResult, error)
 
 	// DeleteFile deletes a file in a context
 	DeleteFile(contextID string, filePath string) (*agentbay.ContextFileDeleteResult, error)

@@ -692,6 +692,15 @@ func (client *Client) DescribeContextFilesWithOptions(request *DescribeContextFi
 	if _err != nil {
 		return _result, _err
 	}
+	query := map[string]interface{}{}
+	if !dara.IsNil(request.MaxResults) {
+		query["MaxResults"] = request.MaxResults
+	}
+
+	if !dara.IsNil(request.NextToken) {
+		query["NextToken"] = request.NextToken
+	}
+
 	body := map[string]interface{}{}
 	if !dara.IsNil(request.Authorization) {
 		body["Authorization"] = request.Authorization
@@ -714,7 +723,8 @@ func (client *Client) DescribeContextFilesWithOptions(request *DescribeContextFi
 	}
 
 	req := &openapiutil.OpenApiRequest{
-		Body: openapiutil.ParseToMap(body),
+		Query: openapiutil.Query(query),
+		Body:  openapiutil.ParseToMap(body),
 	}
 	params := &openapiutil.Params{
 		Action:      dara.String("DescribeContextFiles"),

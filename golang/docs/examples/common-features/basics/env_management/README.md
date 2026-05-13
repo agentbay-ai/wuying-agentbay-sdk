@@ -16,7 +16,7 @@ export AGENTBAY_API_KEY="your-api-key"
 go run main.go
 ```
 
-The session uses `imageId` `AIO_ubuntu2404`.
+The session uses `imageId` `linux_latest`.
 
 ## Expected output (illustrative)
 

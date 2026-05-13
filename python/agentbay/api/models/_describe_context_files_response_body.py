@@ -19,6 +19,8 @@ class DescribeContextFilesResponseBody(DaraModel):
         message: str = None,
         request_id: str = None,
         success: bool = None,
+        next_token: str = None,
+        max_results: int = None,
     ):
         self.code = code
         self.count = count
@@ -27,6 +29,8 @@ class DescribeContextFilesResponseBody(DaraModel):
         self.message = message
         self.request_id = request_id
         self.success = success
+        self.next_token = next_token
+        self.max_results = max_results
 
     def validate(self):
         if self.data:
@@ -62,6 +66,12 @@ class DescribeContextFilesResponseBody(DaraModel):
         if self.success is not None:
             result["Success"] = self.success
 
+        if self.next_token is not None:
+            result["NextToken"] = self.next_token
+
+        if self.max_results is not None:
+            result["MaxResults"] = self.max_results
+
         return result
 
     def from_map(self, m: dict = None):
@@ -89,6 +99,12 @@ class DescribeContextFilesResponseBody(DaraModel):
 
         if m.get("Success") is not None:
             self.success = m.get("Success")
+
+        if m.get("NextToken") is not None:
+            self.next_token = m.get("NextToken")
+
+        if m.get("MaxResults") is not None:
+            self.max_results = m.get("MaxResults")
 
         return self
 

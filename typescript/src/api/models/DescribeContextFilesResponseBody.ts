@@ -53,6 +53,8 @@ export class DescribeContextFilesResponseBody extends $dara.Model {
   message?: string;
   requestId?: string;
   success?: boolean;
+  nextToken?: string;
+  maxResults?: number;
   static names(): { [key: string]: string } {
     return {
       code: 'Code',
@@ -62,6 +64,8 @@ export class DescribeContextFilesResponseBody extends $dara.Model {
       message: 'Message',
       requestId: 'RequestId',
       success: 'Success',
+      nextToken: 'NextToken',
+      maxResults: 'MaxResults',
     };
   }
 
@@ -74,6 +78,8 @@ export class DescribeContextFilesResponseBody extends $dara.Model {
       message: 'string',
       requestId: 'string',
       success: 'boolean',
+      nextToken: 'string',
+      maxResults: 'number',
     };
   }
 

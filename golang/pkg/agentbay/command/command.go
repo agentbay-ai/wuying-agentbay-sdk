@@ -204,104 +204,108 @@ func (c *Command) executeCommandInternal(
 	}
 
 	if result.Success {
-		// Try to parse the new JSON format response
-		var dataJson map[string]interface{}
-		if err := json.Unmarshal([]byte(result.Data), &dataJson); err != nil {
-			// Fallback to old format if JSON parsing fails
-			return &CommandResult{
-				ApiResponse: models.ApiResponse{
-					RequestID: result.RequestID,
-				},
-				Success: true,
-				Output:  result.Data,
-			}, nil
-		}
-
-		// Extract fields from new format
-		stdout := ""
-		if val, ok := dataJson["stdout"].(string); ok {
-			stdout = val
-		}
-		stderr := ""
-		if val, ok := dataJson["stderr"].(string); ok {
-			stderr = val
-		}
-		exitCode := 0
-		if val, ok := dataJson["exit_code"].(float64); ok {
-			exitCode = int(val)
-		}
-		traceID := ""
-		if val, ok := dataJson["traceId"].(string); ok {
-			traceID = val
-		}
-
-		// Determine success based on exit_code (0 means success)
-		success := exitCode == 0
-
-		// For backward compatibility, output should be stdout + stderr
-		output := stdout + stderr
-
+		parsed := parseShellPayload(result.Data)
 		return &CommandResult{
 			ApiResponse: models.ApiResponse{
 				RequestID: result.RequestID,
 			},
-			Success:      success,
-			Output:       output,
-			ExitCode:     exitCode,
-			Stdout:       stdout,
-			Stderr:       stderr,
-			TraceID:      traceID,
+			Success:      parsed.exitCode == 0,
+			Output:       parsed.stdout + parsed.stderr,
+			ExitCode:     parsed.exitCode,
+			Stdout:       parsed.stdout,
+			Stderr:       parsed.stderr,
+			TraceID:      parsed.traceID,
 			ErrorMessage: result.ErrorMessage,
 		}, nil
 	} else {
-		// Try to parse error message as JSON (in case backend returns JSON in error)
-		var errorData map[string]interface{}
-		if err := json.Unmarshal([]byte(result.ErrorMessage), &errorData); err == nil {
-			// Successfully parsed JSON from error message
-			stdout := ""
-			if val, ok := errorData["stdout"].(string); ok {
-				stdout = val
-			}
-			stderr := ""
-			if val, ok := errorData["stderr"].(string); ok {
-				stderr = val
-			}
-			exitCode := 0
-			// Backend may return either "exit_code" or "errorCode", support both
-			if val, ok := errorData["exit_code"].(float64); ok {
-				exitCode = int(val)
-			} else if val, ok := errorData["errorCode"].(float64); ok {
-				exitCode = int(val)
-			}
-			traceID := ""
-			if val, ok := errorData["traceId"].(string); ok {
-				traceID = val
-			}
-			// For backward compatibility, output should be stdout + stderr
-			output := stdout + stderr
-
-			return &CommandResult{
-				ApiResponse: models.ApiResponse{
-					RequestID: result.RequestID,
-				},
-				Success:      false,
-				Output:       output,
-				ExitCode:     exitCode,
-				Stdout:       stdout,
-				Stderr:       stderr,
-				TraceID:      traceID,
-				ErrorMessage: stderr,
-			}, nil
+		rawErr := result.ErrorMessage
+		parsed := parseShellPayload(rawErr)
+		effectiveExitCode := parsed.exitCode
+		if effectiveExitCode == 0 {
+			effectiveExitCode = 1
 		}
-
-		// If parsing fails, return error
+		effectiveError := parsed.stderr
+		if effectiveError == "" {
+			effectiveError = rawErr
+		}
+		if effectiveError == "" {
+			effectiveError = "Failed to execute command"
+		}
 		return &CommandResult{
 			ApiResponse: models.ApiResponse{
 				RequestID: result.RequestID,
 			},
 			Success:      false,
-			Output:       "",
-			ErrorMessage: result.ErrorMessage,
+			Output:       parsed.stdout + parsed.stderr,
+			ExitCode:     effectiveExitCode,
+			Stdout:       parsed.stdout,
+			Stderr:       parsed.stderr,
+			TraceID:      parsed.traceID,
+			ErrorMessage: effectiveError,
 		}, nil
 	}
+}
+
+// parsedShellPayload holds the parsed fields from a shell-tool MCP response.
+type parsedShellPayload struct {
+	stdout  string
+	stderr  string
+	exitCode int
+	traceID string
+}
+
+// looksLikeWrappedShellPayload conservatively determines whether a parsed JSON
+// map looks like the shell-tool wrapped envelope {exit_code, stdout, stderr}.
+//
+// Different sandbox images return data in different shapes:
+//   - Wrapped (code_latest): {"exit_code":0,"stdout":"...","stderr":"..."}
+//   - Raw (imgc-* / openclaw): the command's stdout returned verbatim
+//
+// We require strong signals to avoid mistaking user command JSON output
+// for the wrapper:
+//  1. Integer exit_code + at least one string stdout/stderr, OR
+//  2. Both string stdout and stderr present.
+func looksLikeWrappedShellPayload(data map[string]interface{}) bool {
+	_, hasStdout := data["stdout"].(string)
+	_, hasStderr := data["stderr"].(string)
+	exitCodeVal, hasExitCode := data["exit_code"]
+	hasIntExitCode := false
+	if hasExitCode {
+		if floatVal, ok := exitCodeVal.(float64); ok {
+			hasIntExitCode = floatVal == float64(int(floatVal))
+		}
+	}
+	if hasIntExitCode && (hasStdout || hasStderr) {
+		return true
+	}
+	return hasStdout && hasStderr
+}
+
+// parseShellPayload parses a shell-tool MCP response payload.
+// It detects the wrapped format conservatively; anything else is treated
+// as raw command output returned verbatim.
+func parseShellPayload(rawData string) parsedShellPayload {
+	if rawData == "" {
+		return parsedShellPayload{}
+	}
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal([]byte(rawData), &dataMap); err == nil {
+		if looksLikeWrappedShellPayload(dataMap) {
+			stdout, _ := dataMap["stdout"].(string)
+			stderr, _ := dataMap["stderr"].(string)
+			exitCode := 0
+			if val, ok := dataMap["exit_code"].(float64); ok {
+				exitCode = int(val)
+			}
+			traceID, _ := dataMap["traceId"].(string)
+			return parsedShellPayload{
+				stdout:   stdout,
+				stderr:   stderr,
+				exitCode: exitCode,
+				traceID:  traceID,
+			}
+		}
+	}
+	// Raw stdout: return the entire payload verbatim.
+	return parsedShellPayload{stdout: rawData}
 }

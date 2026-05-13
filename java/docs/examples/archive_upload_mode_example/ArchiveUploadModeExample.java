@@ -113,11 +113,14 @@ public class ArchiveUploadModeExample {
             System.out.println("✅ Context info entries: " + infoResult.getContextStatusData().size());
 
             ContextFileListResult listResult =
-                agentBay.getContext().listFiles(contextId, syncPath, 1, 10);
+                agentBay.getContext().listFiles(contextId, syncPath, 10, null);
             if (!listResult.isSuccess()) {
                 throw new IllegalStateException("listFiles failed: " + listResult.getErrorMessage());
             }
             System.out.println("✅ Listed " + listResult.getEntries().size() + " entries");
+            if (listResult.getNextToken() != null && !listResult.getNextToken().isEmpty()) {
+                System.out.println("   nextToken present for further pages");
+            }
             for (int i = 0; i < listResult.getEntries().size(); i++) {
                 FileInfo e = listResult.getEntries().get(i);
                 System.out.println(
@@ -223,7 +226,7 @@ public class ArchiveUploadModeExample {
             System.out.println("✅ Context sync requestId: " + syncResult.getRequestId());
 
             ContextFileListResult listResult =
-                agentBay.getContext().listFiles(contextId, syncPath, 1, 20);
+                agentBay.getContext().listFiles(contextId, syncPath, 20, null);
             if (!listResult.isSuccess()) {
                 throw new IllegalStateException("listFiles failed: " + listResult.getErrorMessage());
             }

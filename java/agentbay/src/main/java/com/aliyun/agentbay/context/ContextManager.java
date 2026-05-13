@@ -418,7 +418,8 @@ public class ContextManager {
                 item.setContextId(ctx.getContextId());
                 item.setPath(ctx.getPath());
                 if (ctx.getPolicy() != null) {
-                    item.setPolicy(objectMapper.writeValueAsString(ctx.getPolicy()));
+                    Map<String, Object> policyMap = ctx.getPolicy().toMap();
+                    item.setPolicy(objectMapper.writeValueAsString(policyMap));
                 }
                 persistenceDataList.add(item);
             }

@@ -112,6 +112,7 @@ CLAUDE.md
 .agents/
 .claude/
 .iflow/
+docs/superpowers/
 skills-lock.json
 
 # Example result files

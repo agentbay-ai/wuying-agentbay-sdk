@@ -217,6 +217,19 @@ type commandOptions struct {
 
 commandOptions holds the configuration for command execution
 
+## Type parsedShellPayload
+
+```go
+type parsedShellPayload struct {
+	stdout		string
+	stderr		string
+	exitCode	int
+	traceID		string
+}
+```
+
+parsedShellPayload holds the parsed fields from a shell-tool MCP response.
+
 ## Functions
 
 ### GetMobileCommandTemplate

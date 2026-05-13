@@ -1,5 +1,16 @@
 # Lifecycle Policy API Reference
 
+## ⏱ Related Tutorial
+
+- [Session Lifecycle Guide](../../../../../docs/guides/common-features/basics/session-management.md) - Learn how to control session lifecycle with idle release, max runtime, and manual release
+
+## Overview
+
+The LifecyclePolicy class provides fine-grained control over session lifecycle.
+It supports idle release timeout, maximum runtime, and manual release options.
+All time values are in minutes. When set, SDK takes full control of session lifecycle
+and overrides console defaults.
+
 ## Type LifecyclePolicy
 
 ```go
@@ -65,6 +76,18 @@ func NewLifecyclePolicyWithValues(idleReleaseTimeout, maxRuntime int32, manualRe
 NewLifecyclePolicyWithValues validates and returns a LifecyclePolicy. When manualRelease is true,
 idleReleaseTimeout and maxRuntime must be zero. When manualRelease is false, idleReleaseTimeout and
 maxRuntime must be positive.
+
+## Best Practices
+
+1. Use LifecyclePolicy instead of the deprecated idle_release_timeout parameter for new code
+2. Set max_runtime to prevent runaway sessions from consuming resources indefinitely
+3. Use manual_release=true for interactive workflows where session duration is unpredictable
+4. The backend requires idle_release_timeout >= 3 minutes
+
+## Related Resources
+
+- [Session Params API Reference](session-params.md)
+- [Session API Reference](session.md)
 
 ---
 

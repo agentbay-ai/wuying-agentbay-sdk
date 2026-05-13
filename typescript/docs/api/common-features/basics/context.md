@@ -346,7 +346,7 @@ ___
 
 ### listFiles
 
-▸ **listFiles**(`contextId`, `parentFolderPath`, `pageNumber?`, `pageSize?`): `Promise`\<`ContextFileListResult`\>
+▸ **listFiles**(`contextId`, `parentFolderPath`, `pageNumber?`, `pageSize?`, `maxResults?`, `nextToken?`): `Promise`\<`ContextFileListResult`\>
 
 List files under a specific folder path in a context.
 
@@ -356,8 +356,10 @@ List files under a specific folder path in a context.
 | :------ | :------ | :------ | :------ |
 | `contextId` | `string` | `undefined` | The ID of the context. |
 | `parentFolderPath` | `string` | `undefined` | The parent folder path to list files from. |
-| `pageNumber` | `number` | `1` | Page number for pagination (default: 1). |
-| `pageSize` | `number` | `50` | Number of files per page (default: 50). |
+| `pageNumber` | `number` | `1` | Page number for pagination (default: 1). Ignored when `maxResults` or `nextToken` is set. |
+| `pageSize` | `number` | `50` | Number of files per page (default: 50). Ignored when `maxResults` or `nextToken` is set. |
+| `maxResults?` | `number` | `undefined` | Maximum entries per request (token-based pagination). When set with or without `nextToken`, token pagination is used instead of page number/size. |
+| `nextToken?` | `string` | `undefined` | Pagination token from a previous response. |
 
 #### Returns
 

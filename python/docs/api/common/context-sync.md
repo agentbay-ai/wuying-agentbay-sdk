@@ -336,8 +336,18 @@ Defines the white list configuration
 
 **Attributes**:
 
-    path: Path to include in the white list
-    exclude_paths: Paths to exclude from the white list
+    path: Path to include in the white list.
+  When is_path_regex is False (default), this must be an exact absolute directory path
+  and wildcard characters are not allowed.
+  When is_path_regex is True, this is treated as a regex pattern (e.g. "/home/wuying/.*").
+    exclude_paths: Paths to exclude from the white list.
+  When is_exclude_regex is False (default), these must be exact absolute directory paths
+  and wildcard characters are not allowed.
+  When is_exclude_regex is True, these are treated as regex patterns.
+    is_path_regex: If True, path is interpreted as a regex pattern.
+  If False (default), path is an absolute directory path.
+    is_exclude_regex: If True, exclude_paths entries are interpreted as regex patterns.
+  If False (default), exclude_paths entries are absolute directory paths.
 
 #### path: `str`
 
@@ -349,6 +359,18 @@ path = ""
 
 ```python
 exclude_paths = field(default_factory=list)
+```
+
+#### is_path_regex: `bool`
+
+```python
+is_path_regex = False
+```
+
+#### is_exclude_regex: `bool`
+
+```python
+is_exclude_regex = False
 ```
 
 ## BWList

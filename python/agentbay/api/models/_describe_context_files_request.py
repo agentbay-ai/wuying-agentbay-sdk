@@ -13,12 +13,16 @@ class DescribeContextFilesRequest(DaraModel):
         page_size: int = None,
         parent_folder_path: str = None,
         context_id: str = None,
+        max_results: int = None,
+        next_token: str = None,
     ):
         self.authorization = authorization
         self.page_number = page_number
         self.page_size = page_size
         self.parent_folder_path = parent_folder_path
         self.context_id = context_id
+        self.max_results = max_results
+        self.next_token = next_token
 
     def validate(self):
         pass
@@ -43,6 +47,12 @@ class DescribeContextFilesRequest(DaraModel):
         if self.context_id is not None:
             result["ContextId"] = self.context_id
 
+        if self.max_results is not None:
+            result["MaxResults"] = self.max_results
+
+        if self.next_token is not None:
+            result["NextToken"] = self.next_token
+
         return result
 
     def from_map(self, m: dict = None):
@@ -61,5 +71,11 @@ class DescribeContextFilesRequest(DaraModel):
 
         if m.get("ContextId") is not None:
             self.context_id = m.get("ContextId")
+
+        if m.get("MaxResults") is not None:
+            self.max_results = m.get("MaxResults")
+
+        if m.get("NextToken") is not None:
+            self.next_token = m.get("NextToken")
 
         return self

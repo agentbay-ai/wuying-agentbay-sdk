@@ -89,10 +89,12 @@ for index, status := range infoResult.ContextStatusData {
 ### File Listing in Context Directory
 
 ```go
-// List files in context sync directory
-listResult, err := ab.Context.ListFiles(contextID, syncDirPath, 1, 10)
+// List files via MaxResults/NextToken pagination
+maxResults := int32(10)
+listResult, err := ab.Context.ListFilesWithPagination(contextID, syncDirPath, &maxResults, nil)
 
-// Display file entries
+// Display file entries; for the next page when listResult.NextToken is non-empty:
+// next := listResult.NextToken; ab.Context.ListFilesWithPagination(contextID, syncDirPath, nil, &next)
 for index, entry := range listResult.Entries {
     fmt.Printf("FilePath: %s\n", entry.FilePath)
     fmt.Printf("FileType: %s\n", entry.FileType)

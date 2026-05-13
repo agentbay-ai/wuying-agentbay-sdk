@@ -174,19 +174,23 @@ public ContextFileListResult listFiles(String contextId, String parentFolderPath
 ```
 
 ```java
+public ContextFileListResult listFiles(String contextId, String parentFolderPath, Integer maxResults, String nextToken)
+```
+
+```java
 public ContextFileListResult listFiles(String contextId, String parentFolderPath)
 ```
 
-Lists files under a specific folder path in a context.
+Lists files under a specific folder path in a context using max-results and next-token pagination.
 
 **Parameters:**
 - `contextId` (String): The ID of the context.
 - `parentFolderPath` (String): The parent folder path to list files from.
-- `pageNumber` (int): The page number for pagination. Default is 1.
-- `pageSize` (int): The number of items per page. Default is 50.
+- `maxResults` (Integer): Maximum number of results to return (may be null to omit).
+- `nextToken` (String): Token for the next page (may be null for the first page).
 
 **Returns:**
-- `ContextFileListResult`: ContextFileListResult containing the list of files and request ID.
+- `ContextFileListResult`: ContextFileListResult containing the list of files, next token, and request ID.
 
 
 

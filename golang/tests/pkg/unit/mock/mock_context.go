@@ -154,6 +154,21 @@ func (mr *MockContextInterfaceMockRecorder) ListFiles(arg0, arg1, arg2, arg3 int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFiles", reflect.TypeOf((*MockContextInterface)(nil).ListFiles), arg0, arg1, arg2, arg3)
 }
 
+// ListFilesWithPagination mocks base method.
+func (m *MockContextInterface) ListFilesWithPagination(arg0, arg1 string, arg2 *int32, arg3 *string) (*agentbay.ContextFileListResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListFilesWithPagination", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*agentbay.ContextFileListResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListFilesWithPagination indicates an expected call of ListFilesWithPagination.
+func (mr *MockContextInterfaceMockRecorder) ListFilesWithPagination(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFilesWithPagination", reflect.TypeOf((*MockContextInterface)(nil).ListFilesWithPagination), arg0, arg1, arg2, arg3)
+}
+
 // Update mocks base method.
 func (m *MockContextInterface) Update(arg0 *agentbay.Context) (*agentbay.ContextModifyResult, error) {
 	m.ctrl.T.Helper()

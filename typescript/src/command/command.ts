@@ -2,6 +2,69 @@ import { Session } from "../session";
 import { CommandResult } from "../types/api-response";
 
 /**
+ * Parsed result from a shell-tool MCP response payload.
+ */
+interface ParsedShellPayload {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  traceId: string;
+}
+
+/**
+ * Conservatively determines whether a parsed JSON object looks like the
+ * shell-tool wrapped envelope `{exit_code, stdout, stderr}`.
+ *
+ * Different sandbox images return data in different shapes:
+ * - **Wrapped** (code_latest): `{"exit_code":0,"stdout":"...","stderr":"..."}`
+ * - **Raw** (imgc-* / openclaw): the command's stdout returned verbatim
+ *
+ * We require strong signals to avoid mistaking user command JSON output
+ * for the wrapper:
+ * 1. Integer `exit_code` + at least one string `stdout`/`stderr`, OR
+ * 2. Both string `stdout` and `stderr` present.
+ */
+function looksLikeWrappedShellPayload(obj: any): boolean {
+  if (obj == null || typeof obj !== "object" || Array.isArray(obj)) {
+    return false;
+  }
+  const hasIntExitCode =
+    typeof obj.exit_code === "number" && Number.isInteger(obj.exit_code);
+  const hasStdout = typeof obj.stdout === "string";
+  const hasStderr = typeof obj.stderr === "string";
+  if (hasIntExitCode && (hasStdout || hasStderr)) {
+    return true;
+  }
+  return hasStdout && hasStderr;
+}
+
+/**
+ * Parses a shell-tool MCP response payload into a structured result.
+ * Detects the wrapped format conservatively; anything else is treated
+ * as raw command output returned verbatim.
+ */
+function parseShellPayload(rawData: string): ParsedShellPayload {
+  if (!rawData) {
+    return { stdout: "", stderr: "", exitCode: 0, traceId: "" };
+  }
+  try {
+    const parsed = JSON.parse(rawData);
+    if (looksLikeWrappedShellPayload(parsed)) {
+      return {
+        stdout: parsed.stdout || "",
+        stderr: parsed.stderr || "",
+        exitCode:
+          typeof parsed.exit_code === "number" ? parsed.exit_code : 0,
+        traceId: parsed.traceId || "",
+      };
+    }
+  } catch {
+    // Not valid JSON — fall through to raw treatment.
+  }
+  return { stdout: rawData, stderr: "", exitCode: 0, traceId: "" };
+}
+
+/**
  * Handles command execution operations in the AgentBay cloud environment.
  */
 export class Command {
@@ -126,87 +189,38 @@ export class Command {
       const result = await this.session.callMcpTool("shell", args, false);
 
       if (result.success) {
-        // Try to parse the new JSON format response
-        try {
-          // Parse JSON string from result.data
-          let dataJson: any;
-          if (typeof result.data === "string") {
-            dataJson = JSON.parse(result.data);
-          } else {
-            dataJson = result.data;
-          }
-
-          // Extract fields from new format
-          const stdout = dataJson.stdout || "";
-          const stderr = dataJson.stderr || "";
-          const exitCode = dataJson.exit_code || 0;
-          const traceId = dataJson.traceId || "";
-
-          // Determine success based on exit_code (0 means success)
-          const success = exitCode === 0;
-
-          // For backward compatibility, output should be stdout + stderr
-          const output = stdout + stderr;
-
-          return {
-            requestId: result.requestId,
-            success,
-            output,
-            exitCode: exitCode,
-            stdout,
-            stderr,
-            traceId: traceId || undefined,
-            errorMessage: result.errorMessage,
-          };
-        } catch (parseError) {
-          // Fallback to old format if JSON parsing fails
-          return {
-            requestId: result.requestId,
-            success: true,
-            output:
-              typeof result.data === "string"
-                ? result.data
-                : String(result.data),
-            errorMessage: result.errorMessage,
-          };
-        }
+        const rawData =
+          result.data == null
+            ? ""
+            : typeof result.data === "string"
+              ? result.data
+              : String(result.data);
+        const parsed = parseShellPayload(rawData);
+        return {
+          requestId: result.requestId,
+          success: parsed.exitCode === 0,
+          output: parsed.stdout + parsed.stderr,
+          exitCode: parsed.exitCode,
+          stdout: parsed.stdout,
+          stderr: parsed.stderr,
+          traceId: parsed.traceId || undefined,
+          errorMessage: result.errorMessage,
+        };
       } else {
-        // Try to parse error message as JSON (in case backend returns JSON in error)
-        try {
-          const errorData =
-            typeof result.errorMessage === "string"
-              ? JSON.parse(result.errorMessage)
-              : result.errorMessage;
-
-          if (errorData && typeof errorData === "object") {
-            const stdout = errorData.stdout || "";
-            const stderr = errorData.stderr || "";
-            // Backend may return either "exit_code" or "errorCode", support both
-            const exitCode = errorData.exit_code || errorData.errorCode || 0;
-            const traceId = errorData.traceId || "";
-            // For backward compatibility, output should be stdout + stderr
-            const output = stdout + stderr;
-
-            return {
-              requestId: result.requestId,
-              success: false,
-              output,
-              exitCode: exitCode,
-              stdout,
-              stderr,
-              traceId: traceId || undefined,
-              errorMessage: stderr || result.errorMessage,
-            };
-          }
-        } catch {
-          // If parsing fails, use original error message
-        }
-
+        const rawErr = result.errorMessage || "";
+        const parsed = parseShellPayload(rawErr);
+        const effectiveExitCode = parsed.exitCode !== 0 ? parsed.exitCode : 1;
+        const effectiveError =
+          parsed.stderr || rawErr || "Failed to execute command";
         return {
           requestId: result.requestId,
           success: false,
-          output: "",
-          errorMessage: result.errorMessage || "Failed to execute command",
+          output: parsed.stdout + parsed.stderr,
+          exitCode: effectiveExitCode,
+          stdout: parsed.stdout,
+          stderr: parsed.stderr,
+          traceId: parsed.traceId || undefined,
+          errorMessage: effectiveError,
         };
       }
     } catch (error) {

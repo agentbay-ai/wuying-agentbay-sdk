@@ -469,7 +469,71 @@ public class ContextService {
             }
 
             return new ContextFileListResult(
-                requestId, true, entries, body.getCount(), ""
+                requestId, true, entries, body.getCount(), body.getNextToken(), ""
+            );
+
+        } catch (Exception e) {
+            return new ContextFileListResult(
+                "", false, new ArrayList<>(), null, "Failed to list files: " + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Lists files under a specific folder path in a context using max-results and next-token pagination.
+     *
+     * @param contextId The ID of the context.
+     * @param parentFolderPath The parent folder path to list files from.
+     * @param maxResults Maximum number of results to return (may be null to omit).
+     * @param nextToken Token for the next page (may be null for the first page).
+     * @return ContextFileListResult containing the list of files, next token, and request ID.
+     */
+    public ContextFileListResult listFiles(String contextId, String parentFolderPath, Integer maxResults, String nextToken) {
+        try {
+            DescribeContextFilesRequest request = new DescribeContextFilesRequest();
+            request.setAuthorization("Bearer " + agentBay.getApiKey());
+            request.setContextId(contextId);
+            request.setParentFolderPath(parentFolderPath);
+            request.setMaxResults(maxResults);
+            request.setNextToken(nextToken);
+
+            DescribeContextFilesResponse response = agentBay.getClient().describeContextFiles(request);
+            String requestId = ResponseUtil.extractRequestId(response);
+
+            if (response == null || response.getBody() == null) {
+                return new ContextFileListResult(
+                    requestId, false, new ArrayList<>(), null, "Invalid response from API"
+                );
+            }
+
+            DescribeContextFilesResponseBody body = response.getBody();
+
+            if (!Boolean.TRUE.equals(body.getSuccess())) {
+                String code = body.getCode() != null ? body.getCode() : "Unknown";
+                String message = body.getMessage() != null ? body.getMessage() : "Unknown error";
+                return new ContextFileListResult(
+                    requestId, false, new ArrayList<>(), null, "[" + code + "] " + message
+                );
+            }
+
+            List<FileInfo> entries = new ArrayList<>();
+            if (body.getData() != null) {
+                for (DescribeContextFilesResponseBody.DescribeContextFilesResponseBodyData data : body.getData()) {
+                    FileInfo fileInfo = new FileInfo();
+                    fileInfo.setFileId(data.getFileId());
+                    fileInfo.setFileName(data.getFileName());
+                    fileInfo.setFilePath(data.getFilePath());
+                    fileInfo.setFileType(data.getFileType());
+                    fileInfo.setGmtCreate(data.getGmtCreate());
+                    fileInfo.setGmtModified(data.getGmtModified());
+                    fileInfo.setSize(data.getSize());
+                    fileInfo.setStatus(data.getStatus());
+                    entries.add(fileInfo);
+                }
+            }
+
+            return new ContextFileListResult(
+                requestId, true, entries, body.getCount(), body.getNextToken(), ""
             );
 
         } catch (Exception e) {

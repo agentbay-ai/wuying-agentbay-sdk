@@ -14,6 +14,10 @@ type iDescribeContextFilesRequest interface {
 	GetPageNumber() *int32
 	SetPageSize(v int32) *DescribeContextFilesRequest
 	GetPageSize() *int32
+	SetMaxResults(v int32) *DescribeContextFilesRequest
+	GetMaxResults() *int32
+	SetNextToken(v string) *DescribeContextFilesRequest
+	GetNextToken() *string
 	SetParentFolderPath(v string) *DescribeContextFilesRequest
 	GetParentFolderPath() *string
 	SetContextId(v string) *DescribeContextFilesRequest
@@ -24,6 +28,8 @@ type DescribeContextFilesRequest struct {
 	Authorization    *string `json:"Authorization,omitempty" xml:"Authorization,omitempty"`
 	PageNumber       *int32  `json:"PageNumber,omitempty" xml:"PageNumber,omitempty"`
 	PageSize         *int32  `json:"PageSize,omitempty" xml:"PageSize,omitempty"`
+	MaxResults       *int32  `json:"MaxResults,omitempty" xml:"MaxResults,omitempty"`
+	NextToken        *string `json:"NextToken,omitempty" xml:"NextToken,omitempty"`
 	ParentFolderPath *string `json:"ParentFolderPath,omitempty" xml:"ParentFolderPath,omitempty"`
 	ContextId        *string `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
 }
@@ -48,6 +54,14 @@ func (s *DescribeContextFilesRequest) GetPageSize() *int32 {
 	return s.PageSize
 }
 
+func (s *DescribeContextFilesRequest) GetMaxResults() *int32 {
+	return s.MaxResults
+}
+
+func (s *DescribeContextFilesRequest) GetNextToken() *string {
+	return s.NextToken
+}
+
 func (s *DescribeContextFilesRequest) GetParentFolderPath() *string {
 	return s.ParentFolderPath
 }
@@ -68,6 +82,16 @@ func (s *DescribeContextFilesRequest) SetPageNumber(v int32) *DescribeContextFil
 
 func (s *DescribeContextFilesRequest) SetPageSize(v int32) *DescribeContextFilesRequest {
 	s.PageSize = &v
+	return s
+}
+
+func (s *DescribeContextFilesRequest) SetMaxResults(v int32) *DescribeContextFilesRequest {
+	s.MaxResults = &v
+	return s
+}
+
+func (s *DescribeContextFilesRequest) SetNextToken(v string) *DescribeContextFilesRequest {
+	s.NextToken = &v
 	return s
 }
 

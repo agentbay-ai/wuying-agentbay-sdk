@@ -25,7 +25,7 @@ java -cp "target/example-classes:target/classes:$(cat target/classpath.txt)" Arc
 
 ## What it does
 
-1. **Basic Archive mode** — Creates a context and session with `UploadMode.ARCHIVE`, writes a 5&nbsp;KB file under the sync path, runs context sync and info, lists files via `context.listFiles`, then deletes the session with sync enabled.
+1. **Basic Archive mode** — Creates a context and session with `UploadMode.ARCHIVE`, writes a 5&nbsp;KB file under the sync path, runs context sync and info, lists files via `context.listFiles(contextId, path, maxResults, nextToken)` (MaxResults/NextToken pagination), then deletes the session with sync enabled.
 2. **`archiveExcludePaths`** — Same flow with `important/` and `config.json` excluded from the archive bundle so they can be stored and accessed as individual files; writes files under excluded and non-excluded paths, syncs, lists, then deletes with sync.
 
 ## Expected output (illustrative)
