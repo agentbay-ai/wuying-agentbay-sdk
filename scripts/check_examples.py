@@ -39,6 +39,10 @@ CI_MARKER_SCAN_LINES = 20
 def _scan_marker(file_path: str, marker: str) -> Optional[str]:
     """Scan the first N lines of a file for a marker string.
 
+    Supports markers in:
+      - Line comments: # ci-stable / // ci-stable
+      - Docstrings: bare 'ci-stable' line inside triple-quoted strings
+
     Returns the text after the marker (or a default message) if found, None otherwise.
     """
     try:
@@ -52,6 +56,9 @@ def _scan_marker(file_path: str, marker: str) -> Optional[str]:
                     comment_body = stripped[2:].strip()
                 elif stripped.startswith("#") and not stripped.startswith("#!"):
                     comment_body = stripped[1:].strip()
+                else:
+                    # Also match bare marker lines inside docstrings
+                    comment_body = stripped
                 if comment_body is None:
                     continue
                 if comment_body == marker:
