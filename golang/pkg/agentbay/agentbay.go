@@ -339,15 +339,14 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	// Add context mount configurations if provided
 	if len(params.ContextMount) > 0 {
 		for _, contextMount := range params.ContextMount {
-			mountConfigJSON, err := contextMount.mountConfigJSON()
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal context mount config to JSON: %v", err)
-			}
 			persistenceItem := &mcp.CreateMcpSessionRequestPersistenceDataList{
-				ContextId:   tea.String(contextMount.ContextID),
-				Path:        tea.String(contextMount.Path),
-				Type:        tea.String("mount"),
-				MountConfig: tea.String(mountConfigJSON),
+				ContextId: tea.String(contextMount.ContextID),
+				Path:      tea.String(contextMount.Path),
+				Type:      tea.String("mount"),
+				MountConfig: &mcp.CreateMcpSessionRequestPersistenceDataListMountConfig{
+					AccessMode:  tea.String(string(contextMount.AccessMode)),
+					StorageMode: tea.String(string(contextMount.Strategy)),
+				},
 			}
 			persistenceDataList = append(persistenceDataList, persistenceItem)
 			waitContextIDs[contextMount.ContextID] = struct{}{}
@@ -1493,6 +1492,20 @@ func (a *AgentBay) copyCreateSessionParams(params *CreateSessionParams) *CreateS
 				csCopy.Policy = cs.Policy
 			}
 			copy.ContextSync = append(copy.ContextSync, csCopy)
+		}
+	}
+
+	// Deep copy ContextMount slice
+	if params.ContextMount != nil {
+		copy.ContextMount = make([]*ContextMount, 0, len(params.ContextMount))
+		for _, cm := range params.ContextMount {
+			cmCopy := &ContextMount{
+				ContextID:  cm.ContextID,
+				Path:       cm.Path,
+				AccessMode: cm.AccessMode,
+				Strategy:   cm.Strategy,
+			}
+			copy.ContextMount = append(copy.ContextMount, cmCopy)
 		}
 	}
 

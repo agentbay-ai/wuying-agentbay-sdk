@@ -4,6 +4,7 @@ import {
   SyncContextRequest,
   BindContextsRequest,
   BindContextsRequestPersistenceDataList,
+  BindContextsRequestPersistenceDataListMountConfig,
   DescribeSessionContextsRequest,
 } from "./api/models/model";
 import {
@@ -610,10 +611,7 @@ export class ContextManager {
    * ```
    */
   async bind(
-    contexts:
-      | ContextSync
-      | ContextMount
-      | (ContextSync | ContextMount)[],
+    contexts: ContextSync | ContextMount | (ContextSync | ContextMount)[],
     waitForCompletion = true
   ): Promise<ContextBindResult> {
     const ctxArray = Array.isArray(contexts) ? contexts : [contexts];
@@ -633,7 +631,11 @@ export class ContextManager {
       });
       if (ctx instanceof ContextMount) {
         item.type = "mount";
-        item.mountConfig = ctx.toMountConfigJSON();
+        item.mountConfig =
+          new BindContextsRequestPersistenceDataListMountConfig({
+            accessMode: ctx.accessMode,
+            storageMode: ctx.strategy,
+          });
       } else if (ctx instanceof ContextSync && ctx.policy) {
         item.policy = JSON.stringify(ctx.policy);
       }

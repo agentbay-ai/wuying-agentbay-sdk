@@ -384,12 +384,17 @@ public class AgentBay {
                     request.setPersistenceDataList(new ArrayList<>());
                 }
                 for (ContextMount cm : params.getContextMounts()) {
+                    CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataListMountConfig mountConfig =
+                        new CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataListMountConfig();
+                    mountConfig.setAccessMode(cm.getAccessMode().getValue());
+                    mountConfig.setStorageMode(cm.getStrategy().getValue());
+
                     CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataList persistenceData =
                         new CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataList();
                     persistenceData.setContextId(cm.getContextId());
                     persistenceData.setPath(cm.getPath());
                     persistenceData.setType("mount");
-                    persistenceData.setMountConfig(cm.toMountConfigJSON());
+                    persistenceData.setMountConfig(mountConfig);
                     request.getPersistenceDataList().add(persistenceData);
                 }
             }

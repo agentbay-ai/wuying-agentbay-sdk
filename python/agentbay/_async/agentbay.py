@@ -669,21 +669,25 @@ class AsyncAgentBay:
 
             # Add context_mounts if provided
             if hasattr(params, "context_mounts") and params.context_mounts:
-                from ..api.models import CreateMcpSessionRequestPersistenceDataList
-                import json as _json
+                from ..api.models import (
+                    CreateMcpSessionRequestPersistenceDataList,
+                    CreateMcpSessionRequestPersistenceDataListMountConfig,
+                )
 
                 if not hasattr(request, "persistence_data_list") or request.persistence_data_list is None:
                     request.persistence_data_list = []
                 for cm in params.context_mounts:
-                    mount_config_json = _json.dumps(
-                        cm._to_mount_config_dict(), ensure_ascii=False
+                    mount_config_dict = cm._to_mount_config_dict()
+                    mount_config = CreateMcpSessionRequestPersistenceDataListMountConfig(
+                        access_mode=mount_config_dict.get("accessMode"),
+                        storage_mode=mount_config_dict.get("storageMode"),
                     )
                     request.persistence_data_list.append(
                         CreateMcpSessionRequestPersistenceDataList(
                             context_id=cm.context_id,
                             path=cm.path,
                             type="mount",
-                            mount_config=mount_config_json,
+                            mount_config=mount_config,
                         )
                     )
 

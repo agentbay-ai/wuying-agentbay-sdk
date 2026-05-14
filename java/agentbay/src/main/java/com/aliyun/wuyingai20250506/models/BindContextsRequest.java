@@ -42,6 +42,46 @@ public class BindContextsRequest extends TeaModel {
         return this.sessionId;
     }
 
+    public static class BindContextsRequestPersistenceDataListMountConfig extends TeaModel {
+        @NameInMap("AccessMode")
+        public String accessMode;
+
+        @NameInMap("StorageMode")
+        public String storageMode;
+
+        @NameInMap("ObjectKey")
+        public String objectKey;
+
+        public static BindContextsRequestPersistenceDataListMountConfig build(java.util.Map<String, ?> map) throws Exception {
+            BindContextsRequestPersistenceDataListMountConfig self = new BindContextsRequestPersistenceDataListMountConfig();
+            return TeaModel.build(map, self);
+        }
+
+        public BindContextsRequestPersistenceDataListMountConfig setAccessMode(String accessMode) {
+            this.accessMode = accessMode;
+            return this;
+        }
+        public String getAccessMode() {
+            return this.accessMode;
+        }
+
+        public BindContextsRequestPersistenceDataListMountConfig setStorageMode(String storageMode) {
+            this.storageMode = storageMode;
+            return this;
+        }
+        public String getStorageMode() {
+            return this.storageMode;
+        }
+
+        public BindContextsRequestPersistenceDataListMountConfig setObjectKey(String objectKey) {
+            this.objectKey = objectKey;
+            return this;
+        }
+        public String getObjectKey() {
+            return this.objectKey;
+        }
+    }
+
     public static class BindContextsRequestPersistenceDataList extends TeaModel {
         @NameInMap("ContextId")
         public String contextId;
@@ -56,7 +96,7 @@ public class BindContextsRequest extends TeaModel {
         public String type;
 
         @NameInMap("MountConfig")
-        public String mountConfig;
+        public BindContextsRequestPersistenceDataListMountConfig mountConfig;
 
         public static BindContextsRequestPersistenceDataList build(java.util.Map<String, ?> map) throws Exception {
             BindContextsRequestPersistenceDataList self = new BindContextsRequestPersistenceDataList();
@@ -95,11 +135,11 @@ public class BindContextsRequest extends TeaModel {
             return this.type;
         }
 
-        public BindContextsRequestPersistenceDataList setMountConfig(String mountConfig) {
+        public BindContextsRequestPersistenceDataList setMountConfig(BindContextsRequestPersistenceDataListMountConfig mountConfig) {
             this.mountConfig = mountConfig;
             return this;
         }
-        public String getMountConfig() {
+        public BindContextsRequestPersistenceDataListMountConfig getMountConfig() {
             return this.mountConfig;
         }
     }

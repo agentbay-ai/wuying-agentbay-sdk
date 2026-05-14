@@ -71,12 +71,57 @@ func (s *BindContextsRequest) Validate() error {
 	return nil
 }
 
+type BindContextsRequestPersistenceDataListMountConfig struct {
+	AccessMode  *string `json:"AccessMode,omitempty" xml:"AccessMode,omitempty"`
+	StorageMode *string `json:"StorageMode,omitempty" xml:"StorageMode,omitempty"`
+	ObjectKey   *string `json:"ObjectKey,omitempty" xml:"ObjectKey,omitempty"`
+}
+
+func (s BindContextsRequestPersistenceDataListMountConfig) String() string {
+	return dara.Prettify(s)
+}
+
+func (s BindContextsRequestPersistenceDataListMountConfig) GoString() string {
+	return s.String()
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) SetAccessMode(v string) *BindContextsRequestPersistenceDataListMountConfig {
+	s.AccessMode = &v
+	return s
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) GetAccessMode() *string {
+	return s.AccessMode
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) SetStorageMode(v string) *BindContextsRequestPersistenceDataListMountConfig {
+	s.StorageMode = &v
+	return s
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) GetStorageMode() *string {
+	return s.StorageMode
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) SetObjectKey(v string) *BindContextsRequestPersistenceDataListMountConfig {
+	s.ObjectKey = &v
+	return s
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) GetObjectKey() *string {
+	return s.ObjectKey
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) Validate() error {
+	return dara.Validate(s)
+}
+
 type BindContextsRequestPersistenceDataList struct {
-	ContextId   *string `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
-	Path        *string `json:"Path,omitempty" xml:"Path,omitempty"`
-	Policy      *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
-	Type        *string `json:"Type,omitempty" xml:"Type,omitempty"`
-	MountConfig *string `json:"MountConfig,omitempty" xml:"MountConfig,omitempty"`
+	ContextId   *string                                            `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
+	Path        *string                                            `json:"Path,omitempty" xml:"Path,omitempty"`
+	Policy      *string                                            `json:"Policy,omitempty" xml:"Policy,omitempty"`
+	Type        *string                                            `json:"Type,omitempty" xml:"Type,omitempty"`
+	MountConfig *BindContextsRequestPersistenceDataListMountConfig `json:"MountConfig,omitempty" xml:"MountConfig,omitempty"`
 }
 
 func (s BindContextsRequestPersistenceDataList) String() string {
@@ -103,7 +148,7 @@ func (s *BindContextsRequestPersistenceDataList) GetType() *string {
 	return s.Type
 }
 
-func (s *BindContextsRequestPersistenceDataList) GetMountConfig() *string {
+func (s *BindContextsRequestPersistenceDataList) GetMountConfig() *BindContextsRequestPersistenceDataListMountConfig {
 	return s.MountConfig
 }
 
@@ -127,8 +172,8 @@ func (s *BindContextsRequestPersistenceDataList) SetType(v string) *BindContexts
 	return s
 }
 
-func (s *BindContextsRequestPersistenceDataList) SetMountConfig(v string) *BindContextsRequestPersistenceDataList {
-	s.MountConfig = &v
+func (s *BindContextsRequestPersistenceDataList) SetMountConfig(v *BindContextsRequestPersistenceDataListMountConfig) *BindContextsRequestPersistenceDataList {
+	s.MountConfig = v
 	return s
 }
 

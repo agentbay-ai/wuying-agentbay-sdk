@@ -254,12 +254,57 @@ func (s *CreateMcpSessionRequest) Validate() error {
 	return dara.Validate(s)
 }
 
+type CreateMcpSessionRequestPersistenceDataListMountConfig struct {
+	AccessMode  *string `json:"AccessMode,omitempty" xml:"AccessMode,omitempty"`
+	StorageMode *string `json:"StorageMode,omitempty" xml:"StorageMode,omitempty"`
+	ObjectKey   *string `json:"ObjectKey,omitempty" xml:"ObjectKey,omitempty"`
+}
+
+func (s CreateMcpSessionRequestPersistenceDataListMountConfig) String() string {
+	return dara.Prettify(s)
+}
+
+func (s CreateMcpSessionRequestPersistenceDataListMountConfig) GoString() string {
+	return s.String()
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) SetAccessMode(v string) *CreateMcpSessionRequestPersistenceDataListMountConfig {
+	s.AccessMode = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) GetAccessMode() *string {
+	return s.AccessMode
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) SetStorageMode(v string) *CreateMcpSessionRequestPersistenceDataListMountConfig {
+	s.StorageMode = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) GetStorageMode() *string {
+	return s.StorageMode
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) SetObjectKey(v string) *CreateMcpSessionRequestPersistenceDataListMountConfig {
+	s.ObjectKey = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) GetObjectKey() *string {
+	return s.ObjectKey
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) Validate() error {
+	return dara.Validate(s)
+}
+
 type CreateMcpSessionRequestPersistenceDataList struct {
-	ContextId   *string `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
-	Path        *string `json:"Path,omitempty" xml:"Path,omitempty"`
-	Policy      *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
-	Type        *string `json:"Type,omitempty" xml:"Type,omitempty"`
-	MountConfig *string `json:"MountConfig,omitempty" xml:"MountConfig,omitempty"`
+	ContextId   *string                                                `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
+	Path        *string                                                `json:"Path,omitempty" xml:"Path,omitempty"`
+	Policy      *string                                                `json:"Policy,omitempty" xml:"Policy,omitempty"`
+	Type        *string                                                `json:"Type,omitempty" xml:"Type,omitempty"`
+	MountConfig *CreateMcpSessionRequestPersistenceDataListMountConfig `json:"MountConfig,omitempty" xml:"MountConfig,omitempty"`
 }
 
 func (s CreateMcpSessionRequestPersistenceDataList) String() string {
@@ -286,7 +331,7 @@ func (s *CreateMcpSessionRequestPersistenceDataList) GetType() *string {
 	return s.Type
 }
 
-func (s *CreateMcpSessionRequestPersistenceDataList) GetMountConfig() *string {
+func (s *CreateMcpSessionRequestPersistenceDataList) GetMountConfig() *CreateMcpSessionRequestPersistenceDataListMountConfig {
 	return s.MountConfig
 }
 
@@ -310,8 +355,8 @@ func (s *CreateMcpSessionRequestPersistenceDataList) SetType(v string) *CreateMc
 	return s
 }
 
-func (s *CreateMcpSessionRequestPersistenceDataList) SetMountConfig(v string) *CreateMcpSessionRequestPersistenceDataList {
-	s.MountConfig = &v
+func (s *CreateMcpSessionRequestPersistenceDataList) SetMountConfig(v *CreateMcpSessionRequestPersistenceDataListMountConfig) *CreateMcpSessionRequestPersistenceDataList {
+	s.MountConfig = v
 	return s
 }
 

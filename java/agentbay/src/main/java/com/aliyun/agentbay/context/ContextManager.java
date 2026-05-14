@@ -496,12 +496,17 @@ public class ContextManager {
 
         try {
             List<BindContextsRequest.BindContextsRequestPersistenceDataList> persistenceDataList = new ArrayList<>();
+            BindContextsRequest.BindContextsRequestPersistenceDataListMountConfig mountConfig =
+                new BindContextsRequest.BindContextsRequestPersistenceDataListMountConfig();
+            mountConfig.setAccessMode(context.getAccessMode().getValue());
+            mountConfig.setStorageMode(context.getStrategy().getValue());
+
             BindContextsRequest.BindContextsRequestPersistenceDataList item =
                 new BindContextsRequest.BindContextsRequestPersistenceDataList();
             item.setContextId(context.getContextId());
             item.setPath(context.getPath());
             item.setType("mount");
-            item.setMountConfig(context.toMountConfigJSON());
+            item.setMountConfig(mountConfig);
             persistenceDataList.add(item);
 
             BindContextsRequest request = new BindContextsRequest();

@@ -1,5 +1,5 @@
 export { ApplyMqttTokenResponseBodyData } from './ApplyMqttTokenResponseBodyData';
-export { CreateMcpSessionRequestPersistenceDataList } from './CreateMcpSessionRequestPersistenceDataList';
+export { CreateMcpSessionRequestPersistenceDataList, CreateMcpSessionRequestPersistenceDataListMountConfig } from './CreateMcpSessionRequestPersistenceDataList';
 export { CreateMcpSessionResponseBodyData } from './CreateMcpSessionResponseBodyData';
 export { GetContextResponseBodyData } from './GetContextResponseBodyData';
 export { GetContextInfoResponseBodyData } from './GetContextInfoResponseBodyData';
@@ -123,7 +123,7 @@ export { DeleteSessionAsyncRequest } from './DeleteSessionAsyncRequest';
 export { DeleteSessionAsyncResponseBody } from './DeleteSessionAsyncResponseBody';
 export { DeleteSessionAsyncResponse } from './DeleteSessionAsyncResponse';
 // Context binding operations
-export { BindContextsRequestPersistenceDataList, BindContextsRequest } from './BindContextsRequest';
+export { BindContextsRequestPersistenceDataList, BindContextsRequestPersistenceDataListMountConfig, BindContextsRequest } from './BindContextsRequest';
 export { BindContextsShrinkRequest } from './BindContextsShrinkRequest';
 export { BindContextsResponseBody } from './BindContextsResponseBody';
 export { BindContextsResponse } from './BindContextsResponse';

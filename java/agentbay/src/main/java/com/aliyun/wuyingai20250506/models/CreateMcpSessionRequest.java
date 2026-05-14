@@ -222,6 +222,46 @@ public class CreateMcpSessionRequest extends TeaModel {
         return this.vpcResource;
     }
 
+    public static class CreateMcpSessionRequestPersistenceDataListMountConfig extends TeaModel {
+        @NameInMap("AccessMode")
+        public String accessMode;
+
+        @NameInMap("StorageMode")
+        public String storageMode;
+
+        @NameInMap("ObjectKey")
+        public String objectKey;
+
+        public static CreateMcpSessionRequestPersistenceDataListMountConfig build(java.util.Map<String, ?> map) throws Exception {
+            CreateMcpSessionRequestPersistenceDataListMountConfig self = new CreateMcpSessionRequestPersistenceDataListMountConfig();
+            return TeaModel.build(map, self);
+        }
+
+        public CreateMcpSessionRequestPersistenceDataListMountConfig setAccessMode(String accessMode) {
+            this.accessMode = accessMode;
+            return this;
+        }
+        public String getAccessMode() {
+            return this.accessMode;
+        }
+
+        public CreateMcpSessionRequestPersistenceDataListMountConfig setStorageMode(String storageMode) {
+            this.storageMode = storageMode;
+            return this;
+        }
+        public String getStorageMode() {
+            return this.storageMode;
+        }
+
+        public CreateMcpSessionRequestPersistenceDataListMountConfig setObjectKey(String objectKey) {
+            this.objectKey = objectKey;
+            return this;
+        }
+        public String getObjectKey() {
+            return this.objectKey;
+        }
+    }
+
     public static class CreateMcpSessionRequestPersistenceDataList extends TeaModel {
         @NameInMap("ContextId")
         public String contextId;
@@ -236,7 +276,7 @@ public class CreateMcpSessionRequest extends TeaModel {
         public String type;
 
         @NameInMap("MountConfig")
-        public String mountConfig;
+        public CreateMcpSessionRequestPersistenceDataListMountConfig mountConfig;
 
         public static CreateMcpSessionRequestPersistenceDataList build(java.util.Map<String, ?> map) throws Exception {
             CreateMcpSessionRequestPersistenceDataList self = new CreateMcpSessionRequestPersistenceDataList();
@@ -275,11 +315,11 @@ public class CreateMcpSessionRequest extends TeaModel {
             return this.type;
         }
 
-        public CreateMcpSessionRequestPersistenceDataList setMountConfig(String mountConfig) {
+        public CreateMcpSessionRequestPersistenceDataList setMountConfig(CreateMcpSessionRequestPersistenceDataListMountConfig mountConfig) {
             this.mountConfig = mountConfig;
             return this;
         }
-        public String getMountConfig() {
+        public CreateMcpSessionRequestPersistenceDataListMountConfig getMountConfig() {
             return this.mountConfig;
         }
 

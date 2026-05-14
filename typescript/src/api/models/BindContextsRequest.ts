@@ -2,12 +2,41 @@
 import * as $dara from '@darabonba/typescript';
 
 
+export class BindContextsRequestPersistenceDataListMountConfig extends $dara.Model {
+  accessMode?: string;
+  storageMode?: string;
+  objectKey?: string;
+  static names(): { [key: string]: string } {
+    return {
+      accessMode: 'AccessMode',
+      storageMode: 'StorageMode',
+      objectKey: 'ObjectKey',
+    };
+  }
+
+  static types(): { [key: string]: any } {
+    return {
+      accessMode: 'string',
+      storageMode: 'string',
+      objectKey: 'string',
+    };
+  }
+
+  validate() {
+    super.validate();
+  }
+
+  constructor(map?: { [key: string]: any }) {
+    super(map);
+  }
+}
+
 export class BindContextsRequestPersistenceDataList extends $dara.Model {
   contextId?: string;
   path?: string;
   policy?: string;
   type?: string;
-  mountConfig?: string;
+  mountConfig?: BindContextsRequestPersistenceDataListMountConfig;
   static names(): { [key: string]: string } {
     return {
       contextId: 'ContextId',
@@ -24,7 +53,7 @@ export class BindContextsRequestPersistenceDataList extends $dara.Model {
       path: 'string',
       policy: 'string',
       type: 'string',
-      mountConfig: 'string',
+      mountConfig: BindContextsRequestPersistenceDataListMountConfig,
     };
   }
 

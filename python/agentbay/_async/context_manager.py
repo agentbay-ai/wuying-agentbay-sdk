@@ -18,6 +18,7 @@ from .._common.params.context_sync import ContextSync
 from ..api.models import (
     BindContextsRequest,
     BindContextsRequestPersistenceDataList,
+    BindContextsRequestPersistenceDataListMountConfig,
     DescribeSessionContextsRequest,
     GetContextInfoRequest,
     SyncContextRequest,
@@ -78,7 +79,11 @@ class AsyncContextManager:
             )
             if isinstance(ctx, ContextMount):
                 item.type = "mount"
-                item.mount_config = json.dumps(ctx._to_mount_config_dict())
+                mount_config_dict = ctx._to_mount_config_dict()
+                item.mount_config = BindContextsRequestPersistenceDataListMountConfig(
+                    access_mode=mount_config_dict.get("accessMode"),
+                    storage_mode=mount_config_dict.get("storageMode"),
+                )
             elif isinstance(ctx, ContextSync) and ctx.policy:
                 item.policy = json.dumps(ctx.policy.__dict__())
             persistence_data_list.append(item)

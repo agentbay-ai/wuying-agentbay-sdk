@@ -662,15 +662,14 @@ func (cm *ContextManager) Mount(contexts []*ContextMount, waitForCompletion bool
 
 	var persistenceDataList []*mcp.BindContextsRequestPersistenceDataList
 	for _, ctx := range contexts {
-		mountConfigJSON, err := ctx.mountConfigJSON()
-		if err != nil {
-			return nil, fmt.Errorf("failed to serialize mount config for %s: %w", ctx.ContextID, err)
-		}
 		item := &mcp.BindContextsRequestPersistenceDataList{
-			ContextId:   tea.String(ctx.ContextID),
-			Path:        tea.String(ctx.Path),
-			Type:        tea.String("mount"),
-			MountConfig: tea.String(mountConfigJSON),
+			ContextId: tea.String(ctx.ContextID),
+			Path:      tea.String(ctx.Path),
+			Type:      tea.String("mount"),
+			MountConfig: &mcp.BindContextsRequestPersistenceDataListMountConfig{
+				AccessMode:  tea.String(string(ctx.AccessMode)),
+				StorageMode: tea.String(string(ctx.Strategy)),
+			},
 		}
 		persistenceDataList = append(persistenceDataList, item)
 	}

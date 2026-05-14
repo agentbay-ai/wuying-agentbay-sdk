@@ -7,6 +7,7 @@ import * as $_client from "./api";
 import {
   ListSessionRequest,
   CreateMcpSessionRequestPersistenceDataList,
+  CreateMcpSessionRequestPersistenceDataListMountConfig,
   GetSessionRequest as $GetSessionRequest,
 } from "./api/models/model";
 import type { McpTool } from "./session";
@@ -416,7 +417,11 @@ export class AgentBay {
               contextId: mount.contextId,
               path: mount.path,
               type: "mount",
-              mountConfig: mount.toMountConfigJSON(),
+              mountConfig:
+                new CreateMcpSessionRequestPersistenceDataListMountConfig({
+                  accessMode: mount.accessMode,
+                  storageMode: mount.strategy,
+                }),
             });
           request.persistenceDataList.push(persistenceItem);
           waitContextIds.add(mount.contextId);

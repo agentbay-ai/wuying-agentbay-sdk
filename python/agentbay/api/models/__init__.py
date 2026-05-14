@@ -5,6 +5,7 @@ from __future__ import annotations
 from ._bind_contexts_request import (
     BindContextsRequest,
     BindContextsRequestPersistenceDataList,
+    BindContextsRequestPersistenceDataListMountConfig,
 )
 from ._bind_contexts_response import BindContextsResponse
 from ._bind_contexts_response_body import BindContextsResponseBody
@@ -19,6 +20,7 @@ from ._create_mcp_session_request import (
     AppManagerRule,
     CreateMcpSessionRequest,
     CreateMcpSessionRequestPersistenceDataList,
+    CreateMcpSessionRequestPersistenceDataListMountConfig,
     ExtraConfigs,
     MobileExtraConfig,
     MobileSimulateConfig,
@@ -193,6 +195,7 @@ from ._sync_context_response_body import SyncContextResponseBody
 __all__ = [
     BindContextsRequest,
     BindContextsRequestPersistenceDataList,
+    BindContextsRequestPersistenceDataListMountConfig,
     BindContextsResponseBody,
     BindContextsResponse,
     BindContextsShrinkRequest,
@@ -291,6 +294,7 @@ __all__ = [
     SyncContextResponseBody,
     SyncContextResponse,
     CreateMcpSessionRequestPersistenceDataList,
+    CreateMcpSessionRequestPersistenceDataListMountConfig,
     AppManagerRule,
     MobileExtraConfig,
     ExtraConfigs,

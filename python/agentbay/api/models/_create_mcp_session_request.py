@@ -195,6 +195,50 @@ class CreateMcpSessionRequest(DaraModel):
         return self
 
 
+class CreateMcpSessionRequestPersistenceDataListMountConfig(DaraModel):
+    def __init__(
+        self,
+        access_mode: Optional[str] = None,
+        storage_mode: Optional[str] = None,
+        object_key: Optional[str] = None,
+    ):
+        self.access_mode = access_mode
+        self.storage_mode = storage_mode
+        self.object_key = object_key
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        result = dict()
+        _map = super().to_map()
+        if _map is not None:
+            result = _map
+        if self.access_mode is not None:
+            result["AccessMode"] = self.access_mode
+
+        if self.storage_mode is not None:
+            result["StorageMode"] = self.storage_mode
+
+        if self.object_key is not None:
+            result["ObjectKey"] = self.object_key
+
+        return result
+
+    def from_map(self, m: Optional[dict] = None):
+        m = m or dict()
+        if m.get("AccessMode") is not None:
+            self.access_mode = m.get("AccessMode")
+
+        if m.get("StorageMode") is not None:
+            self.storage_mode = m.get("StorageMode")
+
+        if m.get("ObjectKey") is not None:
+            self.object_key = m.get("ObjectKey")
+
+        return self
+
+
 class CreateMcpSessionRequestPersistenceDataList(DaraModel):
     def __init__(
         self,
@@ -202,7 +246,7 @@ class CreateMcpSessionRequestPersistenceDataList(DaraModel):
         path: Optional[str] = None,
         policy: Optional[str] = None,
         type: Optional[str] = None,
-        mount_config: Optional[str] = None,
+        mount_config: Optional[CreateMcpSessionRequestPersistenceDataListMountConfig] = None,
     ):
         self.context_id = context_id
         self.path = path
@@ -211,7 +255,8 @@ class CreateMcpSessionRequestPersistenceDataList(DaraModel):
         self.mount_config = mount_config
 
     def validate(self):
-        pass
+        if self.mount_config:
+            self.mount_config.validate()
 
     def to_map(self):
         result = dict()
@@ -231,7 +276,7 @@ class CreateMcpSessionRequestPersistenceDataList(DaraModel):
             result["Type"] = self.type
 
         if self.mount_config is not None:
-            result["MountConfig"] = self.mount_config
+            result["MountConfig"] = self.mount_config.to_map()
 
         return result
 
@@ -250,7 +295,8 @@ class CreateMcpSessionRequestPersistenceDataList(DaraModel):
             self.type = m.get("Type")
 
         if m.get("MountConfig") is not None:
-            self.mount_config = m.get("MountConfig")
+            temp_model = CreateMcpSessionRequestPersistenceDataListMountConfig()
+            self.mount_config = temp_model.from_map(m.get("MountConfig"))
 
         return self
 
