@@ -14,7 +14,7 @@ This example demonstrates the Context Mount (direct-mount persistence) feature:
 import os
 import time
 
-from agentbay import AgentBay, ContextMount, CreateSessionParams
+from agentbay import AgentBay, BetaContextMount, CreateSessionParams
 
 
 def main():
@@ -53,9 +53,9 @@ def context_mount_demo(agent_bay: AgentBay):
 
     # Step 2: Create first session with context mount
     print("\n🔧 Step 2: Creating first session with context mount...")
-    context_mount = ContextMount.new(context.id, "/tmp/mounted_data")
+    context_mount = BetaContextMount.new(context.id, "/tmp/mounted_data")
 
-    params = CreateSessionParams(context_mounts=[context_mount])
+    params = CreateSessionParams(beta_context_mounts=[context_mount])
     session1_result = agent_bay.create(params)
 
     if not session1_result.success:
@@ -110,7 +110,7 @@ def context_mount_demo(agent_bay: AgentBay):
     # Step 4: Create second session to verify cross-session persistence
     print("\n🔧 Step 4: Creating second session to verify persistence...")
 
-    params2 = CreateSessionParams(context_mounts=[context_mount])
+    params2 = CreateSessionParams(beta_context_mounts=[context_mount])
     session2_result = agent_bay.create(params2)
 
     if not session2_result.success:
@@ -147,7 +147,7 @@ def context_mount_demo(agent_bay: AgentBay):
             f"dynamic-mount-{int(time.time())}", create=True
         )
         if dynamic_ctx_result.success:
-            dynamic_mount = ContextMount.new(
+            dynamic_mount = BetaContextMount.new(
                 dynamic_ctx_result.context.id, "/tmp/dynamic_mount"
             )
             bind_result = session2.context.bind(dynamic_mount)

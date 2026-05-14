@@ -507,8 +507,8 @@ type CreateSessionParams struct {
 	// These configurations define how contexts should be synchronized and mounted.
 	ContextSync	[]*ContextSync
 
-	// ContextMount is a list of context mount configurations for direct-mount persistence.
-	ContextMount	[]*ContextMount
+	// BetaContextMount is a list of context mount configurations for direct-mount persistence.
+	BetaContextMount	[]*BetaContextMount
 
 	// PolicyId specifies the policy ID to apply when creating the session.
 	PolicyId	string
@@ -544,13 +544,13 @@ AgentBay cloud environment.
 
 ### Methods
 
-### AddContextMount
+### AddBetaContextMount
 
 ```go
-func (p *CreateSessionParams) AddContextMount(contextMount *ContextMount) *CreateSessionParams
+func (p *CreateSessionParams) AddBetaContextMount(contextMount *BetaContextMount) *CreateSessionParams
 ```
 
-AddContextMount adds a context mount configuration to the session parameters.
+AddBetaContextMount adds a context mount configuration to the session parameters.
 
 ### AddContextSync
 
@@ -584,6 +584,14 @@ func (p *CreateSessionParams) GetLabelsJSON() (string, error)
 
 GetLabelsJSON returns the labels as a JSON string.
 
+### WithBetaContextMount
+
+```go
+func (p *CreateSessionParams) WithBetaContextMount(contextMounts []*BetaContextMount) *CreateSessionParams
+```
+
+WithBetaContextMount sets the context mount configurations for the session parameters.
+
 ### WithBetaNetworkId
 
 ```go
@@ -600,14 +608,6 @@ func (p *CreateSessionParams) WithBrowserContext(browserContext *BrowserContext)
 ```
 
 WithBrowserContext sets the browser context configuration for the session parameters.
-
-### WithContextMount
-
-```go
-func (p *CreateSessionParams) WithContextMount(contextMounts []*ContextMount) *CreateSessionParams
-```
-
-WithContextMount sets the context mount configurations for the session parameters.
 
 ### WithContextSync
 

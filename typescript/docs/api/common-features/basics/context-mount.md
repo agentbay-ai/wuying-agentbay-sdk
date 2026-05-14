@@ -1,4 +1,6 @@
-# Class: ContextMount
+# Class: BetaContextMount
+
+[Beta] Represents a context mount configuration for direct-mount persistence.
 
 ## Table of contents
 
@@ -8,17 +10,17 @@
 
 ### Methods
 
-- [toMountConfigJSON](#tomountconfigjson)
-- [withAccessMode](#withaccessmode)
-- [withStrategy](#withstrategy)
+- `toMountConfigJSON`
+- `withAccessMode`
+- `withStrategy`
 
 ## Properties
 
 ```typescript
-accessMode: ``ContextMountAccessMode``
+accessMode: ``BetaContextMountAccessMode``
 contextId: `string`
 path: `string`
-strategy: ``ContextMountStrategy``
+strategy: ``BetaContextMountStrategy``
 ```
 
 
@@ -36,38 +38,38 @@ ___
 
 ### withAccessMode
 
-▸ **withAccessMode**(`accessMode`): [`ContextMount`](context-mount.md)
+▸ **withAccessMode**(`accessMode`): ``BetaContextMount``
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `accessMode` | ``ContextMountAccessMode`` |
+| `accessMode` | ``BetaContextMountAccessMode`` |
 
 #### Returns
 
-[`ContextMount`](context-mount.md)
+``BetaContextMount``
 
 ___
 
 ### withStrategy
 
-▸ **withStrategy**(`strategy`): [`ContextMount`](context-mount.md)
+▸ **withStrategy**(`strategy`): ``BetaContextMount``
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `strategy` | ``ContextMountStrategy`` |
+| `strategy` | ``BetaContextMountStrategy`` |
 
 #### Returns
 
-[`ContextMount`](context-mount.md)
+``BetaContextMount``
 
 
-`wuying-agentbay-sdk` / ContextMountAccessMode
+`wuying-agentbay-sdk` / BetaContextMountAccessMode
 
-# Enumeration: ContextMountAccessMode
+# Enumeration: BetaContextMountAccessMode
 
 ## Table of contents
 
@@ -89,9 +91,9 @@ ___
 • **ReadWrite** = ``"readWrite"``
 
 
-`wuying-agentbay-sdk` / ContextMountStrategy
+`wuying-agentbay-sdk` / BetaContextMountStrategy
 
-# Enumeration: ContextMountStrategy
+# Enumeration: BetaContextMountStrategy
 
 ## Table of contents
 

@@ -42,7 +42,7 @@ export { Session } from "./session";
 export { type ListSessionParams } from "./types";
 export * from "./types";
 export * from "./context-sync";
-export * from "./context-mount";
+export * from "./beta-context-mount";
 export * from "./context-manager";
 export * from "./session-params";
 export * from "./browser/eval";

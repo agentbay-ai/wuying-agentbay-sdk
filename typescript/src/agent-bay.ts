@@ -407,11 +407,14 @@ export class AgentBay {
       }
 
       // Add context mounts if provided
-      if (paramsCopy.contextMount && paramsCopy.contextMount.length > 0) {
+      if (
+        paramsCopy.betaContextMount &&
+        paramsCopy.betaContextMount.length > 0
+      ) {
         if (!request.persistenceDataList) {
           request.persistenceDataList = [];
         }
-        for (const mount of paramsCopy.contextMount) {
+        for (const mount of paramsCopy.betaContextMount) {
           const persistenceItem =
             new CreateMcpSessionRequestPersistenceDataList({
               contextId: mount.contextId,

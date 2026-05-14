@@ -641,8 +641,8 @@ func (cm *ContextManager) Bind(contexts []*ContextSync, waitForCompletion bool) 
 	}, nil
 }
 
-// Mount dynamically mounts one or more contexts to the current session with write-through persistence.
-// Unlike Bind which uses sync-based persistence, Mount provides direct-mount persistence
+// BetaMount dynamically mounts one or more contexts to the current session with write-through persistence.
+// Unlike Bind which uses sync-based persistence, BetaMount provides direct-mount persistence
 // where data is persisted immediately without manual sync calls.
 //
 // Example:
@@ -650,9 +650,9 @@ func (cm *ContextManager) Bind(contexts []*ContextSync, waitForCompletion bool) 
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"))
 //	result, _ := client.Create(nil)
 //	session := result.Session
-//	mount := agentbay.NewContextMount(contextID, "/mnt/data")
-//	mountResult, _ := session.Context.Mount([]*ContextMount{mount}, true)
-func (cm *ContextManager) Mount(contexts []*ContextMount, waitForCompletion bool) (*ContextBindResult, error) {
+//	mount := agentbay.NewBetaContextMount(contextID, "/mnt/data")
+//	mountResult, _ := session.Context.BetaMount([]*BetaContextMount{mount}, true)
+func (cm *ContextManager) BetaMount(contexts []*BetaContextMount, waitForCompletion bool) (*ContextBindResult, error) {
 	if len(contexts) == 0 {
 		return &ContextBindResult{
 			Success:      false,

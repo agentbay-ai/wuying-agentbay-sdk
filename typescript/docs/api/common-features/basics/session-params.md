@@ -35,7 +35,7 @@ in the AgentBay cloud environment.
 ## Properties
 
 ```typescript
-contextMount: [`ContextMount`](context-mount.md)[]
+betaContextMount: ``BetaContextMount``[]
 contextSync: [`ContextSync`](context-sync.md)[]
 framework: `string`
 idleReleaseTimeout: `number`
@@ -43,6 +43,12 @@ labels: `Record`<`string`, `string`>
 lifecyclePolicy: `undefined` | [`LifecyclePolicy`](lifecycle-policy.md)
 ```
 
+
+#### Implementation of
+
+`CreateSessionParamsInterface`.`betaContextMount`
+
+___
 
 ### betaNetworkId
 
@@ -65,12 +71,6 @@ Optional configuration for browser data synchronization.
 #### Implementation of
 
 `CreateSessionParamsInterface`.`browserContext`
-
-___
-
-#### Implementation of
-
-`CreateSessionParamsInterface`.`contextMount`
 
 ___
 

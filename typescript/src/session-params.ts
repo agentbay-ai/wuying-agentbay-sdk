@@ -1,4 +1,4 @@
-import { ContextMount } from "./context-mount";
+import { BetaContextMount } from "./beta-context-mount";
 import {
   ContextSync,
   SyncPolicy,
@@ -322,7 +322,7 @@ export interface CreateSessionParamsInterface {
   /** List of context synchronization configurations. */
   contextSync?: ContextSync[];
   /** List of context mount configurations for direct-mount persistence. */
-  contextMount?: ContextMount[];
+  betaContextMount?: BetaContextMount[];
   /** Optional configuration for browser data synchronization. */
   browserContext?: BrowserContext;
   /** Security policy ID (interface field name). */
@@ -369,7 +369,7 @@ export class CreateSessionParams implements CreateSessionParamsInterface {
   public contextSync: ContextSync[];
 
   /** List of context mount configurations for direct-mount persistence. */
-  public contextMount: ContextMount[];
+  public betaContextMount: BetaContextMount[];
 
   /** Whether to create a VPC-based session. Defaults to false. */
   public isVpc?: boolean;
@@ -460,7 +460,9 @@ export class CreateSessionParams implements CreateSessionParamsInterface {
     }
 
     this.contextSync = allContextSyncs;
-    this.contextMount = params?.contextMount ? [...params.contextMount] : [];
+    this.betaContextMount = params?.betaContextMount
+      ? [...params.betaContextMount]
+      : [];
     this.browserContext = params?.browserContext;
     this.loadSkills = params?.loadSkills;
     this.skillNames = params?.skillNames;

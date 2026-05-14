@@ -3,26 +3,26 @@ from enum import Enum
 from typing import Optional
 
 
-class ContextMountAccessMode(Enum):
-    """Access mode for context mount"""
+class BetaContextMountAccessMode(Enum):
+    """Access mode for context mount (beta)"""
 
     READ_WRITE = "readWrite"
     READ_ONLY = "readOnly"
 
 
-class ContextMountStrategy(Enum):
-    """Mount strategy for context mount"""
+class BetaContextMountStrategy(Enum):
+    """Mount strategy for context mount (beta)"""
 
     STANDARD = "standard"
     PERFORMANCE = "performance"
 
 
 @dataclass
-class ContextMount:
+class BetaContextMount:
     """
-    Defines the context mount configuration for direct-mount persistence.
+    [Beta] Defines the context mount configuration for direct-mount persistence.
 
-    Unlike ContextSync which requires explicit synchronization, ContextMount
+    Unlike ContextSync which requires explicit synchronization, BetaContextMount
     provides write-through persistence where data is persisted immediately
     without manual sync calls.
 
@@ -35,29 +35,29 @@ class ContextMount:
 
     context_id: str
     path: str
-    access_mode: ContextMountAccessMode = ContextMountAccessMode.READ_WRITE
-    strategy: ContextMountStrategy = ContextMountStrategy.STANDARD
+    access_mode: BetaContextMountAccessMode = BetaContextMountAccessMode.READ_WRITE
+    strategy: BetaContextMountStrategy = BetaContextMountStrategy.STANDARD
 
     @classmethod
     def new(
         cls,
         context_id: str,
         path: str,
-        access_mode: Optional[ContextMountAccessMode] = None,
-        strategy: Optional[ContextMountStrategy] = None,
+        access_mode: Optional[BetaContextMountAccessMode] = None,
+        strategy: Optional[BetaContextMountStrategy] = None,
     ):
         return cls(
             context_id=context_id,
             path=path,
-            access_mode=access_mode or ContextMountAccessMode.READ_WRITE,
-            strategy=strategy or ContextMountStrategy.STANDARD,
+            access_mode=access_mode or BetaContextMountAccessMode.READ_WRITE,
+            strategy=strategy or BetaContextMountStrategy.STANDARD,
         )
 
-    def with_access_mode(self, access_mode: ContextMountAccessMode):
+    def with_access_mode(self, access_mode: BetaContextMountAccessMode):
         self.access_mode = access_mode
         return self
 
-    def with_strategy(self, strategy: ContextMountStrategy):
+    def with_strategy(self, strategy: BetaContextMountStrategy):
         self.strategy = strategy
         return self
 

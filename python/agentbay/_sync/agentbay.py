@@ -669,8 +669,8 @@ class AgentBay:
                 request.persistence_data_list = persistence_data_list
                 needs_context_sync = len(persistence_data_list) > 0
 
-            # Add context_mounts if provided
-            if hasattr(params, "context_mounts") and params.context_mounts:
+            # Add beta_context_mounts if provided
+            if hasattr(params, "beta_context_mounts") and params.beta_context_mounts:
                 from ..api.models import (
                     CreateMcpSessionRequestPersistenceDataList,
                     CreateMcpSessionRequestPersistenceDataListMountConfig,
@@ -678,7 +678,7 @@ class AgentBay:
 
                 if not hasattr(request, "persistence_data_list") or request.persistence_data_list is None:
                     request.persistence_data_list = []
-                for cm in params.context_mounts:
+                for cm in params.beta_context_mounts:
                     mount_config_dict = cm._to_mount_config_dict()
                     mount_config = CreateMcpSessionRequestPersistenceDataListMountConfig(
                         access_mode=mount_config_dict.get("accessMode"),

@@ -1288,7 +1288,7 @@ else:
 The simplest way to use Context Mount is to specify it when creating a session:
 
 ```python
-from agentbay import AgentBay, ContextMount, CreateSessionParams
+from agentbay import AgentBay, BetaContextMount, CreateSessionParams
 
 agent_bay = AgentBay()
 
@@ -1296,10 +1296,10 @@ agent_bay = AgentBay()
 context = agent_bay.context.get("my-mount-demo", create=True).context
 
 # Create a mount configuration
-context_mount = ContextMount.new(context.id, "/tmp/mounted")
+context_mount = BetaContextMount.new(context.id, "/tmp/mounted")
 
 # Create a session with the mount
-params = CreateSessionParams(context_mounts=[context_mount])
+params = CreateSessionParams(beta_context_mounts=[context_mount])
 session = agent_bay.create(params).session
 
 # Write data — it is persisted immediately, no sync needed
@@ -1318,7 +1318,7 @@ agent_bay.delete(session)
 You can also mount a context to a running session using `bind()`:
 
 ```python
-from agentbay import AgentBay, ContextMount, CreateSessionParams
+from agentbay import AgentBay, BetaContextMount, CreateSessionParams
 
 agent_bay = AgentBay()
 
@@ -1327,7 +1327,7 @@ session = agent_bay.create(CreateSessionParams()).session
 
 # Later, dynamically mount a context
 context = agent_bay.context.get("runtime-mount", create=True).context
-context_mount = ContextMount.new(context.id, "/tmp/dynamic-mount")
+context_mount = BetaContextMount.new(context.id, "/tmp/dynamic-mount")
 
 bind_result = session.context.bind(context_mount)
 if bind_result.success:
@@ -1342,19 +1342,19 @@ agent_bay.delete(session)
 Because Context Mount persists data immediately, it is straightforward to share data across sessions:
 
 ```python
-from agentbay import AgentBay, ContextMount, CreateSessionParams
+from agentbay import AgentBay, BetaContextMount, CreateSessionParams
 
 agent_bay = AgentBay()
 context = agent_bay.context.get("cross-session-mount", create=True).context
-mount = ContextMount.new(context.id, "/tmp/shared")
+mount = BetaContextMount.new(context.id, "/tmp/shared")
 
 # Session A: write data
-session_a = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
+session_a = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
 session_a.file_system.write_file("/tmp/shared/config.json", '{"version": "2.0"}')
 agent_bay.delete(session_a)  # No sync needed
 
 # Session B: read data written by Session A
-session_b = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
+session_b = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
 content = session_b.file_system.read_file("/tmp/shared/config.json")
 print(content.content)  # '{"version": "2.0"}'
 agent_bay.delete(session_b)
@@ -1365,15 +1365,15 @@ agent_bay.delete(session_b)
 When the same context is mounted in multiple active sessions simultaneously, changes made in one session are **immediately visible** in the other sessions — no sync or refresh needed:
 
 ```python
-from agentbay import AgentBay, ContextMount, CreateSessionParams
+from agentbay import AgentBay, BetaContextMount, CreateSessionParams
 
 agent_bay = AgentBay()
 context = agent_bay.context.get("shared-workspace", create=True).context
-mount = ContextMount.new(context.id, "/tmp/shared")
+mount = BetaContextMount.new(context.id, "/tmp/shared")
 
 # Two sessions mount the same context
-session_1 = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
-session_2 = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
+session_1 = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
+session_2 = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
 
 # Session 1 writes a file
 session_1.file_system.write_file("/tmp/shared/status.txt", "ready")
@@ -1410,12 +1410,12 @@ Context Mount supports two configuration dimensions:
 - If your workflow requires file locks or random writes, use **Context Sync** (which operates on local disk) instead.
 
 ```python
-from agentbay import ContextMount, ContextMountAccessMode, ContextMountStrategy
+from agentbay import BetaContextMount, BetaContextMountAccessMode, BetaContextMountStrategy
 
 # Read-only mount with performance strategy
-mount = ContextMount.new(context.id, "/tmp/readonly-data")
-mount.with_access_mode(ContextMountAccessMode.READ_ONLY)
-mount.with_strategy(ContextMountStrategy.PERFORMANCE)
+mount = BetaContextMount.new(context.id, "/tmp/readonly-data")
+mount.with_access_mode(BetaContextMountAccessMode.READ_ONLY)
+mount.with_strategy(BetaContextMountStrategy.PERFORMANCE)
 ```
 
 ### Limitations and Restrictions

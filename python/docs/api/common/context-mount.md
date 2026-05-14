@@ -1,12 +1,12 @@
-# Context Mount API Reference
+# Context Mount [Beta] API Reference
 
-## ContextMountAccessMode
+## BetaContextMountAccessMode
 
 ```python
-class ContextMountAccessMode(Enum)
+class BetaContextMountAccessMode(Enum)
 ```
 
-Access mode for context mount
+Access mode for context mount (beta)
 
 #### READ_WRITE
 
@@ -20,13 +20,13 @@ READ_WRITE = "readWrite"
 READ_ONLY = "readOnly"
 ```
 
-## ContextMountStrategy
+## BetaContextMountStrategy
 
 ```python
-class ContextMountStrategy(Enum)
+class BetaContextMountStrategy(Enum)
 ```
 
-Mount strategy for context mount
+Mount strategy for context mount (beta)
 
 #### STANDARD
 
@@ -40,16 +40,16 @@ STANDARD = "standard"
 PERFORMANCE = "performance"
 ```
 
-## ContextMount
+## BetaContextMount
 
 ```python
 @dataclass
-class ContextMount()
+class BetaContextMount()
 ```
 
-Defines the context mount configuration for direct-mount persistence.
+[Beta] Defines the context mount configuration for direct-mount persistence.
 
-Unlike ContextSync which requires explicit synchronization, ContextMount
+Unlike ContextSync which requires explicit synchronization, BetaContextMount
 provides write-through persistence where data is persisted immediately
 without manual sync calls.
 
@@ -72,16 +72,16 @@ context_id = None
 path = None
 ```
 
-#### access_mode: `ContextMountAccessMode`
+#### access_mode: `BetaContextMountAccessMode`
 
 ```python
-access_mode = ContextMountAccessMode.READ_WRITE
+access_mode = BetaContextMountAccessMode.READ_WRITE
 ```
 
-#### strategy: `ContextMountStrategy`
+#### strategy: `BetaContextMountStrategy`
 
 ```python
-strategy = ContextMountStrategy.STANDARD
+strategy = BetaContextMountStrategy.STANDARD
 ```
 
 ### new
@@ -91,20 +91,20 @@ strategy = ContextMountStrategy.STANDARD
 def new(cls,
         context_id: str,
         path: str,
-        access_mode: Optional[ContextMountAccessMode] = None,
-        strategy: Optional[ContextMountStrategy] = None)
+        access_mode: Optional[BetaContextMountAccessMode] = None,
+        strategy: Optional[BetaContextMountStrategy] = None)
 ```
 
 ### with_access_mode
 
 ```python
-def with_access_mode(access_mode: ContextMountAccessMode)
+def with_access_mode(access_mode: BetaContextMountAccessMode)
 ```
 
 ### with_strategy
 
 ```python
-def with_strategy(strategy: ContextMountStrategy)
+def with_strategy(strategy: BetaContextMountStrategy)
 ```
 
 ## See Also

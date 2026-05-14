@@ -87,7 +87,7 @@ COMMON_DOC_MAPPINGS: Sequence[DocMapping] = (
     DocMapping("common/exceptions.md", "Exceptions", ("agentbay._common.exceptions",)),
     DocMapping("common/logging.md", "Logging", ("agentbay._common.logger",)),
     DocMapping("common/context-sync.md", "Context Sync", ("agentbay._common.params.context_sync",)),
-    DocMapping("common/context-mount.md", "Context Mount", ("agentbay._common.params.context_mount",)),
+    DocMapping("common/context-mount.md", "Context Mount [Beta]", ("agentbay._common.params.beta_context_mount",)),
     DocMapping("common/lifecycle-policy.md", "Lifecycle Policy", ("agentbay._common.params.lifecycle_policy",)),
     DocMapping("common/code-models.md", "Code Execution Models", ("agentbay._common.models.code",)),
     DocMapping("common/browser-models.md", "Browser Models", ("agentbay._common.models.browser",)),

@@ -26,18 +26,18 @@ def __init__(self, session)
 ### bind
 
 ```python
-async def bind(*contexts: Union[ContextSync, ContextMount],
+async def bind(*contexts: Union[ContextSync, BetaContextMount],
                wait_for_completion: bool = True) -> ContextBindResult
 ```
 
 Dynamically bind one or more contexts to the running session.
 
-Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+Accepts both ContextSync (sync-based persistence) and BetaContextMount (direct-mount
 write-through persistence) objects. They can be mixed in a single call.
 
 **Arguments**:
 
-    *contexts: One or more ContextSync or ContextMount objects.
+    *contexts: One or more ContextSync or BetaContextMount objects.
     wait_for_completion: If True, polls list_bindings() until all bound contexts appear.
   
 
@@ -54,7 +54,7 @@ ContextSync(context_id="SdkCtx-xxx", path="/tmp/ctx-data"),
 )
 
 result = await session.context.bind(
-ContextMount(context_id="SdkCtx-yyy", path="/mnt/data"),
+BetaContextMount(context_id="SdkCtx-yyy", path="/mnt/data"),
 )
 
 ```

@@ -15,7 +15,7 @@ import {
   extractRequestId,
 } from "./types/api-response";
 import { ContextSync } from "./context-sync";
-import { ContextMount } from "./context-mount";
+import { BetaContextMount } from "./beta-context-mount";
 import {
   log,
   logError,
@@ -594,10 +594,10 @@ export class ContextManager {
   /**
    * Dynamically binds one or more contexts to the current session.
    *
-   * Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+   * Accepts both ContextSync (sync-based persistence) and BetaContextMount (direct-mount
    * write-through persistence) objects. They can be mixed in a single call.
    *
-   * @param contexts - One or more ContextSync or ContextMount objects
+   * @param contexts - One or more ContextSync or BetaContextMount objects
    * @param waitForCompletion - Whether to poll until all bindings are confirmed (default: true)
    * @returns Promise resolving to ContextBindResult
    *
@@ -606,12 +606,15 @@ export class ContextManager {
    * const contextSync = new ContextSync(context.id, '/tmp/ctx-data');
    * const result = await session.context.bind(contextSync);
    *
-   * const contextMount = new ContextMount(context.id, '/mnt/data');
+   * const contextMount = new BetaContextMount(context.id, '/mnt/data');
    * const result2 = await session.context.bind(contextMount);
    * ```
    */
   async bind(
-    contexts: ContextSync | ContextMount | (ContextSync | ContextMount)[],
+    contexts:
+      | ContextSync
+      | BetaContextMount
+      | (ContextSync | BetaContextMount)[],
     waitForCompletion = true
   ): Promise<ContextBindResult> {
     const ctxArray = Array.isArray(contexts) ? contexts : [contexts];
@@ -629,7 +632,7 @@ export class ContextManager {
         contextId: ctx.contextId,
         path: ctx.path,
       });
-      if (ctx instanceof ContextMount) {
+      if (ctx instanceof BetaContextMount) {
         item.type = "mount";
         item.mountConfig =
           new BindContextsRequestPersistenceDataListMountConfig({

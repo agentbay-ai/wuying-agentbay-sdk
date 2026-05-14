@@ -13,7 +13,7 @@ from .._common.models.context import (
     ContextStatusData,
     ContextSyncResult,
 )
-from .._common.params.context_mount import ContextMount
+from .._common.params.beta_context_mount import BetaContextMount
 from .._common.params.context_sync import ContextSync
 from ..api.models import (
     BindContextsRequest,
@@ -42,17 +42,17 @@ class AsyncContextManager:
 
     async def bind(
         self,
-        *contexts: Union[ContextSync, ContextMount],
+        *contexts: Union[ContextSync, BetaContextMount],
         wait_for_completion: bool = True,
     ) -> ContextBindResult:
         """
         Dynamically bind one or more contexts to the running session.
 
-        Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+        Accepts both ContextSync (sync-based persistence) and BetaContextMount (direct-mount
         write-through persistence) objects. They can be mixed in a single call.
 
         Args:
-            *contexts: One or more ContextSync or ContextMount objects.
+            *contexts: One or more ContextSync or BetaContextMount objects.
             wait_for_completion: If True, polls list_bindings() until all bound contexts appear.
 
         Returns:
@@ -65,7 +65,7 @@ class AsyncContextManager:
             )
 
             result = await session.context.bind(
-                ContextMount(context_id="SdkCtx-yyy", path="/mnt/data"),
+                BetaContextMount(context_id="SdkCtx-yyy", path="/mnt/data"),
             )
         """
         if not contexts:
@@ -77,7 +77,7 @@ class AsyncContextManager:
                 context_id=ctx.context_id,
                 path=ctx.path,
             )
-            if isinstance(ctx, ContextMount):
+            if isinstance(ctx, BetaContextMount):
                 item.type = "mount"
                 mount_config_dict = ctx._to_mount_config_dict()
                 item.mount_config = BindContextsRequestPersistenceDataListMountConfig(

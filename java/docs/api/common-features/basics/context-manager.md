@@ -113,11 +113,11 @@ public ContextBindResult bind(ContextSync context)
 ```
 
 ```java
-public ContextBindResult bind(ContextMount context)
+public ContextBindResult bind(BetaContextMount context)
 ```
 
 ```java
-public ContextBindResult bind(ContextMount context, boolean waitForCompletion)
+public ContextBindResult bind(BetaContextMount context, boolean waitForCompletion)
 ```
 
 Dynamically binds one or more contexts to the current session.

@@ -337,8 +337,8 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	}
 
 	// Add context mount configurations if provided
-	if len(params.ContextMount) > 0 {
-		for _, contextMount := range params.ContextMount {
+	if len(params.BetaContextMount) > 0 {
+		for _, contextMount := range params.BetaContextMount {
 			persistenceItem := &mcp.CreateMcpSessionRequestPersistenceDataList{
 				ContextId: tea.String(contextMount.ContextID),
 				Path:      tea.String(contextMount.Path),
@@ -1495,17 +1495,17 @@ func (a *AgentBay) copyCreateSessionParams(params *CreateSessionParams) *CreateS
 		}
 	}
 
-	// Deep copy ContextMount slice
-	if params.ContextMount != nil {
-		copy.ContextMount = make([]*ContextMount, 0, len(params.ContextMount))
-		for _, cm := range params.ContextMount {
-			cmCopy := &ContextMount{
+	// Deep copy BetaContextMount slice
+	if params.BetaContextMount != nil {
+		copy.BetaContextMount = make([]*BetaContextMount, 0, len(params.BetaContextMount))
+		for _, cm := range params.BetaContextMount {
+			cmCopy := &BetaContextMount{
 				ContextID:  cm.ContextID,
 				Path:       cm.Path,
 				AccessMode: cm.AccessMode,
 				Strategy:   cm.Strategy,
 			}
-			copy.ContextMount = append(copy.ContextMount, cmCopy)
+			copy.BetaContextMount = append(copy.BetaContextMount, cmCopy)
 		}
 	}
 

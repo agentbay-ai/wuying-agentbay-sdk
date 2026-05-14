@@ -379,11 +379,11 @@ public class AgentBay {
             }
 
             // Handle context mounts
-            if (params.getContextMounts() != null && !params.getContextMounts().isEmpty()) {
+            if (params.getBetaContextMounts() != null && !params.getBetaContextMounts().isEmpty()) {
                 if (request.getPersistenceDataList() == null) {
                     request.setPersistenceDataList(new ArrayList<>());
                 }
-                for (ContextMount cm : params.getContextMounts()) {
+                for (BetaContextMount cm : params.getBetaContextMounts()) {
                     CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataListMountConfig mountConfig =
                         new CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataListMountConfig();
                     mountConfig.setAccessMode(cm.getAccessMode().getValue());
@@ -657,11 +657,11 @@ public class AgentBay {
 
             // If we have persistence data, wait for context synchronization
             boolean needsContextSync = (params.getContextSyncs() != null && !params.getContextSyncs().isEmpty()) ||
-                                      (params.getContextMounts() != null && !params.getContextMounts().isEmpty()) ||
+                                      (params.getBetaContextMounts() != null && !params.getBetaContextMounts().isEmpty()) ||
                                       (params.getBrowserContext() != null);
             Set<String> waitContextIds = new HashSet<>();
-            if (params.getContextMounts() != null) {
-                for (ContextMount cm : params.getContextMounts()) {
+            if (params.getBetaContextMounts() != null) {
+                for (BetaContextMount cm : params.getBetaContextMounts()) {
                     if (cm.getContextId() != null && !cm.getContextId().isEmpty()) {
                         waitContextIds.add(cm.getContextId());
                     }

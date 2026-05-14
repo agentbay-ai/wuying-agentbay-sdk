@@ -83,7 +83,7 @@ Shared classes used by both sync and async APIs are in the `common/` directory:
 - [Exceptions](common/exceptions.md) - `agentbay._common.exceptions`
 - [Logging](common/logging.md) - `agentbay._common.logger`
 - [Context Sync](common/context-sync.md) - `agentbay._common.params.context_sync`
-- [Context Mount](common/context-mount.md) - `agentbay._common.params.context_mount`
+- [Context Mount [Beta]](common/context-mount.md) - `agentbay._common.params.beta_context_mount`
 - [Lifecycle Policy](common/lifecycle-policy.md) - `agentbay._common.params.lifecycle_policy`
 - [Code Execution Models](common/code-models.md) - `agentbay._common.models.code`
 - [Browser Models](common/browser-models.md) - `agentbay._common.models.browser`

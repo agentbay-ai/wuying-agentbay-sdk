@@ -12,7 +12,7 @@ import asyncio
 import os
 import time
 
-from agentbay import AsyncAgentBay, ContextMount, CreateSessionParams
+from agentbay import AsyncAgentBay, BetaContextMount, CreateSessionParams
 
 
 async def main():
@@ -51,9 +51,9 @@ async def context_mount_demo(agent_bay: AsyncAgentBay):
 
     # Step 2: Create first session with context mount
     print("\n🔧 Step 2: Creating first session with context mount...")
-    context_mount = ContextMount.new(context.id, "/tmp/mounted_data")
+    context_mount = BetaContextMount.new(context.id, "/tmp/mounted_data")
 
-    params = CreateSessionParams(context_mounts=[context_mount])
+    params = CreateSessionParams(beta_context_mounts=[context_mount])
     session1_result = await agent_bay.create(params)
 
     if not session1_result.success:
@@ -108,7 +108,7 @@ async def context_mount_demo(agent_bay: AsyncAgentBay):
     # Step 4: Create second session to verify cross-session persistence
     print("\n🔧 Step 4: Creating second session to verify persistence...")
 
-    params2 = CreateSessionParams(context_mounts=[context_mount])
+    params2 = CreateSessionParams(beta_context_mounts=[context_mount])
     session2_result = await agent_bay.create(params2)
 
     if not session2_result.success:
@@ -145,7 +145,7 @@ async def context_mount_demo(agent_bay: AsyncAgentBay):
             f"dynamic-mount-{int(time.time())}", create=True
         )
         if dynamic_ctx_result.success:
-            dynamic_mount = ContextMount.new(
+            dynamic_mount = BetaContextMount.new(
                 dynamic_ctx_result.context.id, "/tmp/dynamic_mount"
             )
             bind_result = await session2.context.bind(dynamic_mount)

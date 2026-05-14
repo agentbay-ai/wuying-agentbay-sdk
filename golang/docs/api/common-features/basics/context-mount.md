@@ -1,34 +1,34 @@
-# Context Mount API Reference
+# Context Mount [Beta] API Reference
 
 ## 🚀 Related Tutorial
 
 - [First Session Tutorial](../../../../../docs/quickstart/first-session.md) - Get started with creating your first AgentBay session
 
-## Type ContextMount
+## Type BetaContextMount
 
 ```go
-type ContextMount struct {
+type BetaContextMount struct {
 	// ContextID is the ID of the context to mount
 	ContextID	string
 	// Path is the path where the context should be mounted in the session
 	Path	string
 	// AccessMode defines the access permission (read_write or read_only)
-	AccessMode	ContextMountAccessMode
+	AccessMode	BetaContextMountAccessMode
 	// Strategy defines the mount strategy (standard or performance)
-	Strategy	ContextMountStrategy
+	Strategy	BetaContextMountStrategy
 }
 ```
 
-ContextMount defines the context mount configuration for direct-mount persistence. Unlike
-ContextSync which requires explicit synchronization, ContextMount provides write-through persistence
-where data is persisted immediately.
+BetaContextMount defines the context mount configuration for direct-mount persistence. Unlike
+ContextSync which requires explicit synchronization, BetaContextMount provides write-through
+persistence where data is persisted immediately.
 
 ### Methods
 
 ### WithAccessMode
 
 ```go
-func (cm *ContextMount) WithAccessMode(accessMode ContextMountAccessMode) *ContextMount
+func (cm *BetaContextMount) WithAccessMode(accessMode BetaContextMountAccessMode) *BetaContextMount
 ```
 
 WithAccessMode sets the access mode and returns the context mount for chaining.
@@ -36,46 +36,46 @@ WithAccessMode sets the access mode and returns the context mount for chaining.
 ### WithStrategy
 
 ```go
-func (cm *ContextMount) WithStrategy(strategy ContextMountStrategy) *ContextMount
+func (cm *BetaContextMount) WithStrategy(strategy BetaContextMountStrategy) *BetaContextMount
 ```
 
 WithStrategy sets the mount strategy and returns the context mount for chaining.
 
 ### Related Functions
 
-### NewContextMount
+### NewBetaContextMount
 
 ```go
-func NewContextMount(contextID, path string) *ContextMount
+func NewBetaContextMount(contextID, path string) *BetaContextMount
 ```
 
-NewContextMount creates a new context mount configuration with default values.
+NewBetaContextMount creates a new context mount configuration with default values.
 
-## Type ContextMountAccessMode
+## Type BetaContextMountAccessMode
 
 ```go
-type ContextMountAccessMode string
+type BetaContextMountAccessMode string
 ```
 
-ContextMountAccessMode defines the access mode for context mount
+BetaContextMountAccessMode defines the access mode for context mount
 
-## Type ContextMountStrategy
+## Type BetaContextMountStrategy
 
 ```go
-type ContextMountStrategy string
+type BetaContextMountStrategy string
 ```
 
-ContextMountStrategy defines the mount strategy for context mount
+BetaContextMountStrategy defines the mount strategy for context mount
 
 ## Functions
 
-### NewContextMount
+### NewBetaContextMount
 
 ```go
-func NewContextMount(contextID, path string) *ContextMount
+func NewBetaContextMount(contextID, path string) *BetaContextMount
 ```
 
-NewContextMount creates a new context mount configuration with default values.
+NewBetaContextMount creates a new context mount configuration with default values.
 
 ## Related Resources
 

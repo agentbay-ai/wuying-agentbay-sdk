@@ -5,12 +5,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Defines the context mount configuration for direct-mount persistence.
+ * [Beta] Defines the context mount configuration for direct-mount persistence.
  *
- * <p>Unlike ContextSync which requires explicit synchronization, ContextMount provides
+ * <p>Unlike ContextSync which requires explicit synchronization, BetaContextMount provides
  * write-through persistence where data is persisted immediately without manual sync calls.</p>
  */
-public class ContextMount {
+public class BetaContextMount {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -55,35 +55,35 @@ public class ContextMount {
     private AccessMode accessMode;
     private Strategy strategy;
 
-    public ContextMount() {
+    public BetaContextMount() {
         this.accessMode = AccessMode.READ_WRITE;
         this.strategy = Strategy.STANDARD;
     }
 
-    public ContextMount(String contextId, String path) {
+    public BetaContextMount(String contextId, String path) {
         this.contextId = contextId;
         this.path = path;
         this.accessMode = AccessMode.READ_WRITE;
         this.strategy = Strategy.STANDARD;
     }
 
-    public ContextMount(String contextId, String path, AccessMode accessMode, Strategy strategy) {
+    public BetaContextMount(String contextId, String path, AccessMode accessMode, Strategy strategy) {
         this.contextId = contextId;
         this.path = path;
         this.accessMode = accessMode != null ? accessMode : AccessMode.READ_WRITE;
         this.strategy = strategy != null ? strategy : Strategy.STANDARD;
     }
 
-    public static ContextMount create(String contextId, String path) {
-        return new ContextMount(contextId, path);
+    public static BetaContextMount create(String contextId, String path) {
+        return new BetaContextMount(contextId, path);
     }
 
-    public ContextMount withAccessMode(AccessMode accessMode) {
+    public BetaContextMount withAccessMode(AccessMode accessMode) {
         this.accessMode = accessMode;
         return this;
     }
 
-    public ContextMount withStrategy(Strategy strategy) {
+    public BetaContextMount withStrategy(Strategy strategy) {
         this.strategy = strategy;
         return this;
     }

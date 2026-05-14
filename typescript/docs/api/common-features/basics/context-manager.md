@@ -23,14 +23,14 @@
 
 Dynamically binds one or more contexts to the current session.
 
-Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+Accepts both ContextSync (sync-based persistence) and BetaContextMount (direct-mount
 write-through persistence) objects. They can be mixed in a single call.
 
 #### Parameters
 
 | Name | Type | Default value | Description |
 | :------ | :------ | :------ | :------ |
-| `contexts` | [`ContextSync`](context-sync.md) \| [`ContextMount`](context-mount.md) \| ([`ContextSync`](context-sync.md) \| [`ContextMount`](context-mount.md))[] | `undefined` | One or more ContextSync or ContextMount objects |
+| `contexts` | [`ContextSync`](context-sync.md) \| ``BetaContextMount`` \| ([`ContextSync`](context-sync.md) \| ``BetaContextMount``)[] | `undefined` | One or more ContextSync or BetaContextMount objects |
 | `waitForCompletion` | `boolean` | `true` | Whether to poll until all bindings are confirmed (default: true) |
 
 #### Returns
@@ -45,7 +45,7 @@ Promise resolving to ContextBindResult
 const contextSync = new ContextSync(context.id, '/tmp/ctx-data');
 const result = await session.context.bind(contextSync);
 
-const contextMount = new ContextMount(context.id, '/mnt/data');
+const contextMount = new BetaContextMount(context.id, '/mnt/data');
 const result2 = await session.context.bind(contextMount);
 ```
 

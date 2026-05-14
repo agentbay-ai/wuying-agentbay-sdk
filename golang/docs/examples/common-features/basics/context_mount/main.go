@@ -49,10 +49,10 @@ func contextMountDemo(ab *agentbay.AgentBay) error {
 
 	// Step 2: Create first session with context mount
 	fmt.Println("\n🔧 Step 2: Creating first session with context mount...")
-	contextMount := agentbay.NewContextMount(ctx.ID, "/tmp/mounted_data")
+	contextMount := agentbay.NewBetaContextMount(ctx.ID, "/tmp/mounted_data")
 
 	params1 := agentbay.NewCreateSessionParams()
-	params1.AddContextMount(contextMount)
+	params1.AddBetaContextMount(contextMount)
 	params1.WithLabels(map[string]string{
 		"example": "context-mount",
 		"phase":   "first-session",
@@ -118,7 +118,7 @@ func contextMountDemo(ab *agentbay.AgentBay) error {
 	fmt.Println("\n🔧 Step 4: Creating second session to verify persistence...")
 
 	params2 := agentbay.NewCreateSessionParams()
-	params2.AddContextMount(contextMount)
+	params2.AddBetaContextMount(contextMount)
 	params2.WithLabels(map[string]string{
 		"example": "context-mount",
 		"phase":   "second-session",
@@ -161,8 +161,8 @@ func contextMountDemo(ab *agentbay.AgentBay) error {
 	fmt.Println("\n🔧 Step 6: Dynamic mount using Mount()...")
 	dynamicCtxResult, err := ab.Context.Get(fmt.Sprintf("dynamic-mount-%d", time.Now().Unix()), true)
 	if err == nil && dynamicCtxResult.Context != nil {
-		dynamicMount := agentbay.NewContextMount(dynamicCtxResult.Context.ID, "/tmp/dynamic_mount")
-		bindResult, err := session2.Context.Mount(dynamicMount)
+		dynamicMount := agentbay.NewBetaContextMount(dynamicCtxResult.Context.ID, "/tmp/dynamic_mount")
+		bindResult, err := session2.Context.BetaMount([]*agentbay.BetaContextMount{dynamicMount}, true)
 		if err != nil {
 			log.Printf("❌ Dynamic mount failed: %v", err)
 		} else if bindResult.Success {

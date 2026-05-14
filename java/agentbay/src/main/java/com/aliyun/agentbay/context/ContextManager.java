@@ -470,26 +470,26 @@ public class ContextManager {
      * Binds a single context mount to the current session with write-through persistence.
      *
      * <pre>{@code
-     * ContextMount cm = ContextMount.create(contextId, "/mnt/data");
+     * BetaContextMount cm = BetaContextMount.create(contextId, "/mnt/data");
      * ContextBindResult result = session.getContext().bind(cm);
      * System.out.println("Bind success: " + result.isSuccess());
      * }</pre>
      *
-     * @param context The ContextMount object to bind
+     * @param context The BetaContextMount object to bind
      * @return ContextBindResult with the result of the operation
      */
-    public ContextBindResult bind(ContextMount context) {
+    public ContextBindResult bind(BetaContextMount context) {
         return bind(context, true);
     }
 
     /**
      * Binds a single context mount to the current session with write-through persistence.
      *
-     * @param context The ContextMount object to bind
+     * @param context The BetaContextMount object to bind
      * @param waitForCompletion Whether to poll until the binding is confirmed
      * @return ContextBindResult with the result of the operation
      */
-    public ContextBindResult bind(ContextMount context, boolean waitForCompletion) {
+    public ContextBindResult bind(BetaContextMount context, boolean waitForCompletion) {
         if (context == null) {
             return new ContextBindResult("", false, "Context mount is required");
         }

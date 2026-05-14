@@ -11,7 +11,7 @@
  */
 
 import type { CreateSessionParams } from 'wuying-agentbay-sdk';
-import { AgentBay, ContextMount, logError } from 'wuying-agentbay-sdk';
+import { AgentBay, BetaContextMount, logError } from 'wuying-agentbay-sdk';
 
 async function main(): Promise<void> {
     console.log('📌 AgentBay Context Mount Example');
@@ -52,10 +52,10 @@ async function contextMountDemo(agentBay: AgentBay): Promise<void> {
 
     // Step 2: Create first session with context mount
     console.log('\n🔧 Step 2: Creating first session with context mount...');
-    const contextMount = new ContextMount(context.id, '/tmp/mounted_data');
+    const contextMount = new BetaContextMount(context.id, '/tmp/mounted_data');
 
     const params1: CreateSessionParams = {
-        contextMount: [contextMount]
+        betaContextMount: [contextMount]
     };
     const session1Result = await agentBay.create(params1);
 
@@ -122,7 +122,7 @@ async function contextMountDemo(agentBay: AgentBay): Promise<void> {
     console.log('\n🔧 Step 4: Creating second session to verify persistence...');
 
     const params2: CreateSessionParams = {
-        contextMount: [contextMount]
+        betaContextMount: [contextMount]
     };
     const session2Result = await agentBay.create(params2);
 
@@ -162,7 +162,7 @@ async function contextMountDemo(agentBay: AgentBay): Promise<void> {
         console.log('\n🔧 Step 6: Dynamic mount using bind()...');
         const dynamicCtxResult = await agentBay.context.get(`dynamic-mount-${Date.now()}`, true);
         if (dynamicCtxResult.success) {
-            const dynamicMount = new ContextMount(dynamicCtxResult.context.id, '/tmp/dynamic_mount');
+            const dynamicMount = new BetaContextMount(dynamicCtxResult.context.id, '/tmp/dynamic_mount');
             const bindResult = await session2.context.bind(dynamicMount);
             if (bindResult.success) {
                 console.log('✅ Dynamic mount bound successfully');
