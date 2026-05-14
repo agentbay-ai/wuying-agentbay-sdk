@@ -42,14 +42,15 @@ describe("LifecyclePolicy", () => {
     });
 
     it("should reject idleReleaseTimeout with manual release", () => {
-      expect(() =>
-        new LifecyclePolicy({ manualRelease: true, idleReleaseTimeout: 10 })
+      expect(
+        () =>
+          new LifecyclePolicy({ manualRelease: true, idleReleaseTimeout: 10 })
       ).toThrow();
     });
 
     it("should reject maxRuntime with manual release", () => {
-      expect(() =>
-        new LifecyclePolicy({ manualRelease: true, maxRuntime: 60 })
+      expect(
+        () => new LifecyclePolicy({ manualRelease: true, maxRuntime: 60 })
       ).toThrow();
     });
   });

@@ -34,7 +34,10 @@ export class LifecyclePolicy {
     const opts = options || {};
 
     if (opts.manualRelease) {
-      if (opts.idleReleaseTimeout !== undefined && opts.idleReleaseTimeout !== null) {
+      if (
+        opts.idleReleaseTimeout !== undefined &&
+        opts.idleReleaseTimeout !== null
+      ) {
         throw new Error(
           "idleReleaseTimeout cannot be set when manualRelease=true. " +
             "In manual release mode, the session is only released via delete()."
@@ -62,7 +65,9 @@ export class LifecyclePolicy {
         : 30;
 
     if (typeof idle !== "number" || !Number.isInteger(idle) || idle <= 0) {
-      throw new Error("idleReleaseTimeout must be a positive integer (minutes)");
+      throw new Error(
+        "idleReleaseTimeout must be a positive integer (minutes)"
+      );
     }
     if (typeof max !== "number" || !Number.isInteger(max) || max <= 0) {
       throw new Error("maxRuntime must be a positive integer (minutes)");

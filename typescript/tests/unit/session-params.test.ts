@@ -126,9 +126,7 @@ describe("Session Parameters", () => {
     });
 
     it("should default idleReleaseTimeout to 0 when not specified", () => {
-      const {
-        CreateSessionParams: C,
-      } = require("../../src/session-params");
+      const { CreateSessionParams: C } = require("../../src/session-params");
       const params = new C({});
       expect(params.idleReleaseTimeout).toBe(0);
     });
@@ -136,7 +134,10 @@ describe("Session Parameters", () => {
 
   describe("lifecyclePolicy on CreateSessionParams", () => {
     it("should accept lifecyclePolicy", () => {
-      const lp = new LifecyclePolicy({ idleReleaseTimeout: 10, maxRuntime: 60 });
+      const lp = new LifecyclePolicy({
+        idleReleaseTimeout: 10,
+        maxRuntime: 60,
+      });
       const params = new CreateSessionParamsClass({ lifecyclePolicy: lp });
       expect(params.lifecyclePolicy).toBe(lp);
       expect(params.idleReleaseTimeout).toBe(0);

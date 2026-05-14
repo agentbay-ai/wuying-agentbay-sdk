@@ -235,7 +235,10 @@ export class SyncPolicyImpl implements SyncPolicy {
   toJSON(): SyncPolicy {
     this.ensureDefaults();
     let uploadPolicy = this.uploadPolicy;
-    if (uploadPolicy?.archiveExcludePaths && uploadPolicy.uploadMode !== UploadMode.Archive) {
+    if (
+      uploadPolicy?.archiveExcludePaths &&
+      uploadPolicy.uploadMode !== UploadMode.Archive
+    ) {
       const { archiveExcludePaths: _, ...rest } = uploadPolicy;
       uploadPolicy = rest as UploadPolicy;
     }

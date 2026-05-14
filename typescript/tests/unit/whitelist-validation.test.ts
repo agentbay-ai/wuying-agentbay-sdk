@@ -120,7 +120,9 @@ describe("ContextSync validation", () => {
           whiteLists: [{ path: "/src", excludePaths: ["*.log"] }],
         },
       });
-    }).toThrow("Wildcard patterns are not supported in excludePaths when isExcludeRegex=false");
+    }).toThrow(
+      "Wildcard patterns are not supported in excludePaths when isExcludeRegex=false"
+    );
   });
 
   it("should allow valid policy", () => {

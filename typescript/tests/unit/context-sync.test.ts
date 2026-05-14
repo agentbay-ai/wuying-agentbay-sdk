@@ -382,7 +382,9 @@ describe("ContextSync Unit Tests", () => {
       // ── Wildcard in regex path is allowed ─────────────────────────────────
       expect(() => {
         new ContextSync("ctx", "/base", {
-          bwList: { whiteLists: [{ path: "/home/wuying/.*", isPathRegex: true }] },
+          bwList: {
+            whiteLists: [{ path: "/home/wuying/.*", isPathRegex: true }],
+          },
         });
       }).not.toThrow();
 
@@ -391,7 +393,11 @@ describe("ContextSync Unit Tests", () => {
         new ContextSync("ctx", "/base", {
           bwList: {
             whiteLists: [
-              { path: "/home/wuying", excludePaths: ["record.*"], isExcludeRegex: true },
+              {
+                path: "/home/wuying",
+                excludePaths: ["record.*"],
+                isExcludeRegex: true,
+              },
             ],
           },
         });
@@ -408,7 +414,9 @@ describe("ContextSync Unit Tests", () => {
       expect(() => {
         new ContextSync("ctx", "/base", {
           bwList: {
-            whiteLists: [{ path: "/home/wuying", excludePaths: ["/invalid/*"] }],
+            whiteLists: [
+              { path: "/home/wuying", excludePaths: ["/invalid/*"] },
+            ],
           },
         });
       }).toThrow("isExcludeRegex=false");

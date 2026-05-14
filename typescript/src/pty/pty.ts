@@ -100,7 +100,12 @@ export class PtyHandle {
 
   async resize(cols: number, rows: number): Promise<void> {
     if (!this._connected) throw new PtyNotConnectedError();
-    if (cols < 1 || cols > MAX_TERMINAL_SIZE || rows < 1 || rows > MAX_TERMINAL_SIZE) {
+    if (
+      cols < 1 ||
+      cols > MAX_TERMINAL_SIZE ||
+      rows < 1 ||
+      rows > MAX_TERMINAL_SIZE
+    ) {
       throw new PtyError(
         `Invalid terminal size: cols=${cols}, rows=${rows} (must be 1-${MAX_TERMINAL_SIZE})`
       );
@@ -244,7 +249,12 @@ export class Pty {
     const cols = options.cols ?? 80;
     const rows = options.rows ?? 24;
 
-    if (cols < 1 || cols > MAX_TERMINAL_SIZE || rows < 1 || rows > MAX_TERMINAL_SIZE) {
+    if (
+      cols < 1 ||
+      cols > MAX_TERMINAL_SIZE ||
+      rows < 1 ||
+      rows > MAX_TERMINAL_SIZE
+    ) {
       throw new PtyError(
         `Invalid terminal size: cols=${cols}, rows=${rows} (must be 1-${MAX_TERMINAL_SIZE})`
       );

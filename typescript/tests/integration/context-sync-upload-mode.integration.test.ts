@@ -351,143 +351,145 @@ describe("Context Sync Upload Mode Integration Tests", () => {
     });
   });
 
-  test.skip(
-    "should store excluded paths as individual files when using Archive mode with archiveExcludePaths",
-    async () => {
-       // Online not yet published, skipping for now
+  test.skip("should store excluded paths as individual files when using Archive mode with archiveExcludePaths", async () => {
+    // Online not yet published, skipping for now
 
-      log(
-        "\n=== Testing Archive mode with archiveExcludePaths (hybrid storage) ==="
-      );
+    log(
+      "\n=== Testing Archive mode with archiveExcludePaths (hybrid storage) ==="
+    );
 
-      const contextName = `archive-exclude-context-${uniqueId}`;
-      const contextResult = await agentBay.context.get(contextName, true);
+    const contextName = `archive-exclude-context-${uniqueId}`;
+    const contextResult = await agentBay.context.get(contextName, true);
 
-      expect(contextResult.success).toBe(true);
-      expect(contextResult.contextId).toBeDefined();
-      expect(contextResult.contextId).not.toBe("");
+    expect(contextResult.success).toBe(true);
+    expect(contextResult.contextId).toBeDefined();
+    expect(contextResult.contextId).not.toBe("");
 
-      const syncPath = `/tmp/archive-exclude-${uniqueId}`;
-      const syncPolicy = newSyncPolicy();
-      syncPolicy.uploadPolicy!.uploadMode = UploadMode.Archive;
-      syncPolicy.uploadPolicy!.archiveExcludePaths = ["important/", "config.json"];
+    const syncPath = `/tmp/archive-exclude-${uniqueId}`;
+    const syncPolicy = newSyncPolicy();
+    syncPolicy.uploadPolicy!.uploadMode = UploadMode.Archive;
+    syncPolicy.uploadPolicy!.archiveExcludePaths = [
+      "important/",
+      "config.json",
+    ];
 
-      expect(syncPolicy.uploadPolicy?.archiveExcludePaths).toEqual([
-        "important/",
-        "config.json",
-      ]);
+    expect(syncPolicy.uploadPolicy?.archiveExcludePaths).toEqual([
+      "important/",
+      "config.json",
+    ]);
 
-      const contextSync = newContextSync(
-        contextResult.contextId,
-        syncPath,
-        syncPolicy
-      );
+    const contextSync = newContextSync(
+      contextResult.contextId,
+      syncPath,
+      syncPolicy
+    );
 
-      const sessionParams = {
-        labels: {
-          test: `archive-exclude-${uniqueId}`,
-          type: "archive-exclude-paths",
-        },
-        contextSync: [contextSync],
-      };
+    const sessionParams = {
+      labels: {
+        test: `archive-exclude-${uniqueId}`,
+        type: "archive-exclude-paths",
+      },
+      contextSync: [contextSync],
+    };
 
-      log("Creating session with Archive mode + archiveExcludePaths...");
-      const sessionResult = await agentBay.create(sessionParams);
+    log("Creating session with Archive mode + archiveExcludePaths...");
+    const sessionResult = await agentBay.create(sessionParams);
 
-      expect(sessionResult.success).toBe(true);
-      expect(sessionResult.session).toBeDefined();
+    expect(sessionResult.success).toBe(true);
+    expect(sessionResult.session).toBeDefined();
 
-      const session = sessionResult.session!;
+    const session = sessionResult.session!;
 
-      const fileSystem = new FileSystem(session);
+    const fileSystem = new FileSystem(session);
 
-      let dirResult = await fileSystem.createDirectory(`${syncPath}/important`);
-      expect(dirResult.success).toBe(true);
-      dirResult = await fileSystem.createDirectory(`${syncPath}/regular`);
-      expect(dirResult.success).toBe(true);
+    let dirResult = await fileSystem.createDirectory(`${syncPath}/important`);
+    expect(dirResult.success).toBe(true);
+    dirResult = await fileSystem.createDirectory(`${syncPath}/regular`);
+    expect(dirResult.success).toBe(true);
 
-      let writeResult = await fileSystem.writeFile(
-        `${syncPath}/important/data.txt`,
-        "This file should be stored individually (excluded from archive)",
-        "overwrite"
-      );
-      expect(writeResult.success).toBe(true);
+    let writeResult = await fileSystem.writeFile(
+      `${syncPath}/important/data.txt`,
+      "This file should be stored individually (excluded from archive)",
+      "overwrite"
+    );
+    expect(writeResult.success).toBe(true);
 
-      writeResult = await fileSystem.writeFile(
-        `${syncPath}/config.json`,
-        '{"key": "value", "setting": true}',
-        "overwrite"
-      );
-      expect(writeResult.success).toBe(true);
+    writeResult = await fileSystem.writeFile(
+      `${syncPath}/config.json`,
+      '{"key": "value", "setting": true}',
+      "overwrite"
+    );
+    expect(writeResult.success).toBe(true);
 
-      writeResult = await fileSystem.writeFile(
-        `${syncPath}/regular/data.txt`,
-        "This file should be archived with the rest",
-        "overwrite"
-      );
-      expect(writeResult.success).toBe(true);
+    writeResult = await fileSystem.writeFile(
+      `${syncPath}/regular/data.txt`,
+      "This file should be archived with the rest",
+      "overwrite"
+    );
+    expect(writeResult.success).toBe(true);
 
-      log("All files written; deleting session with sync...");
+    log("All files written; deleting session with sync...");
 
-      const deleteResult = await agentBay.delete(session, true);
-      expect(deleteResult.success).toBe(true);
+    const deleteResult = await agentBay.delete(session, true);
+    expect(deleteResult.success).toBe(true);
 
-      let listResult = await agentBay.context.listFiles(
+    let listResult = await agentBay.context.listFiles(
+      contextResult.contextId,
+      syncPath,
+      1,
+      20
+    );
+
+    for (
+      let attempt = 0;
+      attempt < 20 && (!listResult.success || listResult.entries.length === 0);
+      attempt++
+    ) {
+      await sleep(2000);
+      listResult = await agentBay.context.listFiles(
         contextResult.contextId,
         syncPath,
         1,
         20
       );
+    }
 
-      for (
-        let attempt = 0;
-        attempt < 20 &&
-        (!listResult.success || listResult.entries.length === 0);
-        attempt++
-      ) {
-        await sleep(2000);
-        listResult = await agentBay.context.listFiles(
-          contextResult.contextId,
-          syncPath,
-          1,
-          20
+    expect(listResult.success).toBe(true);
+    expect(listResult.entries.length).toBeGreaterThan(0);
+
+    const filePaths = listResult.entries.map((e) => e.filePath);
+    const fileNames = listResult.entries.map((e) => e.fileName ?? "");
+
+    const hasImportant = filePaths.some((p) => p.includes("important"));
+    const hasConfig = fileNames.some((n) => n.includes("config.json"));
+
+    log(
+      `Excluded paths present individually — important: ${hasImportant}, config.json: ${hasConfig}`
+    );
+    log(`Files found: ${fileNames.join(", ")}`);
+
+    expect(hasImportant).toBe(true);
+    expect(hasConfig).toBe(true);
+
+    // Check for download URL on excluded files (passive check from entry properties)
+    for (const entry of listResult.entries) {
+      const isExcluded =
+        entry.filePath.includes("important") ||
+        (entry.fileName?.includes("config.json") ?? false);
+      if (!isExcluded) {
+        continue;
+      }
+      const presignedUrl =
+        (entry as any).presignedUrl || (entry as any).downloadUrl;
+      if (presignedUrl) {
+        log(
+          `Excluded file '${
+            entry.fileName
+          }' has Presigned URL: ${presignedUrl.substring(0, 80)}...`
         );
       }
-
-      expect(listResult.success).toBe(true);
-      expect(listResult.entries.length).toBeGreaterThan(0);
-
-      const filePaths = listResult.entries.map((e) => e.filePath);
-      const fileNames = listResult.entries.map((e) => e.fileName ?? "");
-
-      const hasImportant = filePaths.some((p) => p.includes("important"));
-      const hasConfig = fileNames.some((n) => n.includes("config.json"));
-
-      log(
-        `Excluded paths present individually — important: ${hasImportant}, config.json: ${hasConfig}`
-      );
-      log(`Files found: ${fileNames.join(", ")}`);
-
-      expect(hasImportant).toBe(true);
-      expect(hasConfig).toBe(true);
-
-      // Check for download URL on excluded files (passive check from entry properties)
-      for (const entry of listResult.entries) {
-        const isExcluded =
-          entry.filePath.includes("important") ||
-          (entry.fileName?.includes("config.json") ?? false);
-        if (!isExcluded) {
-          continue;
-        }
-        const presignedUrl = (entry as any).presignedUrl || (entry as any).downloadUrl;
-        if (presignedUrl) {
-          log(
-            `Excluded file '${entry.fileName}' has Presigned URL: ${presignedUrl.substring(0, 80)}...`
-          );
-        }
-      }
-
-      log("✅ Archive mode with archiveExcludePaths integration test completed");
     }
-  );
+
+    log("✅ Archive mode with archiveExcludePaths integration test completed");
+  });
 });

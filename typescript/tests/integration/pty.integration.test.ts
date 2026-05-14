@@ -38,7 +38,9 @@ describe("PTY Integration", () => {
     expect(handle.isConnected).toBe(true);
 
     await sleep(1000);
-    await handle.sendInput(new TextEncoder().encode("echo 'PTY_TS_OK_12345'\r"));
+    await handle.sendInput(
+      new TextEncoder().encode("echo 'PTY_TS_OK_12345'\r")
+    );
     await sleep(2000);
 
     const combined = Buffer.concat(chunks).toString("utf-8");

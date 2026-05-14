@@ -389,7 +389,8 @@ describe("WhiteListPattern", () => {
       const fileNames: string[] = [];
       for (const entry of result.entries) {
         const ftype = (entry.fileType || "").toUpperCase();
-        const lastSegment = entry.filePath.replace(/\/$/, "").split("/").pop() || "";
+        const lastSegment =
+          entry.filePath.replace(/\/$/, "").split("/").pop() || "";
         if (["FOLDER", "DIR", "DIRECTORY"].includes(ftype)) {
           // Build Windows local sub-path and recurse
           const subPath = folderPath.replace(/\\$/, "") + "\\" + lastSegment;
@@ -402,140 +403,148 @@ describe("WhiteListPattern", () => {
       return fileNames;
     }
 
-    it(
-      "should create session with BWList using is_path_regex and is_exclude_regex (Windows single-session)",
-      async () => {
-        log(
-          "Testing BWList is_path_regex + is_exclude_regex via single-session strategy..."
-        );
+    it("should create session with BWList using is_path_regex and is_exclude_regex (Windows single-session)", async () => {
+      log(
+        "Testing BWList is_path_regex + is_exclude_regex via single-session strategy..."
+      );
 
-        const base = "C:\\Users\\Administrator\\testdata";
+      const base = "C:\\Users\\Administrator\\testdata";
 
-        // Create context
-        const contextName = `bwlist-ctx-${Date.now()}`;
-        const contextResult = await agentBay.context.get(contextName, true);
-        expect(contextResult.success && contextResult.context).toBeTruthy();
-        bwlistContext = contextResult.context!;
-        if (!bwlistContext) {
-          throw new Error("Failed to get/create context");
-        }
-        const contextId = bwlistContext.id;
-        log(`Context ID: ${contextId}`);
+      // Create context
+      const contextName = `bwlist-ctx-${Date.now()}`;
+      const contextResult = await agentBay.context.get(contextName, true);
+      expect(contextResult.success && contextResult.context).toBeTruthy();
+      bwlistContext = contextResult.context!;
+      if (!bwlistContext) {
+        throw new Error("Failed to get/create context");
+      }
+      const contextId = bwlistContext.id;
+      log(`Context ID: ${contextId}`);
 
-        // Create session WITH BWList
-        // path=r"project-.*" (isPathRegex=true): match any sub-dir starting with "project-"
-        // excludePaths=[r"cache.*"] (isExcludeRegex=true): exclude sub-dirs matching "cache.*"
-        const syncPolicy: SyncPolicy = {
-          uploadPolicy: newUploadPolicy(),
-          downloadPolicy: newDownloadPolicy(),
-          deletePolicy: newDeletePolicy(),
-          extractPolicy: newExtractPolicy(),
-          recyclePolicy: newRecyclePolicy(),
-          bwList: {
-            whiteLists: [
-              {
-                path: "project-.*",     // regex matching project-alpha, project-beta
-                isPathRegex: true,
-                excludePaths: ["cache.*"], // exclude sub-dirs matching cache.*
-                isExcludeRegex: true,
-              },
-            ],
-          },
-        };
+      // Create session WITH BWList
+      // path=r"project-.*" (isPathRegex=true): match any sub-dir starting with "project-"
+      // excludePaths=[r"cache.*"] (isExcludeRegex=true): exclude sub-dirs matching "cache.*"
+      const syncPolicy: SyncPolicy = {
+        uploadPolicy: newUploadPolicy(),
+        downloadPolicy: newDownloadPolicy(),
+        deletePolicy: newDeletePolicy(),
+        extractPolicy: newExtractPolicy(),
+        recyclePolicy: newRecyclePolicy(),
+        bwList: {
+          whiteLists: [
+            {
+              path: "project-.*", // regex matching project-alpha, project-beta
+              isPathRegex: true,
+              excludePaths: ["cache.*"], // exclude sub-dirs matching cache.*
+              isExcludeRegex: true,
+            },
+          ],
+        },
+      };
 
-        const contextSync = new ContextSync(contextId, base, syncPolicy);
-        log(`SyncPolicy bwList JSON: ${JSON.stringify(syncPolicy.bwList)}`);
+      const contextSync = new ContextSync(contextId, base, syncPolicy);
+      log(`SyncPolicy bwList JSON: ${JSON.stringify(syncPolicy.bwList)}`);
 
-        const createResponse = await agentBay.create({
-          imageId: "imgc-0ae8jv3fd5yuss7ky",
-          labels: { test: "patternBWList" },
-          contextSync: [contextSync],
-        });
-        expect(createResponse.success).toBe(true);
-        session = createResponse.session;
-        log(`Session created with ID: ${session!.sessionId}`);
+      const createResponse = await agentBay.create({
+        imageId: "imgc-0ae8jv3fd5yuss7ky",
+        labels: { test: "patternBWList" },
+        contextSync: [contextSync],
+      });
+      expect(createResponse.success).toBe(true);
+      session = createResponse.session;
+      log(`Session created with ID: ${session!.sessionId}`);
 
-        // Write test files onto local FS
-        const fs = session!.fileSystem!;
-        for (const dir of [
-          base,
-          `${base}\\project-alpha`,
-          `${base}\\project-beta`,
-          `${base}\\project-beta\\cache`,
-        ]) {
-          const r = await fs.createDirectory(dir);
-          log(`  mkdir ${dir}: ${r.success ? "OK" : r.errorMessage}`);
-        }
+      // Write test files onto local FS
+      const fs = session!.fileSystem!;
+      for (const dir of [
+        base,
+        `${base}\\project-alpha`,
+        `${base}\\project-beta`,
+        `${base}\\project-beta\\cache`,
+      ]) {
+        const r = await fs.createDirectory(dir);
+        log(`  mkdir ${dir}: ${r.success ? "OK" : r.errorMessage}`);
+      }
 
-        const testFiles: [string, string][] = [
-          [`${base}\\project-alpha\\main.py`,       "# main entry point\nprint('hello')\n"],
-          [`${base}\\project-alpha\\README.txt`,    "Project Alpha README\n"],
-          [`${base}\\project-beta\\config.json`,    '{"env": "test"}\n'],
-          [`${base}\\project-beta\\cache\\temp.log`, "temporary log\n"],
-        ];
-        for (const [fpath, content] of testFiles) {
-          const r = await fs.writeFile(fpath, content);
-          log(`  write ${fpath}: ${r.success ? "OK" : r.errorMessage}`);
-        }
+      const testFiles: [string, string][] = [
+        [
+          `${base}\\project-alpha\\main.py`,
+          "# main entry point\nprint('hello')\n",
+        ],
+        [`${base}\\project-alpha\\README.txt`, "Project Alpha README\n"],
+        [`${base}\\project-beta\\config.json`, '{"env": "test"}\n'],
+        [`${base}\\project-beta\\cache\\temp.log`, "temporary log\n"],
+      ];
+      for (const [fpath, content] of testFiles) {
+        const r = await fs.writeFile(fpath, content);
+        log(`  write ${fpath}: ${r.success ? "OK" : r.errorMessage}`);
+      }
 
-        // delete(syncContext=true) triggers upload with BWList filter
-        log("  Deleting session with syncContext=true (BWList upload filter applied)...");
-        const delResult = await agentBay.delete(session!, true);
-        expect(delResult.success).toBe(true);
-        session = undefined;
-        log("  Session deleted. Filtered upload triggered.");
+      // delete(syncContext=true) triggers upload with BWList filter
+      log(
+        "  Deleting session with syncContext=true (BWList upload filter applied)..."
+      );
+      const delResult = await agentBay.delete(session!, true);
+      expect(delResult.success).toBe(true);
+      session = undefined;
+      log("  Session deleted. Filtered upload triggered.");
 
-        // list_files(base) – one call, traverse entries directly
-        log("\n=== Verifying OSS content via context.listFiles ===");
-        const probe = await agentBay.context.listFiles(contextId, base, 1, 200);
-        const entryCount = probe.entries ? probe.entries.length : 0;
-        log(`  listFiles(${base}) -> success=${probe.success}, entries=${entryCount}`);
+      // list_files(base) – one call, traverse entries directly
+      log("\n=== Verifying OSS content via context.listFiles ===");
+      const probe = await agentBay.context.listFiles(contextId, base, 1, 200);
+      const entryCount = probe.entries ? probe.entries.length : 0;
+      log(
+        `  listFiles(${base}) -> success=${probe.success}, entries=${entryCount}`
+      );
 
-        const allFiles: string[] = [];
-        if (probe.entries && probe.entries.length > 0) {
-          for (const e of probe.entries) {
-            const ftype = (e.fileType || "").toUpperCase();
-            const lastSegment = e.filePath.replace(/\/$/, "").split("/").pop() || "";
-            log(`    [${ftype}] ${e.filePath}  -> lastSegment=${lastSegment}`);
-            if (["FOLDER", "DIR", "DIRECTORY"].includes(ftype)) {
-              const subPath = base.replace(/\\$/, "") + "\\" + lastSegment;
-              log(`      Recursing into ${subPath}...`);
-              const sub = await collectAllFiles(contextId, subPath);
-              allFiles.push(...sub);
-            } else {
-              allFiles.push(e.filePath);
-            }
+      const allFiles: string[] = [];
+      if (probe.entries && probe.entries.length > 0) {
+        for (const e of probe.entries) {
+          const ftype = (e.fileType || "").toUpperCase();
+          const lastSegment =
+            e.filePath.replace(/\/$/, "").split("/").pop() || "";
+          log(`    [${ftype}] ${e.filePath}  -> lastSegment=${lastSegment}`);
+          if (["FOLDER", "DIR", "DIRECTORY"].includes(ftype)) {
+            const subPath = base.replace(/\\$/, "") + "\\" + lastSegment;
+            log(`      Recursing into ${subPath}...`);
+            const sub = await collectAllFiles(contextId, subPath);
+            allFiles.push(...sub);
+          } else {
+            allFiles.push(e.filePath);
           }
-        } else {
-          log("  WARNING: No entries found in OSS.");
         }
+      } else {
+        log("  WARNING: No entries found in OSS.");
+      }
 
-        log(`  Collected ${allFiles.length} file(s) total`);
-        log(`\n  === All files in OSS (${allFiles.length} total) ===`);
-        for (const p of allFiles) {
-          log(`    ${p}`);
-        }
+      log(`  Collected ${allFiles.length} file(s) total`);
+      log(`\n  === All files in OSS (${allFiles.length} total) ===`);
+      for (const p of allFiles) {
+        log(`    ${p}`);
+      }
 
-        expect(allFiles.length).toBe(3);
+      expect(allFiles.length).toBe(3);
 
-        // Files that SHOULD be present
-        for (const name of ["main.py", "README.txt", "config.json"]) {
-          const found = allFiles.some((p) => p.includes(name));
-          log(`  ${found ? "FOUND" : "NOT FOUND"}: ${name}`);
-          expect(found).toBe(true);
-        }
-        log("✅ Expected files present in OSS");
+      // Files that SHOULD be present
+      for (const name of ["main.py", "README.txt", "config.json"]) {
+        const found = allFiles.some((p) => p.includes(name));
+        log(`  ${found ? "FOUND" : "NOT FOUND"}: ${name}`);
+        expect(found).toBe(true);
+      }
+      log("✅ Expected files present in OSS");
 
-        // Files that SHOULD be absent (excluded by BWList cache.* regex)
-        for (const name of ["temp.log"]) {
-          const found = allFiles.some((p) => p.includes(name));
-          log(`  ${found ? "FOUND (should be absent!)" : "correctly absent"}: ${name}`);
-          expect(found).toBe(false);
-        }
-        log("✅ Excluded files correctly absent from OSS");
-        log("BWList with isPathRegex + isExcludeRegex verified successfully");
-      },
-      120000
-    );
+      // Files that SHOULD be absent (excluded by BWList cache.* regex)
+      for (const name of ["temp.log"]) {
+        const found = allFiles.some((p) => p.includes(name));
+        log(
+          `  ${
+            found ? "FOUND (should be absent!)" : "correctly absent"
+          }: ${name}`
+        );
+        expect(found).toBe(false);
+      }
+      log("✅ Excluded files correctly absent from OSS");
+      log("BWList with isPathRegex + isExcludeRegex verified successfully");
+    }, 120000);
   });
 });

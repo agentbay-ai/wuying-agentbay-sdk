@@ -53,8 +53,7 @@ function parseShellPayload(rawData: string): ParsedShellPayload {
       return {
         stdout: parsed.stdout || "",
         stderr: parsed.stderr || "",
-        exitCode:
-          typeof parsed.exit_code === "number" ? parsed.exit_code : 0,
+        exitCode: typeof parsed.exit_code === "number" ? parsed.exit_code : 0,
         traceId: parsed.traceId || "",
       };
     }
@@ -193,8 +192,8 @@ export class Command {
           result.data == null
             ? ""
             : typeof result.data === "string"
-              ? result.data
-              : String(result.data);
+            ? result.data
+            : String(result.data);
         const parsed = parseShellPayload(rawData);
         return {
           requestId: result.requestId,

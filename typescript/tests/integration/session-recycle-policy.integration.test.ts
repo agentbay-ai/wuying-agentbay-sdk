@@ -129,9 +129,7 @@ describe("Session RecyclePolicy", () => {
           "/test/path",
           invalidSyncPolicy
         );
-      }).toThrow(
-        /Wildcard patterns are not supported in path/
-      );
+      }).toThrow(/Wildcard patterns are not supported in path/);
 
       log("ContextSync correctly threw error for invalid recyclePolicy path");
     });
