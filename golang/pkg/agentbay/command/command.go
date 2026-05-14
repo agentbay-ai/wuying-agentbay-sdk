@@ -248,10 +248,10 @@ func (c *Command) executeCommandInternal(
 
 // parsedShellPayload holds the parsed fields from a shell-tool MCP response.
 type parsedShellPayload struct {
-	stdout  string
-	stderr  string
+	stdout   string
+	stderr   string
 	exitCode int
-	traceID string
+	traceID  string
 }
 
 // looksLikeWrappedShellPayload conservatively determines whether a parsed JSON

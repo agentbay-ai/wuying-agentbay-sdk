@@ -24,9 +24,9 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/git"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/internal"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/mobile"
-	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/pty"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/models"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/oss"
+	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/pty"
 )
 
 // SessionResult wraps Session object and RequestID

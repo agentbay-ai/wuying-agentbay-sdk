@@ -53,8 +53,8 @@ func TestComputerRealE2E(t *testing.T) {
 
 	// Check if session supports screenshot before running Computer tests
 	screenshotCheck := session.Computer.Screenshot()
-	if screenshotCheck.ErrorMessage != "" && 
-	    strings.Contains(screenshotCheck.ErrorMessage, "not support `screenshot()`") {
+	if screenshotCheck.ErrorMessage != "" &&
+		strings.Contains(screenshotCheck.ErrorMessage, "not support `screenshot()`") {
 		t.Skip("Skipping Computer tests: session does not support screenshot()")
 	}
 

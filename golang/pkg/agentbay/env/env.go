@@ -48,8 +48,8 @@ type Env struct {
 		GetSessionId() string
 		CallMcpTool(toolName string, args interface{}) (*models.McpToolResult, error)
 	}
-	registrar     EnvToolRegistrar
-	toolsOnce     sync.Once
+	registrar EnvToolRegistrar
+	toolsOnce sync.Once
 }
 
 // NewEnv creates a new Env instance

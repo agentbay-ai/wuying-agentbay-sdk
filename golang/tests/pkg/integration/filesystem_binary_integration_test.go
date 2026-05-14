@@ -11,7 +11,7 @@ import (
 
 func TestFileSystem_ReadBinaryFileWithPattern(t *testing.T) {
 	// Skip if no API key
-	apiKey:= getTestAPIKey()
+	apiKey := getTestAPIKey()
 
 	fmt.Println("=== Testing binary file read functionality ===")
 
@@ -159,7 +159,7 @@ func TestFileSystem_ReadEmptyBinaryFile(t *testing.T) {
 	// Read binary file using ReadFileBinary
 	fmt.Println("\n2. Reading empty binary file...")
 	binaryResult, err := session.FileSystem.ReadFileBinary("/tmp/empty_binary_test")
-	
+
 	// Empty file causes base64 decode error - this is expected behavior
 	// The SDK doesn't gracefully handle empty file content yet
 	if err != nil {
