@@ -2,6 +2,8 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
+
 Mobile UI Automation Example
 
 This example demonstrates:

@@ -6,6 +6,7 @@ from agentbay.api.models._create_mcp_session_request import ExtraConfigs
 from ..config import _BROWSER_FINGERPRINT_PERSIST_PATH
 from ..logger import get_logger
 from .lifecycle_policy import LifecyclePolicy
+from .context_mount import ContextMount, ContextMountAccessMode, ContextMountStrategy
 from .context_sync import (
     BWList,
     ContextSync,
@@ -330,6 +331,7 @@ class CreateSessionParams:
         idle_release_timeout: Optional[int] = None,
         lifecycle_policy: Optional[LifecyclePolicy] = None,
         context_syncs: Optional[List[ContextSync]] = None,
+        context_mounts: Optional[List[ContextMount]] = None,
         browser_context: Optional[BrowserContext] = None,
         policy_id: Optional[str] = None,
         beta_network_id: Optional[str] = None,
@@ -398,6 +400,7 @@ class CreateSessionParams:
             _logger.info(f"Added fingerprint context sync from BrowserContext")
 
         self.context_syncs = all_context_syncs
+        self.context_mounts = list(context_mounts or [])
         self.browser_context = browser_context
         self.policy_id = policy_id
         self.beta_network_id = beta_network_id

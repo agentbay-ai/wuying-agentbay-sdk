@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 AgentBay SDK - Jupyter Context Persistence Example
 
 This example demonstrates that consecutive `session.code.run_code()` calls within the same

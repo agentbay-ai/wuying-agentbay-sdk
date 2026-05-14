@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Example: session-scoped environment variables via the Env module.
 
 Demonstrates set, get (all and filtered), overwrite, and shell visibility.

@@ -2,10 +2,17 @@
 # This file is auto-generated from the _async directory.
 
 #!/usr/bin/env python3
+"""
+ci-stable
+AgentBay SDK - Context Management Example
+
+This example demonstrates how to use the AgentBay SDK to manage contexts,
+including listing, creating, and retrieving context details.
+"""
 
 import os
 
-from agentbay import AgentBay, ContextSync, SyncPolicy, CreateSessionParams
+from agentbay import AgentBay, ContextSync, SyncPolicy, CreateSessionParams, ContextListParams
 from agentbay import AgentBayError, ClearanceTimeoutError
 
 def main():
@@ -108,6 +115,33 @@ def main():
                 print(f"Failed to get context by name")
         except AgentBayError as e:
             print(f"Error getting context by name: {e}")
+
+        # Example 7: Paginated context listing
+        print("\nExample 7: Paginated context listing...")
+        try:
+            # First page
+            params = ContextListParams(max_results=3)
+            result = agent_bay.context.list(params)
+            if result.success:
+                print(f"Page 1: Found {len(result.contexts)} contexts (Total: {result.total_count or 'Unknown'})")
+                for ctx in result.contexts:
+                    print(f"  - {ctx.name} ({ctx.id})")
+
+                # Fetch next page if available
+                if result.next_token:
+                    print(f"  Has more results, fetching next page...")
+                    params = ContextListParams(max_results=3, next_token=result.next_token)
+                    result = agent_bay.context.list(params)
+                    if result.success:
+                        print(f"Page 2: Found {len(result.contexts)} contexts")
+                        for ctx in result.contexts:
+                            print(f"  - {ctx.name} ({ctx.id})")
+                else:
+                    print("  No more pages")
+            else:
+                print(f"Failed to list contexts: {result.error_message}")
+        except AgentBayError as e:
+            print(f"Error during paginated listing: {e}")
 
         # Clean up
         print("\nCleaning up...")

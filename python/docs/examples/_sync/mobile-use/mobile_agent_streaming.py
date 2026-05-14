@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Mobile Agent Streaming Example
 
 This example demonstrates:

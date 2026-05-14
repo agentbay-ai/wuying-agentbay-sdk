@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Basic Extension Management Example
 
 This example demonstrates the fundamental usage of browser extensions with AgentBay SDK.
@@ -28,9 +29,13 @@ def basic_extension_example():
         extension_path = "/Users/liyuebing/Projects/wuying-agentbay-sdk/tmp/test-extension.zip"  # Test extension path
 
         if not os.path.exists(extension_path):
-            print(f"❌ Extension file not found: {extension_path}")
-            print("💡 Please update the extension_path variable with a valid ZIP file")
-            return False
+            print(f"⚠️ Extension file not found: {extension_path}")
+            print("📦 Creating a minimal test extension ZIP in the current directory...")
+            import zipfile
+            extension_path = os.path.join(os.path.dirname(__file__), "test-extension.zip")
+            with zipfile.ZipFile(extension_path, "w") as zf:
+                zf.writestr("manifest.json", '{"manifest_version": 2, "name": "test-extension", "version": "1.0"}')
+            print(f"✅ Created test extension: {extension_path}")
 
         # Upload extension to cloud
         print(f"📦 Uploading extension: {extension_path}")
@@ -91,6 +96,8 @@ def basic_extension_example():
         print("\n🧹 Cleaning up resources...")
         extensions_service.cleanup()
         print("✅ Cleanup completed")
+        if os.path.exists(extension_path):
+            os.remove(extension_path)
 
 
 def multiple_extensions_example():
@@ -110,9 +117,19 @@ def multiple_extensions_example():
 
         # Filter existing files
         existing_paths = [path for path in extension_paths if os.path.exists(path)]
+        created_paths = []
         if not existing_paths:
-            print("❌ No extension files found. Please update extension_paths with valid ZIP files")
-            return False
+            print("⚠️ No extension files found. Creating test extension ZIPs in the current directory...")
+            import zipfile
+            ext_dir = os.path.dirname(__file__)
+            for i, path in enumerate(extension_paths):
+                name = f"test-extension-v{i+1}.zip"
+                local_path = os.path.join(ext_dir, name)
+                with zipfile.ZipFile(local_path, "w") as zf:
+                    zf.writestr("manifest.json", f'{{"manifest_version": 2, "name": "test-extension-v{i+1}", "version": "1.0"}}')
+                existing_paths.append(local_path)
+                created_paths.append(local_path)
+                print(f"✅ Created test extension: {local_path}")
 
         print(f"📦 Uploading {len(existing_paths)} extensions...")
 
@@ -157,6 +174,10 @@ def multiple_extensions_example():
         return False
     finally:
         extensions_service.cleanup()
+        # 清理本地创建的测试 ZIP 文件
+        for path in created_paths:
+            if os.path.exists(path):
+                os.remove(path)
 
 
 if __name__ == "__main__":

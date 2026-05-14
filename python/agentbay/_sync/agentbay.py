@@ -669,6 +669,26 @@ class AgentBay:
                 request.persistence_data_list = persistence_data_list
                 needs_context_sync = len(persistence_data_list) > 0
 
+            # Add context_mounts if provided
+            if hasattr(params, "context_mounts") and params.context_mounts:
+                from ..api.models import CreateMcpSessionRequestPersistenceDataList
+                import json as _json
+
+                if not hasattr(request, "persistence_data_list") or request.persistence_data_list is None:
+                    request.persistence_data_list = []
+                for cm in params.context_mounts:
+                    mount_config_json = _json.dumps(
+                        cm._to_mount_config_dict(), ensure_ascii=False
+                    )
+                    request.persistence_data_list.append(
+                        CreateMcpSessionRequestPersistenceDataList(
+                            context_id=cm.context_id,
+                            path=cm.path,
+                            type="mount",
+                            mount_config=mount_config_json,
+                        )
+                    )
+
             # Add BrowserContext as a ContextSync if provided
             if hasattr(params, "browser_context") and params.browser_context:
                 self._apply_browser_context(params.browser_context, request)

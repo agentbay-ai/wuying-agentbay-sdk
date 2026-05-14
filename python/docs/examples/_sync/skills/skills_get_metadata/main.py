@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Skills feature example: get_metadata + session with skills.
 
 This example demonstrates:

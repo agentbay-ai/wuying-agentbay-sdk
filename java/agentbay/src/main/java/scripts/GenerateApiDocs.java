@@ -1273,7 +1273,10 @@ public class GenerateApiDocs {
             "com.aliyun.agentbay.context.Lifecycle",
             "com.aliyun.agentbay.context.UploadStrategy"
         ));
-        
+        moduleToClasses.put("context-mount", Arrays.asList(
+            "com.aliyun.agentbay.context.ContextMount"
+        ));
+
         // Advanced modules
         moduleToClasses.put("browser", Arrays.asList(
             "com.aliyun.agentbay.browser.Browser",
@@ -1389,6 +1392,8 @@ public class GenerateApiDocs {
             "The Env module provides methods for setting and querying global environment variables within a session sandbox."));
         modules.put("lifecycle-policy", createModuleConfig("Lifecycle Policy", "common-features/basics", "\\u23F1",
             "The LifecyclePolicy class provides fine-grained control over session lifecycle with idle release timeout, max runtime, and manual release options. All time values are in minutes."));
+        modules.put("context-mount", createModuleConfig("Context Mount", "common-features/basics", "\\uD83D\\uDCC2",
+            "ContextMount provides direct-mount write-through persistence where data is persisted immediately without manual sync calls. Unlike ContextSync, mounted paths act as live persistent storage."));
         fallbackData.put("modules", modules);
         
         // Add comprehensive global configuration

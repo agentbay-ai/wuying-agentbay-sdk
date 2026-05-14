@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Text Processing Example
 
 This example demonstrates:

@@ -3,6 +3,7 @@ import concurrent.futures
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Concurrent Sessions Example
 
 This example demonstrates:

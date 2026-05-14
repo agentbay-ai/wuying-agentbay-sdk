@@ -14,34 +14,52 @@ Mobile Use environment (`mobile_latest` image) provides cloud-based Android mobi
 
 ## Examples
 
-### mobile_system/main.py
+### mobile_agent_streaming.py
 
-Comprehensive mobile automation example demonstrating:
+Mobile Agent streaming example:
+- Execute tasks using Mobile Agent with streaming output
+- Real-time reasoning, content, tool call, and tool result callbacks
+- Observe mode for screen analysis
 
-1. **Application Management**
-   - Get installed applications
-   - Start applications
-   - Stop applications
-   - Application state monitoring
+### mobile_simulate_basic_usage.py
 
-2. **UI Element Detection**
-   - Get clickable UI elements
-   - Get all UI elements (tree structure)
-   - Element property inspection
+Mobile simulate basic usage example:
+- Simulated mobile interaction without real device
+- Tap, swipe, input text operations
+- Screenshot capture
 
-3. **Touch Interactions**
-   - Tap at coordinates
-   - Swipe gestures
-   - Multi-touch operations
+### mobile_simulate_with_ctx.py
 
-4. **Text Input**
-   - Input text to focused elements
-   - Send key events
-   - Keyboard operations
+Mobile simulate with context:
+- Mobile simulation with custom context injection
+- Context-aware automation flows
 
-5. **Screenshot Capture**
-   - Capture mobile screen
-   - Save screenshots locally
+### mobile_app_operations.py
+
+Mobile app management:
+- Get installed applications
+- Start and stop applications
+- Application state monitoring
+
+### mobile_beta_screenshot.py
+
+Mobile screenshot capture:
+- Using `beta_take_screenshot()` API
+- Save screenshots locally
+
+### mobile_bounds_rect.py
+
+Mobile UI bounds/rect operations:
+- Get element bounding rectangles
+- UI layout analysis
+
+### mobile_ui_automation.py
+
+Mobile UI automation:
+- Tap at coordinates
+- Swipe gestures
+- Text input
+- Key events
 
 ### mobile_get_adb_url_example.py
 
@@ -49,6 +67,21 @@ ADB URL retrieval example:
 - Get ADB connection URL
 - Connect external tools to mobile session
 - Remote debugging setup
+
+### mobile_system/main.py
+
+Comprehensive mobile system operations:
+- Application management
+- UI element detection
+- Touch interactions
+- Text input
+- Screenshot capture
+
+### get_all_ui_elements_xml/
+
+Get all UI elements as XML:
+- Full UI hierarchy dump
+- XML format parsing
 
 ## Prerequisites
 

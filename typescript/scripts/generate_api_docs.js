@@ -41,6 +41,12 @@ const docMappings = [
     identifiers: ['Interface ContextSync', 'ContextSync', 'SyncPolicy', 'UploadPolicy', 'DownloadPolicy', 'DeletePolicy', 'ExtractPolicy', 'RecyclePolicy', 'WhiteList', 'BWList', 'MappingPolicy'],
   },
   {
+    target: 'common-features/basics/context-mount.md',
+    symbol: 'ContextMount',
+    collectPages: ['ContextMount', 'ContextMountAccessMode', 'ContextMountStrategy'],
+    identifiers: ['Class ContextMount', 'ContextMount', 'ContextMountAccessMode', 'ContextMountStrategy'],
+  },
+  {
     target: 'common-features/basics/logging.md',
     symbol: 'logger',
     identifiers: ['logger', 'log'],

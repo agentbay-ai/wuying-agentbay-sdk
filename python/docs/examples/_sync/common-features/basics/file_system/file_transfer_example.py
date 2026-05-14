@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 File Transfer Example
 
 This example demonstrates how to use the file transfer functionality

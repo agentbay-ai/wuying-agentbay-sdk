@@ -14,6 +14,7 @@ import {
   extractRequestId,
 } from "./types/api-response";
 import { ContextSync } from "./context-sync";
+import { ContextMount } from "./context-mount";
 import {
   log,
   logError,
@@ -592,7 +593,10 @@ export class ContextManager {
   /**
    * Dynamically binds one or more contexts to the current session.
    *
-   * @param contexts - One or more ContextSync objects specifying contexts to bind
+   * Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+   * write-through persistence) objects. They can be mixed in a single call.
+   *
+   * @param contexts - One or more ContextSync or ContextMount objects
    * @param waitForCompletion - Whether to poll until all bindings are confirmed (default: true)
    * @returns Promise resolving to ContextBindResult
    *
@@ -600,11 +604,16 @@ export class ContextManager {
    * ```typescript
    * const contextSync = new ContextSync(context.id, '/tmp/ctx-data');
    * const result = await session.context.bind(contextSync);
-   * console.log(`Bind success: ${result.success}`);
+   *
+   * const contextMount = new ContextMount(context.id, '/mnt/data');
+   * const result2 = await session.context.bind(contextMount);
    * ```
    */
   async bind(
-    contexts: ContextSync | ContextSync[],
+    contexts:
+      | ContextSync
+      | ContextMount
+      | (ContextSync | ContextMount)[],
     waitForCompletion = true
   ): Promise<ContextBindResult> {
     const ctxArray = Array.isArray(contexts) ? contexts : [contexts];
@@ -622,7 +631,10 @@ export class ContextManager {
         contextId: ctx.contextId,
         path: ctx.path,
       });
-      if (ctx.policy) {
+      if (ctx instanceof ContextMount) {
+        item.type = "mount";
+        item.mountConfig = ctx.toMountConfigJSON();
+      } else if (ctx instanceof ContextSync && ctx.policy) {
         item.policy = JSON.stringify(ctx.policy);
       }
       return item;
@@ -676,7 +688,12 @@ export class ContextManager {
       );
 
       if (waitForCompletion) {
-        await this.pollForBindCompletion(ctxArray.map((c) => c.contextId));
+        const syncIds = ctxArray
+          .filter((c) => c instanceof ContextSync)
+          .map((c) => c.contextId);
+        if (syncIds.length > 0) {
+          await this.pollForBindCompletion(syncIds);
+        }
       }
 
       return { requestId, success: true };

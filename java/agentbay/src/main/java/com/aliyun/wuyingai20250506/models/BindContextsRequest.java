@@ -52,6 +52,12 @@ public class BindContextsRequest extends TeaModel {
         @NameInMap("Policy")
         public String policy;
 
+        @NameInMap("Type")
+        public String type;
+
+        @NameInMap("MountConfig")
+        public String mountConfig;
+
         public static BindContextsRequestPersistenceDataList build(java.util.Map<String, ?> map) throws Exception {
             BindContextsRequestPersistenceDataList self = new BindContextsRequestPersistenceDataList();
             return TeaModel.build(map, self);
@@ -79,6 +85,22 @@ public class BindContextsRequest extends TeaModel {
         }
         public String getPolicy() {
             return this.policy;
+        }
+
+        public BindContextsRequestPersistenceDataList setType(String type) {
+            this.type = type;
+            return this;
+        }
+        public String getType() {
+            return this.type;
+        }
+
+        public BindContextsRequestPersistenceDataList setMountConfig(String mountConfig) {
+            this.mountConfig = mountConfig;
+            return this;
+        }
+        public String getMountConfig() {
+            return this.mountConfig;
         }
     }
 }

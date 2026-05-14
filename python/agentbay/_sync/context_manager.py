@@ -3,7 +3,7 @@
 
 import json
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from .._common.logger import _log_api_call, _log_api_response_with_details, get_logger
 from .._common.models.response import ApiResponse, extract_request_id
@@ -15,6 +15,7 @@ from .._common.models.context import (
     ContextStatusData,
     ContextSyncResult,
 )
+from .._common.params.context_mount import ContextMount
 from .._common.params.context_sync import ContextSync
 from ..api.models import (
     BindContextsRequest,
@@ -42,14 +43,17 @@ class ContextManager:
 
     def bind(
         self,
-        *contexts: ContextSync,
+        *contexts: Union[ContextSync, ContextMount],
         wait_for_completion: bool = True,
     ) -> ContextBindResult:
         """
         Dynamically bind one or more contexts to the running session.
 
+        Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+        write-through persistence) objects. They can be mixed in a single call.
+
         Args:
-            *contexts: One or more ContextSync objects specifying context_id, path, and optional policy.
+            *contexts: One or more ContextSync or ContextMount objects.
             wait_for_completion: If True, polls list_bindings() until all bound contexts appear.
 
         Returns:
@@ -60,7 +64,10 @@ class ContextManager:
             result = session.context.bind(
                 ContextSync(context_id="SdkCtx-xxx", path="/tmp/ctx-data"),
             )
-            print(f"Bind success: {result.success}")
+
+            result = session.context.bind(
+                ContextMount(context_id="SdkCtx-yyy", path="/mnt/data"),
+            )
         """
         if not contexts:
             return ContextBindResult(success=False, error_message="No contexts provided")
@@ -71,7 +78,10 @@ class ContextManager:
                 context_id=ctx.context_id,
                 path=ctx.path,
             )
-            if ctx.policy:
+            if isinstance(ctx, ContextMount):
+                item.type = "mount"
+                item.mount_config = json.dumps(ctx._to_mount_config_dict())
+            elif isinstance(ctx, ContextSync) and ctx.policy:
                 item.policy = json.dumps(ctx.policy.__dict__())
             persistence_data_list.append(item)
 
@@ -115,8 +125,9 @@ class ContextManager:
         )
 
         if wait_for_completion:
-            expected_ids = {c.context_id for c in contexts}
-            self._poll_for_bind_completion(expected_ids)
+            sync_ids = {c.context_id for c in contexts if isinstance(c, ContextSync)}
+            if sync_ids:
+                self._poll_for_bind_completion(sync_ids)
 
         return ContextBindResult(request_id=request_id, success=True)
 

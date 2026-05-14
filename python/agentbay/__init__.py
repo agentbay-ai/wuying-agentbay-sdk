@@ -45,6 +45,11 @@ from ._common.params.context_sync import (
     UploadStrategy,
     WhiteList,
 )
+from ._common.params.context_mount import (
+    ContextMount,
+    ContextMountAccessMode,
+    ContextMountStrategy,
+)
 from ._sync.extension import Extension, ExtensionOption, ExtensionsService
 from ._common.params.session_params import (
     BrowserContext,
@@ -288,6 +293,9 @@ __all__ = [
     "FileUrlResult",
     "ClearContextResult",
     "ContextStatusData",
+    "ContextMount",
+    "ContextMountAccessMode",
+    "ContextMountStrategy",
     # Browser Operator types BEGIN
     "ActOptions",
     "ActResult",

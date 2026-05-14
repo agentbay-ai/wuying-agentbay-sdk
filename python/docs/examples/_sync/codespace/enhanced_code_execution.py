@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 AgentBay SDK - Enhanced Code Execution Example
 
 This example demonstrates the new enhanced code execution features:

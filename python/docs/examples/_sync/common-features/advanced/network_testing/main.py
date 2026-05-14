@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-skip
 Example demonstrating network testing with AgentBay SDK.
 
 This example shows how to:

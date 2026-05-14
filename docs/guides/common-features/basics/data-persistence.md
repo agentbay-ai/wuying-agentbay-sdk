@@ -10,6 +10,7 @@ This guide covers AgentBay SDK's data persistence features, including context co
 - [Context Management](#context-management)
 - [Dynamic Context Binding](#dynamic-context-binding)
 - [Data Synchronization Strategies](#data-synchronization-strategies)
+- [Context Mount (Direct-Mount Persistence)](#context-mount-direct-mount-persistence)
 
 <a id="core-concepts"></a>
 ## 🎯 Core Concepts
@@ -1264,6 +1265,217 @@ if upload_result.success:
 else:
     print(f"Upload failed: {upload_result.error_message}")
 ```
+
+<a id="context-mount"></a>
+## 📌 Context Mount (Direct-Mount Persistence)
+
+### What is Context Mount?
+
+**Context Mount** provides an alternative persistence model to Context Sync. Instead of downloading and uploading files at session start/end, Context Mount presents the context's storage as a **live mounted filesystem** — writes are persisted immediately, and reads always reflect the latest state.
+
+**Key difference from Context Sync:**
+
+| Aspect | Context Sync | Context Mount |
+|--------|-------------|---------------|
+| **Persistence model** | Batch: download on start, upload on end | Write-through: changes persist immediately |
+| **Manual sync needed?** | Yes (`sync()`, `delete(sync_context=True)`) | No — all writes are automatically persisted |
+| **Data availability** | After sync completes | Immediately after write |
+| **Best for** | Large batch operations, offline-first workflows | Real-time persistence, shared state across sessions |
+| **Configuration** | `SyncPolicy` (upload/download/recycle) | `AccessMode` + `Strategy` |
+
+### Using Context Mount at Session Creation
+
+The simplest way to use Context Mount is to specify it when creating a session:
+
+```python
+from agentbay import AgentBay, ContextMount, CreateSessionParams
+
+agent_bay = AgentBay()
+
+# Create or get a context
+context = agent_bay.context.get("my-mount-demo", create=True).context
+
+# Create a mount configuration
+context_mount = ContextMount.new(context.id, "/tmp/mounted")
+
+# Create a session with the mount
+params = CreateSessionParams(context_mounts=[context_mount])
+session = agent_bay.create(params).session
+
+# Write data — it is persisted immediately, no sync needed
+session.file_system.write_file("/tmp/mounted/hello.txt", "Hello from Context Mount!")
+
+# Read it back
+content = session.file_system.read_file("/tmp/mounted/hello.txt")
+print(content.content)  # "Hello from Context Mount!"
+
+# No need for sync_context=True — data is already persisted
+agent_bay.delete(session)
+```
+
+### Dynamic Mounting (Runtime Bind)
+
+You can also mount a context to a running session using `bind()`:
+
+```python
+from agentbay import AgentBay, ContextMount, CreateSessionParams
+
+agent_bay = AgentBay()
+
+# Create a session without any initial mounts
+session = agent_bay.create(CreateSessionParams()).session
+
+# Later, dynamically mount a context
+context = agent_bay.context.get("runtime-mount", create=True).context
+context_mount = ContextMount.new(context.id, "/tmp/dynamic-mount")
+
+bind_result = session.context.bind(context_mount)
+if bind_result.success:
+    print("Context mounted successfully!")
+    session.file_system.write_file("/tmp/dynamic-mount/data.txt", "Dynamic mount works!")
+
+agent_bay.delete(session)
+```
+
+### Cross-Session Data Persistence
+
+Because Context Mount persists data immediately, it is straightforward to share data across sessions:
+
+```python
+from agentbay import AgentBay, ContextMount, CreateSessionParams
+
+agent_bay = AgentBay()
+context = agent_bay.context.get("cross-session-mount", create=True).context
+mount = ContextMount.new(context.id, "/tmp/shared")
+
+# Session A: write data
+session_a = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
+session_a.file_system.write_file("/tmp/shared/config.json", '{"version": "2.0"}')
+agent_bay.delete(session_a)  # No sync needed
+
+# Session B: read data written by Session A
+session_b = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
+content = session_b.file_system.read_file("/tmp/shared/config.json")
+print(content.content)  # '{"version": "2.0"}'
+agent_bay.delete(session_b)
+```
+
+### Multi-Session Real-Time Sharing
+
+When the same context is mounted in multiple active sessions simultaneously, changes made in one session are **immediately visible** in the other sessions — no sync or refresh needed:
+
+```python
+from agentbay import AgentBay, ContextMount, CreateSessionParams
+
+agent_bay = AgentBay()
+context = agent_bay.context.get("shared-workspace", create=True).context
+mount = ContextMount.new(context.id, "/tmp/shared")
+
+# Two sessions mount the same context
+session_1 = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
+session_2 = agent_bay.create(CreateSessionParams(context_mounts=[mount])).session
+
+# Session 1 writes a file
+session_1.file_system.write_file("/tmp/shared/status.txt", "ready")
+
+# Session 2 can read it immediately — no sync needed
+content = session_2.file_system.read_file("/tmp/shared/status.txt")
+print(content.content)  # "ready"
+
+agent_bay.delete(session_1)
+agent_bay.delete(session_2)
+```
+
+### Access Modes and Strategies
+
+Context Mount supports two configuration dimensions:
+
+**Access Mode** controls read/write permissions:
+
+| Mode | Description |
+|------|-------------|
+| `READ_WRITE` (default) | Full read and write access |
+| `READ_ONLY` | Read-only access — writes will be rejected |
+
+**Strategy** controls the underlying mount technology and POSIX compatibility:
+
+| Strategy | Description | Compatibility | Best For |
+|----------|-------------|---------------|----------|
+| `STANDARD` (default) | High POSIX compatibility via ossfs 1.0 | Supports random writes; does **not** support file locks | General file storage, project workspaces, configuration persistence |
+| `PERFORMANCE` | High-throughput via ossfs 2.0 | Does **not** support file locks, symlinks, random writes, or permission changes | Sequential I/O, large datasets, AI training/inference data |
+
+**Important compatibility notes:**
+- Neither strategy supports file locks (`flock`/`fcntl`). Applications that rely on lock files (Git, Chrome, database engines) **will not work** on a mounted path.
+- `PERFORMANCE` does not support random writes (`lseek` + `write`). It is optimized for sequential read, sequential append, and random read patterns.
+- If your workflow requires file locks or random writes, use **Context Sync** (which operates on local disk) instead.
+
+```python
+from agentbay import ContextMount, ContextMountAccessMode, ContextMountStrategy
+
+# Read-only mount with performance strategy
+mount = ContextMount.new(context.id, "/tmp/readonly-data")
+mount.with_access_mode(ContextMountAccessMode.READ_ONLY)
+mount.with_strategy(ContextMountStrategy.PERFORMANCE)
+```
+
+### Limitations and Restrictions
+
+| Restriction | Description |
+|-------------|-------------|
+| **Mount path must be empty** | If the target path already contains files, the mount will fail. Use an empty or non-existent directory. |
+| **No duplicate mount paths** | You cannot mount two different contexts to the same path in one session. |
+| **Max mount count** | Each session supports up to **3** mounted contexts. Exceeding this limit may degrade performance. |
+| **No file locks** | Both strategies use OSS-backed FUSE; file locking is not supported. |
+| **No unmount** | Dynamic unmounting during a session is not currently supported; mounted contexts remain until the session ends. |
+
+**Applications known to fail on mounted paths:**
+
+| Application | Reason |
+|-------------|--------|
+| Chrome / browser user data | Creates file locks and symlinks on startup |
+| Git operations | Relies on lock files (`.git/index.lock`) |
+| VS Code / IDE projects | Build tooling uses file locks |
+| npm / yarn install | Uses symlinks for `node_modules` |
+
+For these use cases, use **Context Sync** which operates on local disk with full POSIX semantics.
+
+### Choosing Between Context Sync and Context Mount
+
+#### Quick Decision Guide
+
+- **Need file locks, symlinks, or random writes?** → Use **Context Sync** (local disk, full POSIX)
+- **Need real-time persistence or multi-session sharing?** → Use **Context Mount (Standard)**
+- **High-throughput sequential I/O on large datasets?** → Use **Context Mount (Performance)**
+
+#### Three-Mode Comparison
+
+|  | Context Sync | Context Mount (Standard) | Context Mount (Performance) |
+|--|-------------|--------------------------|------------------------------|
+| **How it works** | Download on start, upload on end | Live mounted filesystem | Live mounted filesystem (high-throughput) |
+| **Persistence** | Batch — manual `sync()` or `delete(sync_context=True)` | Write-through — immediate | Write-through — immediate |
+| **File lock (`flock`)** | ✅ Supported | ❌ Not supported | ❌ Not supported |
+| **Symlinks** | ✅ Supported | ✅ Supported | ❌ Not supported |
+| **Random writes (`lseek`)** | ✅ Supported | ✅ Supported | ❌ Not supported |
+| **Permission changes** | ✅ Supported | ✅ Supported | ❌ Not supported |
+| **Compression (Archive mode)** | ✅ Supported | ❌ N/A | ❌ N/A |
+| **Selective sync (whitelist)** | ✅ Supported | ❌ N/A | ❌ N/A |
+| **Recycle policy (auto-delete)** | ✅ Supported | ❌ N/A | ❌ N/A |
+| **Multi-session real-time sharing** | ❌ Requires re-sync | ✅ Immediate visibility | ✅ Immediate visibility |
+| **Risk of data loss on crash** | ⚠️ Unsaved changes lost | ✅ No risk | ✅ No risk |
+
+#### Typical Use Cases
+
+| Use Case | Recommended Mode |
+|----------|-----------------|
+| Browser cookie / user data persistence | **Context Sync** — Chrome requires file locks and symlinks |
+| Git repository workspace | **Context Sync** — Git relies on lock files |
+| IDE / build toolchain projects | **Context Sync** — compilers and package managers use file locks |
+| Agent working directory (general files) | **Context Mount (Standard)** — good compatibility, real-time persistence |
+| Shared read-only dataset across sessions | **Context Mount (Standard)** with `READ_ONLY` mode |
+| AI training data / large sequential reads | **Context Mount (Performance)** — highest throughput |
+| npm / pip package cache | **Context Sync** — package managers use symlinks and lock files |
+
+> **Tip:** You can use both Context Sync and Context Mount in the same session on different paths. For example, mount a shared dataset at `/tmp/data` while syncing a Git workspace at `/home/wuying/project`.
 
 <a id="troubleshooting"></a>
 ## 🔧 Troubleshooting

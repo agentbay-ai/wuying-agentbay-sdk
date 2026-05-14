@@ -6,11 +6,15 @@ export class CreateMcpSessionRequestPersistenceDataList extends $dara.Model {
   contextId?: string;
   path?: string;
   policy?: string;
+  type?: string;
+  mountConfig?: string;
   static names(): { [key: string]: string } {
     return {
       contextId: 'ContextId',
       path: 'Path',
       policy: 'Policy',
+      type: 'Type',
+      mountConfig: 'MountConfig',
     };
   }
 
@@ -19,6 +23,8 @@ export class CreateMcpSessionRequestPersistenceDataList extends $dara.Model {
       contextId: 'string',
       path: 'string',
       policy: 'string',
+      type: 'string',
+      mountConfig: 'string',
     };
   }
 

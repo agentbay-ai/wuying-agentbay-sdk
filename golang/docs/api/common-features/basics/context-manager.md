@@ -135,6 +135,26 @@ for _, b := range bindingsResult.Bindings {
 }
 ```
 
+### Mount
+
+```go
+func (cm *ContextManager) Mount(contexts []*ContextMount, waitForCompletion bool) (*ContextBindResult, error)
+```
+
+Mount dynamically mounts one or more contexts to the current session with write-through persistence.
+Unlike Bind which uses sync-based persistence, Mount provides direct-mount persistence where data is
+persisted immediately without manual sync calls.
+
+**Example:**
+
+```go
+client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"))
+result, _ := client.Create(nil)
+session := result.Session
+mount := agentbay.NewContextMount(contextID, "/mnt/data")
+mountResult, _ := session.Context.Mount([]*ContextMount{mount}, true)
+```
+
 ### Sync
 
 ```go

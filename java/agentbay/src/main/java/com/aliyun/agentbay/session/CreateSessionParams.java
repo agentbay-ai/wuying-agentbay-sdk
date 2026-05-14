@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import com.aliyun.agentbay.browser.BrowserContext;
+import com.aliyun.agentbay.context.ContextMount;
 import com.aliyun.agentbay.context.ContextSync;
 import com.aliyun.agentbay.model.ExtraConfigs;
 
@@ -46,6 +47,9 @@ public class CreateSessionParams {
      */
     private List<ContextSync> contextSyncs;
 
+    /** List of context mount configurations for direct-mount persistence. */
+    private List<ContextMount> contextMounts;
+
     /** Optional configuration for browser data synchronization. */
     private BrowserContext browserContext;
 
@@ -83,6 +87,7 @@ public class CreateSessionParams {
      */
     public CreateSessionParams() {
         this.contextSyncs = new ArrayList<>();
+        this.contextMounts = new ArrayList<>();
         this.labels = new java.util.HashMap<>();
     }
 
@@ -218,6 +223,24 @@ public class CreateSessionParams {
      */
     public void setContextSyncs(List<ContextSync> contextSyncs) {
         this.contextSyncs = contextSyncs;
+    }
+
+    /**
+     * Get the list of context mount configurations.
+     *
+     * @return list of context mounts, or empty list if not set
+     */
+    public List<ContextMount> getContextMounts() {
+        return contextMounts;
+    }
+
+    /**
+     * Set the list of context mount configurations.
+     *
+     * @param contextMounts list of context mounts
+     */
+    public void setContextMounts(List<ContextMount> contextMounts) {
+        this.contextMounts = contextMounts;
     }
 
     /**

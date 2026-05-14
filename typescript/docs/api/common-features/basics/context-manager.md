@@ -23,11 +23,14 @@
 
 Dynamically binds one or more contexts to the current session.
 
+Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+write-through persistence) objects. They can be mixed in a single call.
+
 #### Parameters
 
 | Name | Type | Default value | Description |
 | :------ | :------ | :------ | :------ |
-| `contexts` | [`ContextSync`](context-sync.md) \| [`ContextSync`](context-sync.md)[] | `undefined` | One or more ContextSync objects specifying contexts to bind |
+| `contexts` | [`ContextSync`](context-sync.md) \| [`ContextMount`](context-mount.md) \| ([`ContextSync`](context-sync.md) \| [`ContextMount`](context-mount.md))[] | `undefined` | One or more ContextSync or ContextMount objects |
 | `waitForCompletion` | `boolean` | `true` | Whether to poll until all bindings are confirmed (default: true) |
 
 #### Returns
@@ -41,7 +44,9 @@ Promise resolving to ContextBindResult
 ```typescript
 const contextSync = new ContextSync(context.id, '/tmp/ctx-data');
 const result = await session.context.bind(contextSync);
-console.log(`Bind success: ${result.success}`);
+
+const contextMount = new ContextMount(context.id, '/mnt/data');
+const result2 = await session.context.bind(contextMount);
 ```
 
 ___

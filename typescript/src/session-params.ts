@@ -1,3 +1,4 @@
+import { ContextMount } from "./context-mount";
 import {
   ContextSync,
   SyncPolicy,
@@ -320,6 +321,8 @@ export interface CreateSessionParamsInterface {
   lifecyclePolicy?: LifecyclePolicy;
   /** List of context synchronization configurations. */
   contextSync?: ContextSync[];
+  /** List of context mount configurations for direct-mount persistence. */
+  contextMount?: ContextMount[];
   /** Optional configuration for browser data synchronization. */
   browserContext?: BrowserContext;
   /** Security policy ID (interface field name). */
@@ -364,6 +367,9 @@ export class CreateSessionParams implements CreateSessionParamsInterface {
    * These configurations define how contexts should be synchronized and mounted.
    */
   public contextSync: ContextSync[];
+
+  /** List of context mount configurations for direct-mount persistence. */
+  public contextMount: ContextMount[];
 
   /** Whether to create a VPC-based session. Defaults to false. */
   public isVpc?: boolean;
@@ -412,10 +418,7 @@ export class CreateSessionParams implements CreateSessionParamsInterface {
       this.idleReleaseTimeout = idle;
     }
     this.lifecyclePolicy = (params as any)?.lifecyclePolicy || undefined;
-    if (
-      this.lifecyclePolicy &&
-      this.idleReleaseTimeout > 0
-    ) {
+    if (this.lifecyclePolicy && this.idleReleaseTimeout > 0) {
       throw new Error(
         "lifecyclePolicy cannot be used together with deprecated idleReleaseTimeout (seconds); use lifecyclePolicy only"
       );
@@ -457,6 +460,7 @@ export class CreateSessionParams implements CreateSessionParamsInterface {
     }
 
     this.contextSync = allContextSyncs;
+    this.contextMount = params?.contextMount ? [...params.contextMount] : [];
     this.browserContext = params?.browserContext;
     this.loadSkills = params?.loadSkills;
     this.skillNames = params?.skillNames;

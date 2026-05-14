@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+# ci-stable
 Complete Windows Application Management Example
 
 This example demonstrates the full workflow for managing desktop applications

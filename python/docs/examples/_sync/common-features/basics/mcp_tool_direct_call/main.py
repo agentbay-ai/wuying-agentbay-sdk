@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Example: List MCP Tools and Call a Tool
 
 This example demonstrates:

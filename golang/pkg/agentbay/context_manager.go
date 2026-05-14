@@ -641,6 +641,88 @@ func (cm *ContextManager) Bind(contexts []*ContextSync, waitForCompletion bool) 
 	}, nil
 }
 
+// Mount dynamically mounts one or more contexts to the current session with write-through persistence.
+// Unlike Bind which uses sync-based persistence, Mount provides direct-mount persistence
+// where data is persisted immediately without manual sync calls.
+//
+// Example:
+//
+//	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"))
+//	result, _ := client.Create(nil)
+//	session := result.Session
+//	mount := agentbay.NewContextMount(contextID, "/mnt/data")
+//	mountResult, _ := session.Context.Mount([]*ContextMount{mount}, true)
+func (cm *ContextManager) Mount(contexts []*ContextMount, waitForCompletion bool) (*ContextBindResult, error) {
+	if len(contexts) == 0 {
+		return &ContextBindResult{
+			Success:      false,
+			ErrorMessage: "At least one context mount is required",
+		}, nil
+	}
+
+	var persistenceDataList []*mcp.BindContextsRequestPersistenceDataList
+	for _, ctx := range contexts {
+		mountConfigJSON, err := ctx.mountConfigJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize mount config for %s: %w", ctx.ContextID, err)
+		}
+		item := &mcp.BindContextsRequestPersistenceDataList{
+			ContextId:   tea.String(ctx.ContextID),
+			Path:        tea.String(ctx.Path),
+			Type:        tea.String("mount"),
+			MountConfig: tea.String(mountConfigJSON),
+		}
+		persistenceDataList = append(persistenceDataList, item)
+	}
+
+	request := &mcp.BindContextsRequest{
+		Authorization:       tea.String("Bearer " + cm.Session.GetAPIKey()),
+		SessionId:           tea.String(cm.Session.GetSessionId()),
+		PersistenceDataList: persistenceDataList,
+	}
+
+	contextIDs := make([]string, len(contexts))
+	for i, ctx := range contexts {
+		contextIDs[i] = ctx.ContextID
+	}
+	logAPICall("BindContexts(Mount)", fmt.Sprintf("SessionId=%s, Contexts=%v", cm.Session.GetSessionId(), contextIDs))
+
+	response, err := cm.Session.GetClient().BindContexts(request)
+	if err != nil {
+		logOperationError("BindContexts(Mount)", err.Error(), true)
+		return nil, fmt.Errorf("failed to mount contexts: %w", err)
+	}
+
+	requestID := models.ExtractRequestID(response)
+
+	if response != nil && response.Body != nil {
+		if response.Body.Success != nil && !*response.Body.Success {
+			code := tea.StringValue(response.Body.Code)
+			message := tea.StringValue(response.Body.Message)
+			if message == "" {
+				message = "Unknown error"
+			}
+			respJSON, _ := json.MarshalIndent(response.Body, "", "  ")
+			logAPIResponseWithDetails("BindContexts(Mount)", requestID, false, nil, string(respJSON))
+			return &ContextBindResult{
+				ApiResponse:  models.ApiResponse{RequestID: requestID},
+				Success:      false,
+				ErrorMessage: fmt.Sprintf("[%s] %s", code, message),
+			}, nil
+		}
+	}
+
+	respJSON, _ := json.MarshalIndent(response.Body, "", "  ")
+	logAPIResponseWithDetails("BindContexts(Mount)", requestID, true, map[string]interface{}{
+		"context_count": len(contexts),
+	}, string(respJSON))
+
+	return &ContextBindResult{
+		ApiResponse: models.ApiResponse{RequestID: requestID},
+		Success:     true,
+	}, nil
+}
+
 // ListBindings lists all context bindings for the current session.
 //
 // Example:

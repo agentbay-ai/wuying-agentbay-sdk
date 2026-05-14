@@ -4,7 +4,7 @@ This directory contains comprehensive examples demonstrating the FileSystem func
 
 ## Examples
 
-### Basic Operations Example ([main.py](./main.py))
+### Basic Operations Example ([basic_file_operations_example.py](./basic_file_operations_example.py))
 
 Demonstrates fundamental file system operations:
 
@@ -93,7 +93,7 @@ export AGENTBAY_API_KEY=your_api_key_here
 
 ```bash
 # Basic file operations
-python main.py
+python basic_file_operations_example.py
 
 # Directory monitoring
 python watch_directory_example.py
@@ -104,7 +104,7 @@ python file_transfer_example.py
 
 ## Code Explanation
 
-### Basic Operations Example (main.py)
+### Basic Operations Example (basic_file_operations_example.py)
 
 The basic operations example demonstrates the following workflow:
 

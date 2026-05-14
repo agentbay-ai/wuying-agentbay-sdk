@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 Watch Directory Example
 
 This example demonstrates how to use the watch_directory functionality

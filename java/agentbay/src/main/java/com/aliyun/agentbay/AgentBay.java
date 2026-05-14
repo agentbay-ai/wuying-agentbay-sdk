@@ -378,6 +378,22 @@ public class AgentBay {
                 request.setPersistenceDataList(persistenceDataList);
             }
 
+            // Handle context mounts
+            if (params.getContextMounts() != null && !params.getContextMounts().isEmpty()) {
+                if (request.getPersistenceDataList() == null) {
+                    request.setPersistenceDataList(new ArrayList<>());
+                }
+                for (ContextMount cm : params.getContextMounts()) {
+                    CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataList persistenceData =
+                        new CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataList();
+                    persistenceData.setContextId(cm.getContextId());
+                    persistenceData.setPath(cm.getPath());
+                    persistenceData.setType("mount");
+                    persistenceData.setMountConfig(cm.toMountConfigJSON());
+                    request.getPersistenceDataList().add(persistenceData);
+                }
+            }
+
             // Add BrowserContext as a ContextSync if provided
             if (params.getBrowserContext() != null) {
                 BrowserContext browserContext = params.getBrowserContext();
@@ -636,8 +652,16 @@ public class AgentBay {
 
             // If we have persistence data, wait for context synchronization
             boolean needsContextSync = (params.getContextSyncs() != null && !params.getContextSyncs().isEmpty()) ||
+                                      (params.getContextMounts() != null && !params.getContextMounts().isEmpty()) ||
                                       (params.getBrowserContext() != null);
             Set<String> waitContextIds = new HashSet<>();
+            if (params.getContextMounts() != null) {
+                for (ContextMount cm : params.getContextMounts()) {
+                    if (cm.getContextId() != null && !cm.getContextId().isEmpty()) {
+                        waitContextIds.add(cm.getContextId());
+                    }
+                }
+            }
             if (params.getContextSyncs() != null) {
                 for (ContextSync cs : params.getContextSyncs()) {
                     Boolean wait = cs.getBetaWaitForCompletion();

@@ -255,9 +255,11 @@ func (s *CreateMcpSessionRequest) Validate() error {
 }
 
 type CreateMcpSessionRequestPersistenceDataList struct {
-	ContextId *string `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
-	Path      *string `json:"Path,omitempty" xml:"Path,omitempty"`
-	Policy    *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
+	ContextId   *string `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
+	Path        *string `json:"Path,omitempty" xml:"Path,omitempty"`
+	Policy      *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
+	Type        *string `json:"Type,omitempty" xml:"Type,omitempty"`
+	MountConfig *string `json:"MountConfig,omitempty" xml:"MountConfig,omitempty"`
 }
 
 func (s CreateMcpSessionRequestPersistenceDataList) String() string {
@@ -280,6 +282,14 @@ func (s *CreateMcpSessionRequestPersistenceDataList) GetPolicy() *string {
 	return s.Policy
 }
 
+func (s *CreateMcpSessionRequestPersistenceDataList) GetType() *string {
+	return s.Type
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataList) GetMountConfig() *string {
+	return s.MountConfig
+}
+
 func (s *CreateMcpSessionRequestPersistenceDataList) SetContextId(v string) *CreateMcpSessionRequestPersistenceDataList {
 	s.ContextId = &v
 	return s
@@ -292,6 +302,16 @@ func (s *CreateMcpSessionRequestPersistenceDataList) SetPath(v string) *CreateMc
 
 func (s *CreateMcpSessionRequestPersistenceDataList) SetPolicy(v string) *CreateMcpSessionRequestPersistenceDataList {
 	s.Policy = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataList) SetType(v string) *CreateMcpSessionRequestPersistenceDataList {
+	s.Type = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataList) SetMountConfig(v string) *CreateMcpSessionRequestPersistenceDataList {
+	s.MountConfig = &v
 	return s
 }
 

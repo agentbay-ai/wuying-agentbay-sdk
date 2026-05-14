@@ -31,6 +31,9 @@ type CreateSessionParams struct {
 	// These configurations define how contexts should be synchronized and mounted.
 	ContextSync	[]*ContextSync
 
+	// ContextMount is a list of context mount configurations for direct-mount persistence.
+	ContextMount	[]*ContextMount
+
 	// PolicyId specifies the policy ID to apply when creating the session.
 	PolicyId	string
 
@@ -64,6 +67,14 @@ CreateSessionParams provides a way to configure the parameters for creating a ne
 AgentBay cloud environment.
 
 ### Methods
+
+### AddContextMount
+
+```go
+func (p *CreateSessionParams) AddContextMount(contextMount *ContextMount) *CreateSessionParams
+```
+
+AddContextMount adds a context mount configuration to the session parameters.
 
 ### AddContextSync
 
@@ -113,6 +124,14 @@ func (p *CreateSessionParams) WithBrowserContext(browserContext *BrowserContext)
 ```
 
 WithBrowserContext sets the browser context configuration for the session parameters.
+
+### WithContextMount
+
+```go
+func (p *CreateSessionParams) WithContextMount(contextMounts []*ContextMount) *CreateSessionParams
+```
+
+WithContextMount sets the context mount configurations for the session parameters.
 
 ### WithContextSync
 

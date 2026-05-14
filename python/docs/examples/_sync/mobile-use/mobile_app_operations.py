@@ -2,6 +2,8 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
+
 Mobile App Operations Example
 
 This example demonstrates:

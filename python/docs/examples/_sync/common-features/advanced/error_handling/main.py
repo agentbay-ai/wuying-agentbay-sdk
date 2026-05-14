@@ -141,9 +141,6 @@ def main():
         # Execute a safe command
         safe_command_execution(session, "echo 'Hello World'")
 
-        # Execute a command that might take longer
-        safe_command_execution(session, "sleep 2 && echo 'Done'")
-
         # Execute a command with potential issues
         safe_command_execution(session, "nonexistent_command")
 

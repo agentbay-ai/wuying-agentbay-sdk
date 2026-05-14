@@ -6,7 +6,7 @@ from pathlib import Path
 from agentbay import AgentBay, CreateSessionParams
 
 
-IMAGE_ID = "mobile-use-android-12-gw"
+IMAGE_ID = "mobile_latest"
 
 
 def main() -> None:

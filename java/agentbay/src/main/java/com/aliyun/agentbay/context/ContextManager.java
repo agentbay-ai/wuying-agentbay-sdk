@@ -467,6 +467,67 @@ public class ContextManager {
     }
 
     /**
+     * Binds a single context mount to the current session with write-through persistence.
+     *
+     * <pre>{@code
+     * ContextMount cm = ContextMount.create(contextId, "/mnt/data");
+     * ContextBindResult result = session.getContext().bind(cm);
+     * System.out.println("Bind success: " + result.isSuccess());
+     * }</pre>
+     *
+     * @param context The ContextMount object to bind
+     * @return ContextBindResult with the result of the operation
+     */
+    public ContextBindResult bind(ContextMount context) {
+        return bind(context, true);
+    }
+
+    /**
+     * Binds a single context mount to the current session with write-through persistence.
+     *
+     * @param context The ContextMount object to bind
+     * @param waitForCompletion Whether to poll until the binding is confirmed
+     * @return ContextBindResult with the result of the operation
+     */
+    public ContextBindResult bind(ContextMount context, boolean waitForCompletion) {
+        if (context == null) {
+            return new ContextBindResult("", false, "Context mount is required");
+        }
+
+        try {
+            List<BindContextsRequest.BindContextsRequestPersistenceDataList> persistenceDataList = new ArrayList<>();
+            BindContextsRequest.BindContextsRequestPersistenceDataList item =
+                new BindContextsRequest.BindContextsRequestPersistenceDataList();
+            item.setContextId(context.getContextId());
+            item.setPath(context.getPath());
+            item.setType("mount");
+            item.setMountConfig(context.toMountConfigJSON());
+            persistenceDataList.add(item);
+
+            BindContextsRequest request = new BindContextsRequest();
+            request.setAuthorization("Bearer " + session.getApiKey());
+            request.setSessionId(session.getSessionId());
+            request.setPersistenceDataList(persistenceDataList);
+
+            BindContextsResponse response = session.getAgentBay().getClient().bindContexts(request);
+            String requestId = ResponseUtil.extractRequestId(response);
+
+            if (response != null && response.getBody() != null) {
+                BindContextsResponseBody body = response.getBody();
+                if (body.getSuccess() != null && !body.getSuccess()) {
+                    String code = body.getCode() != null ? body.getCode() : "Unknown";
+                    String message = body.getMessage() != null ? body.getMessage() : "Unknown error";
+                    return new ContextBindResult(requestId, false, String.format("[%s] %s", code, message));
+                }
+            }
+
+            return new ContextBindResult(requestId, true);
+        } catch (Exception e) {
+            return new ContextBindResult("", false, "Failed to bind context mount: " + e.getMessage());
+        }
+    }
+
+    /**
      * Lists all context bindings for the current session.
      *
      * <pre>{@code

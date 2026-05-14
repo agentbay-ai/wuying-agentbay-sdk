@@ -28,6 +28,9 @@ type CreateSessionParams struct {
 	// These configurations define how contexts should be synchronized and mounted.
 	ContextSync []*ContextSync
 
+	// ContextMount is a list of context mount configurations for direct-mount persistence.
+	ContextMount []*ContextMount
+
 	// PolicyId specifies the policy ID to apply when creating the session.
 	PolicyId string
 
@@ -59,8 +62,9 @@ type CreateSessionParams struct {
 // NewCreateSessionParams creates a new CreateSessionParams with default values.
 func NewCreateSessionParams() *CreateSessionParams {
 	return &CreateSessionParams{
-		Labels:      make(map[string]string),
-		ContextSync: make([]*ContextSync, 0),
+		Labels:       make(map[string]string),
+		ContextSync:  make([]*ContextSync, 0),
+		ContextMount: make([]*ContextMount, 0),
 	}
 }
 
@@ -179,5 +183,17 @@ func (p *CreateSessionParams) AddContextSyncConfig(contextSync *ContextSync) *Cr
 // WithContextSync sets the context sync configurations for the session parameters.
 func (p *CreateSessionParams) WithContextSync(contextSyncs []*ContextSync) *CreateSessionParams {
 	p.ContextSync = contextSyncs
+	return p
+}
+
+// AddContextMount adds a context mount configuration to the session parameters.
+func (p *CreateSessionParams) AddContextMount(contextMount *ContextMount) *CreateSessionParams {
+	p.ContextMount = append(p.ContextMount, contextMount)
+	return p
+}
+
+// WithContextMount sets the context mount configurations for the session parameters.
+func (p *CreateSessionParams) WithContextMount(contextMounts []*ContextMount) *CreateSessionParams {
+	p.ContextMount = contextMounts
 	return p
 }

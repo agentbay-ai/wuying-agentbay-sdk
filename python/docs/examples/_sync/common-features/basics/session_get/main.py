@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Example demonstrating how to use the Get API to retrieve a session by its ID.
 
 This example shows:

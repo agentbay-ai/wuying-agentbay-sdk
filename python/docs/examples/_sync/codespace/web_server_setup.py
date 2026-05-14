@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Web Server Setup Example
 
 This example demonstrates:

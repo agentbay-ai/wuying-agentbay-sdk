@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Python Development Environment Example
 
 This example demonstrates:

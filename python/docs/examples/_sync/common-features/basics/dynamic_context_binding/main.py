@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 AgentBay SDK - Dynamic Context Binding Example
 
 This example demonstrates how to dynamically bind contexts to a running session:

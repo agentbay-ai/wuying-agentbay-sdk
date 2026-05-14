@@ -336,6 +336,24 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		}
 	}
 
+	// Add context mount configurations if provided
+	if len(params.ContextMount) > 0 {
+		for _, contextMount := range params.ContextMount {
+			mountConfigJSON, err := contextMount.mountConfigJSON()
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal context mount config to JSON: %v", err)
+			}
+			persistenceItem := &mcp.CreateMcpSessionRequestPersistenceDataList{
+				ContextId:   tea.String(contextMount.ContextID),
+				Path:        tea.String(contextMount.Path),
+				Type:        tea.String("mount"),
+				MountConfig: tea.String(mountConfigJSON),
+			}
+			persistenceDataList = append(persistenceDataList, persistenceItem)
+			waitContextIDs[contextMount.ContextID] = struct{}{}
+		}
+	}
+
 	// Add BrowserContext as a persistence item if provided
 	if params.BrowserContext != nil {
 		item, err := buildBrowserContextPersistenceDataListItem(params.BrowserContext)

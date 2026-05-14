@@ -2,6 +2,7 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Example: Get ADB Connection URL for Mobile Device
 
 This example demonstrates how to use session.mobile.get_adb_url() to retrieve

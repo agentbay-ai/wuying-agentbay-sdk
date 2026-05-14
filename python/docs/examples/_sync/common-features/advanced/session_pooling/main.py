@@ -3,6 +3,7 @@ import time
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
 Example demonstrating session pooling with AgentBay SDK.
 
 This example shows how to:

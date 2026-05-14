@@ -1,0 +1,191 @@
+"""
+AgentBay SDK - Context Mount Example
+
+This example demonstrates the Context Mount (direct-mount persistence) feature:
+- Mounting a context at session creation time
+- Write-through persistence (no manual sync needed)
+- Cross-session data persistence via mount
+- Dynamic mounting using bind()
+"""
+
+import asyncio
+import os
+import time
+
+from agentbay import AsyncAgentBay, ContextMount, CreateSessionParams
+
+
+async def main():
+    print("📌 AgentBay Context Mount Example")
+
+    api_key = os.environ.get("AGENTBAY_API_KEY", "")
+    if not api_key:
+        print("❌ Please set AGENTBAY_API_KEY environment variable")
+        return
+
+    agent_bay = AsyncAgentBay(api_key=api_key)
+
+    try:
+        await context_mount_demo(agent_bay)
+    except Exception as e:
+        print(f"❌ Example execution failed: {e}")
+        raise
+
+    print("✅ Context mount example completed")
+
+
+async def context_mount_demo(agent_bay: AsyncAgentBay):
+    print("\n🔄 === Context Mount Demonstration ===")
+
+    # Step 1: Create a context for persistent storage
+    print("\n📦 Step 1: Creating context for persistent storage...")
+    context_name = f"mount-demo-{int(time.time())}"
+    context_result = await agent_bay.context.get(context_name, create=True)
+
+    if not context_result.success:
+        print(f"❌ Context creation failed: {context_result.error_message}")
+        return
+
+    context = context_result.context
+    print(f"✅ Context created: {context.id} (name: {context.name})")
+
+    # Step 2: Create first session with context mount
+    print("\n🔧 Step 2: Creating first session with context mount...")
+    context_mount = ContextMount.new(context.id, "/tmp/mounted_data")
+
+    params = CreateSessionParams(context_mounts=[context_mount])
+    session1_result = await agent_bay.create(params)
+
+    if not session1_result.success:
+        print(f"❌ First session creation failed: {session1_result.error_message}")
+        return
+
+    session1 = session1_result.session
+    print(f"✅ First session created: {session1.session_id}")
+
+    session1_id = session1.session_id
+    try:
+        # Step 3: Write data — persisted immediately via write-through
+        print("\n💾 Step 3: Writing data (write-through persistence)...")
+
+        await session1.command.execute_command("mkdir -p /tmp/mounted_data/config")
+
+        config_content = '{"app": "mount-demo", "version": "1.0", "session": "%s"}' % session1.session_id
+        config_result = await session1.file_system.write_file(
+            "/tmp/mounted_data/config/app.json", config_content
+        )
+        if config_result.success:
+            print("✅ Config file written (persisted immediately)")
+        else:
+            print(f"❌ Failed to write config: {config_result.error_message}")
+
+        data_content = "This data is persisted via Context Mount.\nNo manual sync() call needed!"
+        data_result = await session1.file_system.write_file(
+            "/tmp/mounted_data/notes.txt", data_content
+        )
+        if data_result.success:
+            print("✅ Data file written (persisted immediately)")
+        else:
+            print(f"❌ Failed to write data: {data_result.error_message}")
+
+        # List files
+        print("\n📋 Files in mounted path:")
+        list_result = await session1.command.execute_command(
+            "find /tmp/mounted_data -type f -ls"
+        )
+        if list_result.success:
+            print(list_result.output)
+
+    finally:
+        # No sync_context needed — data is already persisted
+        print("\n🧹 Deleting first session (no sync needed for mount)...")
+        delete_result = await agent_bay.delete(session1)
+        if delete_result.success:
+            print("✅ First session deleted")
+        else:
+            print(f"❌ First session deletion failed: {delete_result.error_message}")
+
+    # Step 4: Create second session to verify cross-session persistence
+    print("\n🔧 Step 4: Creating second session to verify persistence...")
+
+    params2 = CreateSessionParams(context_mounts=[context_mount])
+    session2_result = await agent_bay.create(params2)
+
+    if not session2_result.success:
+        print(f"❌ Second session creation failed: {session2_result.error_message}")
+        return
+
+    session2 = session2_result.session
+    print(f"✅ Second session created: {session2.session_id}")
+
+    try:
+        print("\n🔍 Step 5: Verifying persisted data in second session...")
+
+        files_to_check = [
+            "/tmp/mounted_data/config/app.json",
+            "/tmp/mounted_data/notes.txt",
+        ]
+
+        files_found = 0
+        for file_path in files_to_check:
+            print(f"\n🔍 Checking: {file_path}")
+            read_result = await session2.file_system.read_file(file_path)
+
+            if read_result.success:
+                print(f"✅ File found!")
+                preview = read_result.content[:120]
+                print(f"   📄 Content: {preview}")
+                files_found += 1
+            else:
+                print(f"❌ Not found: {read_result.error_message}")
+
+        # Step 6: Dynamic mount demo (bind)
+        print("\n🔧 Step 6: Dynamic mount using bind()...")
+        dynamic_ctx_result = await agent_bay.context.get(
+            f"dynamic-mount-{int(time.time())}", create=True
+        )
+        if dynamic_ctx_result.success:
+            dynamic_mount = ContextMount.new(
+                dynamic_ctx_result.context.id, "/tmp/dynamic_mount"
+            )
+            bind_result = await session2.context.bind(dynamic_mount)
+            if bind_result.success:
+                print("✅ Dynamic mount bound successfully")
+                write_result = await session2.file_system.write_file(
+                    "/tmp/dynamic_mount/dynamic.txt", "Dynamically mounted data!"
+                )
+                if write_result.success:
+                    print("✅ Wrote to dynamically mounted path")
+            else:
+                print(f"❌ Dynamic bind failed: {bind_result.error_message}")
+
+            # Clean up dynamic context
+            await agent_bay.context.delete(dynamic_ctx_result.context)
+
+        # Summary
+        print(f"\n📊 === Persistence Summary ===")
+        print(f"✅ Context ID: {context.id}")
+        print(f"✅ Session 1: {session1_id} (deleted)")
+        print(f"✅ Session 2: {session2.session_id} (active)")
+        print(f"✅ Files found: {files_found}/{len(files_to_check)}")
+
+        if files_found == len(files_to_check):
+            print("🎉 Context Mount persistence verification SUCCESSFUL!")
+        else:
+            print("⚠️  Some files not found — mount may still be initializing")
+
+    finally:
+        print("\n🧹 Cleaning up second session...")
+        delete_result = await agent_bay.delete(session2)
+        if delete_result.success:
+            print("✅ Second session deleted")
+
+    # Clean up context
+    print("\n🧹 Cleaning up context...")
+    delete_ctx_result = await agent_bay.context.delete(context)
+    if delete_ctx_result.success:
+        print(f"✅ Context deleted: {delete_ctx_result.request_id}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

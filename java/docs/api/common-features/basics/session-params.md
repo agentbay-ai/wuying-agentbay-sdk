@@ -156,6 +156,28 @@ Set the list of context synchronization configurations.
 **Parameters:**
 - `contextSyncs` (List<ContextSync>): list of context syncs
 
+### getContextMounts
+
+```java
+public List<ContextMount> getContextMounts()
+```
+
+Get the list of context mount configurations.
+
+**Returns:**
+- `List<ContextMount>`: list of context mounts, or empty list if not set
+
+### setContextMounts
+
+```java
+public void setContextMounts(List<ContextMount> contextMounts)
+```
+
+Set the list of context mount configurations.
+
+**Parameters:**
+- `contextMounts` (List<ContextMount>): list of context mounts
+
 ### getBrowserContext
 
 ```java

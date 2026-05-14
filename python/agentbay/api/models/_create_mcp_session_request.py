@@ -201,10 +201,14 @@ class CreateMcpSessionRequestPersistenceDataList(DaraModel):
         context_id: Optional[str] = None,
         path: Optional[str] = None,
         policy: Optional[str] = None,
+        type: Optional[str] = None,
+        mount_config: Optional[str] = None,
     ):
         self.context_id = context_id
         self.path = path
         self.policy = policy
+        self.type = type
+        self.mount_config = mount_config
 
     def validate(self):
         pass
@@ -223,6 +227,12 @@ class CreateMcpSessionRequestPersistenceDataList(DaraModel):
         if self.policy is not None:
             result["Policy"] = self.policy
 
+        if self.type is not None:
+            result["Type"] = self.type
+
+        if self.mount_config is not None:
+            result["MountConfig"] = self.mount_config
+
         return result
 
     def from_map(self, m: Optional[dict] = None):
@@ -235,6 +245,12 @@ class CreateMcpSessionRequestPersistenceDataList(DaraModel):
 
         if m.get("Policy") is not None:
             self.policy = m.get("Policy")
+
+        if m.get("Type") is not None:
+            self.type = m.get("Type")
+
+        if m.get("MountConfig") is not None:
+            self.mount_config = m.get("MountConfig")
 
         return self
 

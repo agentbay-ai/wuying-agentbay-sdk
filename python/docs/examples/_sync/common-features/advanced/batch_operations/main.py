@@ -2,6 +2,8 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
+
 Example demonstrating batch operations with AgentBay SDK.
 
 This example shows how to:

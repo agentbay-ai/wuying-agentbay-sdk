@@ -3,6 +3,8 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
+
 AgentBay SDK - run_code streaming output (beta)
 
 This example demonstrates how to receive stdout/stderr in real time by enabling

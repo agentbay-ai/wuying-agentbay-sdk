@@ -232,6 +232,12 @@ public class CreateMcpSessionRequest extends TeaModel {
         @NameInMap("Policy")
         public String policy;
 
+        @NameInMap("Type")
+        public String type;
+
+        @NameInMap("MountConfig")
+        public String mountConfig;
+
         public static CreateMcpSessionRequestPersistenceDataList build(java.util.Map<String, ?> map) throws Exception {
             CreateMcpSessionRequestPersistenceDataList self = new CreateMcpSessionRequestPersistenceDataList();
             return TeaModel.build(map, self);
@@ -259,6 +265,22 @@ public class CreateMcpSessionRequest extends TeaModel {
         }
         public String getPolicy() {
             return this.policy;
+        }
+
+        public CreateMcpSessionRequestPersistenceDataList setType(String type) {
+            this.type = type;
+            return this;
+        }
+        public String getType() {
+            return this.type;
+        }
+
+        public CreateMcpSessionRequestPersistenceDataList setMountConfig(String mountConfig) {
+            this.mountConfig = mountConfig;
+            return this;
+        }
+        public String getMountConfig() {
+            return this.mountConfig;
         }
 
     }

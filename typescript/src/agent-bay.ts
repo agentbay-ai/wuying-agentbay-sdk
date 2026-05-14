@@ -30,7 +30,10 @@ import {
   CreateSessionParamsInterface,
   CreateSessionParams as CreateSessionParamsClass,
 } from "./session-params";
-export { LifecyclePolicy, type LifecyclePolicyOptions } from "./lifecycle-policy";
+export {
+  LifecyclePolicy,
+  type LifecyclePolicyOptions,
+} from "./lifecycle-policy";
 import { BrowserSyncMode } from "./session-params";
 import { Context } from "./context";
 import { ExtraConfigs } from "./types/extra-configs";
@@ -400,6 +403,25 @@ export class AgentBay {
         }
         request.persistenceDataList = persistenceDataList;
         needsContextSync = persistenceDataList.length > 0;
+      }
+
+      // Add context mounts if provided
+      if (paramsCopy.contextMount && paramsCopy.contextMount.length > 0) {
+        if (!request.persistenceDataList) {
+          request.persistenceDataList = [];
+        }
+        for (const mount of paramsCopy.contextMount) {
+          const persistenceItem =
+            new CreateMcpSessionRequestPersistenceDataList({
+              contextId: mount.contextId,
+              path: mount.path,
+              type: "mount",
+              mountConfig: mount.toMountConfigJSON(),
+            });
+          request.persistenceDataList.push(persistenceItem);
+          waitContextIds.add(mount.contextId);
+        }
+        needsContextSync = true;
       }
 
       // Add BrowserContext as a ContextSync if provided

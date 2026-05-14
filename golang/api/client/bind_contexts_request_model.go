@@ -72,9 +72,11 @@ func (s *BindContextsRequest) Validate() error {
 }
 
 type BindContextsRequestPersistenceDataList struct {
-	ContextId *string `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
-	Path      *string `json:"Path,omitempty" xml:"Path,omitempty"`
-	Policy    *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
+	ContextId   *string `json:"ContextId,omitempty" xml:"ContextId,omitempty"`
+	Path        *string `json:"Path,omitempty" xml:"Path,omitempty"`
+	Policy      *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
+	Type        *string `json:"Type,omitempty" xml:"Type,omitempty"`
+	MountConfig *string `json:"MountConfig,omitempty" xml:"MountConfig,omitempty"`
 }
 
 func (s BindContextsRequestPersistenceDataList) String() string {
@@ -97,6 +99,14 @@ func (s *BindContextsRequestPersistenceDataList) GetPolicy() *string {
 	return s.Policy
 }
 
+func (s *BindContextsRequestPersistenceDataList) GetType() *string {
+	return s.Type
+}
+
+func (s *BindContextsRequestPersistenceDataList) GetMountConfig() *string {
+	return s.MountConfig
+}
+
 func (s *BindContextsRequestPersistenceDataList) SetContextId(v string) *BindContextsRequestPersistenceDataList {
 	s.ContextId = &v
 	return s
@@ -109,6 +119,16 @@ func (s *BindContextsRequestPersistenceDataList) SetPath(v string) *BindContexts
 
 func (s *BindContextsRequestPersistenceDataList) SetPolicy(v string) *BindContextsRequestPersistenceDataList {
 	s.Policy = &v
+	return s
+}
+
+func (s *BindContextsRequestPersistenceDataList) SetType(v string) *BindContextsRequestPersistenceDataList {
+	s.Type = &v
+	return s
+}
+
+func (s *BindContextsRequestPersistenceDataList) SetMountConfig(v string) *BindContextsRequestPersistenceDataList {
+	s.MountConfig = &v
 	return s
 }
 

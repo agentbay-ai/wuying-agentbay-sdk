@@ -2,6 +2,8 @@
 # This file is auto-generated from the _async directory.
 
 """
+ci-stable
+
 Node.js Development Environment Example
 
 This example demonstrates:

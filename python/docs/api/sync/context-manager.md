@@ -24,15 +24,18 @@ def __init__(self, session)
 ### bind
 
 ```python
-def bind(*contexts: ContextSync,
+def bind(*contexts: Union[ContextSync, ContextMount],
          wait_for_completion: bool = True) -> ContextBindResult
 ```
 
 Dynamically bind one or more contexts to the running session.
 
+Accepts both ContextSync (sync-based persistence) and ContextMount (direct-mount
+write-through persistence) objects. They can be mixed in a single call.
+
 **Arguments**:
 
-    *contexts: One or more ContextSync objects specifying context_id, path, and optional policy.
+    *contexts: One or more ContextSync or ContextMount objects.
     wait_for_completion: If True, polls list_bindings() until all bound contexts appear.
   
 
@@ -47,7 +50,10 @@ Dynamically bind one or more contexts to the running session.
 result = session.context.bind(
 ContextSync(context_id="SdkCtx-xxx", path="/tmp/ctx-data"),
 )
-print(f"Bind success: {result.success}")
+
+result = session.context.bind(
+ContextMount(context_id="SdkCtx-yyy", path="/mnt/data"),
+)
 
 ```
 

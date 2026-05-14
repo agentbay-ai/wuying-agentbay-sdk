@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 AgentBay SDK - Data Persistence Example
 
 This example demonstrates real data persistence functionality:

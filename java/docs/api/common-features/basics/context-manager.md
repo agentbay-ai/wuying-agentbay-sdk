@@ -112,6 +112,14 @@ public ContextBindResult bind(List<ContextSync> contexts, boolean waitForComplet
 public ContextBindResult bind(ContextSync context)
 ```
 
+```java
+public ContextBindResult bind(ContextMount context)
+```
+
+```java
+public ContextBindResult bind(ContextMount context, boolean waitForCompletion)
+```
+
 Dynamically binds one or more contexts to the current session.
 
 <pre>{@code

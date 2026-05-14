@@ -3,16 +3,17 @@
 
 #!/usr/bin/env python3
 """
+ci-stable
 AgentBay SDK — Context File Transfer Example
 
-This example demonstrates how to use the ContextFileTransfer utility class
-to upload and download files/directories to/from AgentBay Context storage,
-without needing an active Session.
+This example demonstrates how to upload and download files/directories
+to/from AgentBay Context storage using presigned URLs, without needing
+an active Session.
 
 Features demonstrated:
   1. Upload a single file (from bytes)
-  2. Upload a single file (from file stream)
-  3. Download a single file (returns string)
+  2. Upload a single file (JSON data)
+  3. Download a single file
   4. Upload an entire local directory
   5. Download an entire directory to local
   6. Content verification
@@ -27,9 +28,156 @@ import os
 import shutil
 import tempfile
 import time
+from typing import BinaryIO, Union
+
+import requests
 
 from agentbay import AgentBay
-from context_file_transfer import ContextFileTransfer
+from agentbay._common.exceptions import AgentBayError
+from agentbay._common.models.response import OperationResult
+
+
+# ── Helper: ContextFileTransfer ──────────────────────────────────────────────
+# Wraps the SDK's presigned URL APIs into simple upload/download operations,
+# so developers don't need to handle presigned URLs and HTTP requests manually.
+
+
+class ContextFileTransfer:
+    """Convenience wrapper for uploading/downloading files to/from AgentBay Context."""
+
+    def __init__(self, agent_bay: AgentBay):
+        self._agent_bay = agent_bay
+
+    def upload_file(
+        self,
+        context_id: str,
+        target_path: str,
+        data: Union[BinaryIO, bytes],
+    ) -> OperationResult:
+        """Upload file content to a specific path in a context."""
+        url_result = self._agent_bay.context.get_file_upload_url(
+            context_id, target_path
+        )
+        if not url_result.success or not url_result.url:
+            return OperationResult(
+                request_id=url_result.request_id,
+                success=False,
+                error_message=f"Failed to get upload URL: {url_result.error_message}",
+            )
+
+        file_data = data if isinstance(data, bytes) else data.read()
+        response = requests.put(url_result.url, data=file_data)
+
+        success = response.status_code in (200, 201, 204)
+        return OperationResult(
+            request_id=url_result.request_id,
+            success=success,
+            http_status_code=response.status_code,
+            error_message="" if success else f"HTTP PUT failed with status {response.status_code}",
+        )
+
+    def download_file(self, context_id: str, source_path: str) -> str:
+        """Download a file from a context and return its content as a string."""
+        url_result = self._agent_bay.context.get_file_download_url(
+            context_id, source_path
+        )
+        if not url_result.success or not url_result.url:
+            raise AgentBayError(
+                f"Failed to get download URL for {source_path}: {url_result.error_message}"
+            )
+
+        response = requests.get(url_result.url)
+        if response.status_code != 200:
+            raise AgentBayError(
+                f"HTTP GET failed with status {response.status_code} for {source_path}"
+            )
+        return response.text
+
+    def upload_directory(
+        self, context_id: str, target_path: str, local_dir: str
+    ) -> OperationResult:
+        """Upload a local directory recursively, preserving structure."""
+        if not os.path.isdir(local_dir):
+            raise AgentBayError(f"Local directory does not exist: {local_dir}")
+
+        total = succeeded = failed = 0
+        errors = []
+
+        for root, _dirs, files in os.walk(local_dir):
+            for file_name in files:
+                local_path = os.path.join(root, file_name)
+                relative_path = os.path.relpath(local_path, local_dir)
+                remote_path = target_path.rstrip("/") + "/" + relative_path.replace(os.sep, "/")
+
+                total += 1
+                with open(local_path, "rb") as f:
+                    result = self.upload_file(context_id, remote_path, f)
+                if result.success:
+                    succeeded += 1
+                else:
+                    failed += 1
+                    errors.append(f"{relative_path}: {result.error_message}")
+
+        return OperationResult(
+            success=(failed == 0 and total > 0),
+            data={"total": total, "succeeded": succeeded, "failed": failed},
+            error_message="; ".join(errors) if errors else "",
+        )
+
+    def download_directory(
+        self, context_id: str, source_path: str, local_dir: str
+    ) -> OperationResult:
+        """Download a directory from context to local, preserving structure."""
+        os.makedirs(local_dir, exist_ok=True)
+        stats: dict = {"total": 0, "succeeded": 0, "failed": 0, "errors": []}
+        self._download_recursive(context_id, source_path, local_dir, stats)
+
+        return OperationResult(
+            success=(stats["failed"] == 0 and stats["total"] > 0),
+            data={"total": stats["total"], "succeeded": stats["succeeded"], "failed": stats["failed"]},
+            error_message="; ".join(stats["errors"]) if stats["errors"] else "",
+        )
+
+    def _download_recursive(
+        self, context_id: str, source_path: str, local_dir: str, stats: dict
+    ) -> None:
+        """Recursively list and download files from a context directory."""
+        page_number = 1
+        page_size = 50
+
+        while True:
+            result = self._agent_bay.context.list_files(
+                context_id, source_path, page_number=page_number, page_size=page_size
+            )
+            if not result.success:
+                stats["errors"].append(f"list_files failed for {source_path}")
+                break
+
+            for entry in result.entries:
+                if entry.file_type == "FOLDER":
+                    sub_source = source_path.rstrip("/") + "/" + entry.file_name
+                    sub_local = os.path.join(local_dir, entry.file_name)
+                    os.makedirs(sub_local, exist_ok=True)
+                    self._download_recursive(context_id, sub_source, sub_local, stats)
+                elif entry.file_type == "FILE":
+                    file_source = source_path.rstrip("/") + "/" + entry.file_name
+                    local_path = os.path.join(local_dir, entry.file_name)
+                    stats["total"] += 1
+                    try:
+                        content = self.download_file(context_id, file_source)
+                        with open(local_path, "w", encoding="utf-8") as f:
+                            f.write(content)
+                        stats["succeeded"] += 1
+                    except Exception as e:
+                        stats["failed"] += 1
+                        stats["errors"].append(f"{file_source}: {e}")
+
+            if len(result.entries) < page_size:
+                break
+            page_number += 1
+
+
+# ── Main Example ─────────────────────────────────────────────────────────────
 
 
 def main():
@@ -37,7 +185,12 @@ def main():
     print("AgentBay SDK — Context File Transfer Example")
     print("=" * 70)
 
-    agent_bay = AgentBay()
+    api_key = os.getenv("AGENTBAY_API_KEY")
+    if not api_key:
+        print("❌ Please set the AGENTBAY_API_KEY environment variable")
+        return
+
+    agent_bay = AgentBay(api_key=api_key)
     transfer = ContextFileTransfer(agent_bay)
 
     context_name = f"file-transfer-demo-{int(time.time())}"
@@ -69,11 +222,7 @@ def main():
             "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
         json_bytes = json.dumps(config_data, indent=2).encode("utf-8")
-        result = transfer.upload_file(
-            context_id,
-            "/data/app.json",
-            json_bytes,
-        )
+        result = transfer.upload_file(context_id, "/data/app.json", json_bytes)
         print(f"  Upload result: {'success' if result.success else 'failed: ' + result.error_message}")
 
         # ── Step 4: Download single file ─────────────────────────────────
@@ -99,9 +248,7 @@ def main():
         with open(os.path.join(src_dir, "utils.py"), "w") as f:
             f.write('def greet(name):\n    return f"Hello, {name}!"\n')
 
-        result = transfer.upload_directory(
-            context_id, "/project", temp_dir
-        )
+        result = transfer.upload_directory(context_id, "/project", temp_dir)
         stats = result.data
         print(f"  Upload directory result: {'success' if result.success else 'failed: ' + result.error_message}")
         print(f"  Files: {stats['succeeded']}/{stats['total']} uploaded")
@@ -109,9 +256,7 @@ def main():
         # ── Step 6: Download a directory ─────────────────────────────────
         print("\n[Step 6] Downloading directory from context...")
         download_dir = tempfile.mkdtemp(prefix="ctx_demo_download_")
-        result = transfer.download_directory(
-            context_id, "/project", download_dir
-        )
+        result = transfer.download_directory(context_id, "/project", download_dir)
         stats = result.data
         print(f"  Download directory result: {'success' if result.success else 'failed: ' + result.error_message}")
         print(f"  Files: {stats['succeeded']}/{stats['total']} downloaded")
@@ -126,26 +271,31 @@ def main():
                 original = os.path.join(temp_dir, rel)
                 if os.path.exists(original):
                     with open(original) as f1, open(local_downloaded) as f2:
-                        if f1.read() == f2.read():
+                        orig_norm = "\n".join(
+                            l.rstrip() for l in f1.read().splitlines() if l.strip()
+                        )
+                        dl_norm = "\n".join(
+                            l.rstrip() for l in f2.read().splitlines() if l.strip()
+                        )
+                        if orig_norm == dl_norm:
                             verified += 1
-                            print(f"  Verified: {rel}")
+                            print(f"  ✅ Verified: {rel}")
                         else:
-                            print(f"  MISMATCH: {rel}")
+                            print(f"  ❌ MISMATCH: {rel}")
                 else:
-                    print(f"  No original for: {rel}")
+                    print(f"  ⚠️  No original for: {rel}")
         print(f"  {verified} files verified")
 
         print("\n" + "=" * 70)
-        print("All steps completed successfully!")
+        print("🎉 All steps completed successfully!")
         print("=" * 70)
 
     except Exception as e:
-        print(f"\nError: {e}")
+        print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
 
     finally:
-        # Cleanup
         if context:
             print("\n[Cleanup] Deleting context...")
             agent_bay.context.delete(context)

@@ -35,6 +35,7 @@ in the AgentBay cloud environment.
 ## Properties
 
 ```typescript
+contextMount: [`ContextMount`](context-mount.md)[]
 contextSync: [`ContextSync`](context-sync.md)[]
 framework: `string`
 idleReleaseTimeout: `number`
@@ -64,6 +65,12 @@ Optional configuration for browser data synchronization.
 #### Implementation of
 
 `CreateSessionParamsInterface`.`browserContext`
+
+___
+
+#### Implementation of
+
+`CreateSessionParamsInterface`.`contextMount`
 
 ___
 

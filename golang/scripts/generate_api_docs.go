@@ -256,6 +256,19 @@ var mappings = []docMapping{
 		},
 	},
 	{
+		Target:      "common-features/basics/context-mount.md",
+		Title:       "Context Mount",
+		PackagePath: "pkg/agentbay",
+		TypeNames: []string{
+			"ContextMount",
+			"ContextMountAccessMode",
+			"ContextMountStrategy",
+		},
+		FuncNames: []string{
+			"NewContextMount",
+		},
+	},
+	{
 		Target:      "common-features/basics/logging.md",
 		Title:       "Logging",
 		PackagePath: "pkg/agentbay",
