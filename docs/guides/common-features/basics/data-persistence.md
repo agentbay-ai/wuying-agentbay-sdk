@@ -1437,6 +1437,26 @@ By default, a `BetaContextMount` mounts the **entire** context to the target pat
 
 (`image_id="aio-ubuntu-2404"` is already required by Context Mount itself — see the section header.)
 
+### Migrating from Context Sync to Context Mount
+
+Data written via Context Sync is stored under OSS keys derived from the **local absolute path** used at sync time. For example, when Context Sync mounts at `/tmp/data` and writes `/tmp/data/file.txt`, the file lands at OSS key `tmp/data/file.txt` (the leading `/` is dropped).
+
+When you switch the same context to Context Mount, the mount root exposes the OSS key tree as-is. Without `source_path`, the file appears at the nested path `/<mount_path>/tmp/data/file.txt`. To read it at the original-looking path, set `source_path` to match the original sync mount (without the leading `/`):
+
+```python
+# Originally written via ContextSync at /tmp/data
+ContextSync.new(context.id, "/tmp/data")
+
+# To read via Mount at the same /tmp/data path:
+BetaContextMount.new(
+    context_id=context.id,
+    path="/tmp/data",
+    source_path="tmp/data",   # ← projection key prefix, no leading slash
+)
+```
+
+Data written via Mount goes to OSS keys relative to `source_path`; round-tripping mount → sync similarly requires aware path handling. Most users will not mix the two persistence types on the same context — but if you do, the `source_path` projection is the bridge.
+
 **Mount a subdirectory:**
 
 ```python
