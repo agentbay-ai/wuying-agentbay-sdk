@@ -59,6 +59,7 @@ without manual sync calls.
     path: Path where the context should be mounted in the session
     access_mode: Access permission for the mount (read_write or read_only)
     strategy: Mount strategy (standard or performance)
+    source_path: Subpath within the context to mount; empty string mounts entire context
 
 #### context_id: `str`
 
@@ -84,6 +85,12 @@ access_mode = BetaContextMountAccessMode.READ_WRITE
 strategy = BetaContextMountStrategy.STANDARD
 ```
 
+#### source_path: `str`
+
+```python
+source_path = ""
+```
+
 ### new
 
 ```python
@@ -92,7 +99,8 @@ def new(cls,
         context_id: str,
         path: str,
         access_mode: Optional[BetaContextMountAccessMode] = None,
-        strategy: Optional[BetaContextMountStrategy] = None)
+        strategy: Optional[BetaContextMountStrategy] = None,
+        source_path: Optional[str] = None)
 ```
 
 ### with_access_mode
@@ -105,6 +113,12 @@ def with_access_mode(access_mode: BetaContextMountAccessMode)
 
 ```python
 def with_strategy(strategy: BetaContextMountStrategy)
+```
+
+### with_source_path
+
+```python
+def with_source_path(source_path: str)
 ```
 
 ## See Also

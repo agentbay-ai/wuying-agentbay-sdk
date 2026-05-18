@@ -1267,7 +1267,9 @@ else:
 ```
 
 <a id="context-mount"></a>
-## 📌 Context Mount (Direct-Mount Persistence)
+## 📌 Context Mount (Direct-Mount Persistence) [Beta]
+
+> **Image requirement:** Context Mount requires `image_id="aio-ubuntu-2404"`. Other images do not provide a real OSS-backed mount — writes made on a non-supported image are not persisted to the shared context store and are invisible to other sessions, even when the same context ID and mount path are used.
 
 ### What is Context Mount?
 
@@ -1298,8 +1300,11 @@ context = agent_bay.context.get("my-mount-demo", create=True).context
 # Create a mount configuration
 context_mount = BetaContextMount.new(context.id, "/tmp/mounted")
 
-# Create a session with the mount
-params = CreateSessionParams(beta_context_mounts=[context_mount])
+# Create a session with the mount — image_id is required
+params = CreateSessionParams(
+    image_id="aio-ubuntu-2404",
+    beta_context_mounts=[context_mount],
+)
 session = agent_bay.create(params).session
 
 # Write data — it is persisted immediately, no sync needed
@@ -1322,8 +1327,8 @@ from agentbay import AgentBay, BetaContextMount, CreateSessionParams
 
 agent_bay = AgentBay()
 
-# Create a session without any initial mounts
-session = agent_bay.create(CreateSessionParams()).session
+# Create a session without any initial mounts — image_id is required for mount support
+session = agent_bay.create(CreateSessionParams(image_id="aio-ubuntu-2404")).session
 
 # Later, dynamically mount a context
 context = agent_bay.context.get("runtime-mount", create=True).context
@@ -1348,13 +1353,16 @@ agent_bay = AgentBay()
 context = agent_bay.context.get("cross-session-mount", create=True).context
 mount = BetaContextMount.new(context.id, "/tmp/shared")
 
+def mount_params():
+    return CreateSessionParams(image_id="aio-ubuntu-2404", beta_context_mounts=[mount])
+
 # Session A: write data
-session_a = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
+session_a = agent_bay.create(mount_params()).session
 session_a.file_system.write_file("/tmp/shared/config.json", '{"version": "2.0"}')
 agent_bay.delete(session_a)  # No sync needed
 
 # Session B: read data written by Session A
-session_b = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
+session_b = agent_bay.create(mount_params()).session
 content = session_b.file_system.read_file("/tmp/shared/config.json")
 print(content.content)  # '{"version": "2.0"}'
 agent_bay.delete(session_b)
@@ -1371,9 +1379,12 @@ agent_bay = AgentBay()
 context = agent_bay.context.get("shared-workspace", create=True).context
 mount = BetaContextMount.new(context.id, "/tmp/shared")
 
+def mount_params():
+    return CreateSessionParams(image_id="aio-ubuntu-2404", beta_context_mounts=[mount])
+
 # Two sessions mount the same context
-session_1 = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
-session_2 = agent_bay.create(CreateSessionParams(beta_context_mounts=[mount])).session
+session_1 = agent_bay.create(mount_params()).session
+session_2 = agent_bay.create(mount_params()).session
 
 # Session 1 writes a file
 session_1.file_system.write_file("/tmp/shared/status.txt", "ready")
@@ -1417,6 +1428,61 @@ mount = BetaContextMount.new(context.id, "/tmp/readonly-data")
 mount.with_access_mode(BetaContextMountAccessMode.READ_ONLY)
 mount.with_strategy(BetaContextMountStrategy.PERFORMANCE)
 ```
+
+### Partial Mount with `source_path`
+
+By default, a `BetaContextMount` mounts the **entire** context to the target path. Use `source_path` to mount only a subdirectory of the context. The selected subdirectory's contents are projected to the mount root.
+
+(`image_id="aio-ubuntu-2404"` is already required by Context Mount itself — see the section header.)
+
+**Mount a subdirectory:**
+
+```python
+from agentbay import AgentBay, BetaContextMount, CreateSessionParams
+
+agent_bay = AgentBay()
+context = agent_bay.context.get("dataset-collection", create=True).context
+
+# Mount only the /datasets/train subdirectory to /mnt/train
+mount = BetaContextMount.new(
+    context_id=context.id,
+    path="/mnt/train",
+    source_path="/datasets/train",
+)
+
+params = CreateSessionParams(image_id="aio-ubuntu-2404", beta_context_mounts=[mount])
+session = agent_bay.create(params).session
+# /mnt/train/ now contains the contents of <context>/datasets/train/ projected to the root
+# e.g., a file at <context>/datasets/train/foo.csv is visible at /mnt/train/foo.csv
+```
+
+**Mount multiple subpaths (use multiple `BetaContextMount` instances):**
+
+```python
+params = CreateSessionParams(
+    image_id="aio-ubuntu-2404",
+    beta_context_mounts=[
+        BetaContextMount.new(context.id, "/mnt/train", source_path="/datasets/train"),
+        BetaContextMount.new(context.id, "/mnt/val", source_path="/datasets/val"),
+    ],
+)
+```
+
+**Builder-style alternative:**
+
+```python
+mount = (
+    BetaContextMount.new(context.id, "/mnt/train")
+    .with_source_path("/datasets/train")
+)
+```
+
+**Notes:**
+
+- Default value is empty string `""`, which mounts the entire context (preserves existing behavior).
+- The mount path appears as a symlink to the CSI mount root (e.g., `/run/csi/mount-root/oss/<hash>`). When listing files, use `find -L` to follow symlinks.
+- The SDK does not validate `source_path` syntax; the backend validates path existence and rejects unsafe paths (`..`, wildcards, etc.).
+- Each mount entry is independent — you can give each subpath its own `path`, `access_mode`, and `strategy`.
 
 ### Limitations and Restrictions
 

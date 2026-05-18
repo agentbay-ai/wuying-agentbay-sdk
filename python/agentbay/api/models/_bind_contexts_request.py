@@ -64,10 +64,12 @@ class BindContextsRequestPersistenceDataListMountConfig(DaraModel):
         access_mode: str = None,
         storage_mode: str = None,
         object_key: str = None,
+        source_path: str = None,
     ):
         self.access_mode = access_mode
         self.storage_mode = storage_mode
         self.object_key = object_key
+        self.source_path = source_path
 
     def validate(self):
         pass
@@ -86,6 +88,9 @@ class BindContextsRequestPersistenceDataListMountConfig(DaraModel):
         if self.object_key is not None:
             result['ObjectKey'] = self.object_key
 
+        if self.source_path is not None:
+            result['SourcePath'] = self.source_path
+
         return result
 
     def from_map(self, m: dict = None):
@@ -98,6 +103,9 @@ class BindContextsRequestPersistenceDataListMountConfig(DaraModel):
 
         if m.get('ObjectKey') is not None:
             self.object_key = m.get('ObjectKey')
+
+        if m.get('SourcePath') is not None:
+            self.source_path = m.get('SourcePath')
 
         return self
 

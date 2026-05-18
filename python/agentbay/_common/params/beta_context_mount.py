@@ -31,12 +31,14 @@ class BetaContextMount:
         path: Path where the context should be mounted in the session
         access_mode: Access permission for the mount (read_write or read_only)
         strategy: Mount strategy (standard or performance)
+        source_path: Subpath within the context to mount; empty string mounts entire context
     """
 
     context_id: str
     path: str
     access_mode: BetaContextMountAccessMode = BetaContextMountAccessMode.READ_WRITE
     strategy: BetaContextMountStrategy = BetaContextMountStrategy.STANDARD
+    source_path: str = ""
 
     @classmethod
     def new(
@@ -45,12 +47,14 @@ class BetaContextMount:
         path: str,
         access_mode: Optional[BetaContextMountAccessMode] = None,
         strategy: Optional[BetaContextMountStrategy] = None,
+        source_path: Optional[str] = None,
     ):
         return cls(
             context_id=context_id,
             path=path,
             access_mode=access_mode or BetaContextMountAccessMode.READ_WRITE,
             strategy=strategy or BetaContextMountStrategy.STANDARD,
+            source_path=source_path or "",
         )
 
     def with_access_mode(self, access_mode: BetaContextMountAccessMode):
@@ -61,8 +65,13 @@ class BetaContextMount:
         self.strategy = strategy
         return self
 
+    def with_source_path(self, source_path: str):
+        self.source_path = source_path
+        return self
+
     def _to_mount_config_dict(self):
         return {
             "accessMode": self.access_mode.value,
             "storageMode": self.strategy.value,
+            "sourcePath": self.source_path,
         }

@@ -27,6 +27,7 @@ async def main():
 
     try:
         await context_mount_demo(agent_bay)
+        await partial_mount_demo(agent_bay)
     except Exception as e:
         print(f"❌ Example execution failed: {e}")
         raise
@@ -36,6 +37,10 @@ async def main():
 
 async def context_mount_demo(agent_bay: AsyncAgentBay):
     print("\n🔄 === Context Mount Demonstration ===")
+
+    # Context Mount requires image_id=aio-ubuntu-2404.
+    # Other images do not provide a real OSS-backed mount.
+    image_id = "aio-ubuntu-2404"
 
     # Step 1: Create a context for persistent storage
     print("\n📦 Step 1: Creating context for persistent storage...")
@@ -53,7 +58,7 @@ async def context_mount_demo(agent_bay: AsyncAgentBay):
     print("\n🔧 Step 2: Creating first session with context mount...")
     context_mount = BetaContextMount.new(context.id, "/tmp/mounted_data")
 
-    params = CreateSessionParams(beta_context_mounts=[context_mount])
+    params = CreateSessionParams(image_id=image_id, beta_context_mounts=[context_mount])
     session1_result = await agent_bay.create(params)
 
     if not session1_result.success:
@@ -91,7 +96,7 @@ async def context_mount_demo(agent_bay: AsyncAgentBay):
         # List files
         print("\n📋 Files in mounted path:")
         list_result = await session1.command.execute_command(
-            "find /tmp/mounted_data -type f -ls"
+            "find -L /tmp/mounted_data -type f"
         )
         if list_result.success:
             print(list_result.output)
@@ -108,7 +113,7 @@ async def context_mount_demo(agent_bay: AsyncAgentBay):
     # Step 4: Create second session to verify cross-session persistence
     print("\n🔧 Step 4: Creating second session to verify persistence...")
 
-    params2 = CreateSessionParams(beta_context_mounts=[context_mount])
+    params2 = CreateSessionParams(image_id=image_id, beta_context_mounts=[context_mount])
     session2_result = await agent_bay.create(params2)
 
     if not session2_result.success:
@@ -182,6 +187,100 @@ async def context_mount_demo(agent_bay: AsyncAgentBay):
 
     # Clean up context
     print("\n🧹 Cleaning up context...")
+    delete_ctx_result = await agent_bay.context.delete(context)
+    if delete_ctx_result.success:
+        print(f"✅ Context deleted: {delete_ctx_result.request_id}")
+
+
+async def partial_mount_demo(agent_bay: AsyncAgentBay):
+    """Demonstrate sourcePath: mount only a subdirectory of a context.
+
+    Requires image_id=aio-ubuntu-2404 (CSI-based mount supports partial mounting).
+    """
+    print("\n🔄 === Partial Mount (sourcePath) Demonstration ===")
+
+    image_id = "aio-ubuntu-2404"
+
+    # Step 1: Create context and seed it with subdirectories
+    print("\n📦 Step 1: Creating context and seeding subdirectories...")
+    context_name = f"partial-mount-{int(time.time())}"
+    context_result = await agent_bay.context.get(context_name, create=True)
+    if not context_result.success:
+        print(f"❌ Context creation failed: {context_result.error_message}")
+        return
+    context = context_result.context
+    print(f"✅ Context created: {context.id}")
+
+    # Seed via a session that mounts the entire context root
+    seed_mount = BetaContextMount.new(context.id, "/tmp/seed_data")
+    seed_session_result = await agent_bay.create(
+        CreateSessionParams(image_id=image_id, beta_context_mounts=[seed_mount])
+    )
+    if not seed_session_result.success:
+        print(f"❌ Seed session creation failed: {seed_session_result.error_message}")
+        return
+    seed_session = seed_session_result.session
+    print(f"✅ Seed session created: {seed_session.session_id}")
+
+    seed_files = {
+        "/tmp/seed_data/sub1/file_a.txt": "content of file_a",
+        "/tmp/seed_data/sub1/file_b.txt": "content of file_b",
+        "/tmp/seed_data/sub2/file_c.txt": "content of file_c",
+    }
+
+    await seed_session.command.execute_command(
+        "mkdir -p /tmp/seed_data/sub1 /tmp/seed_data/sub2"
+    )
+    for path, content in seed_files.items():
+        write_result = await seed_session.file_system.write_file(path, content)
+        if write_result.success:
+            print(f"✅ Wrote: {path}")
+        else:
+            print(f"❌ Failed to write {path}: {write_result.error_message}")
+
+    # Delete seed session — data is already persisted via mount
+    print("\n🧹 Deleting seed session...")
+    await agent_bay.delete(seed_session)
+
+    # Step 2: Mount only the /sub1 subdirectory to a fresh path
+    print("\n🔧 Step 2: Mounting only /sub1 subdirectory to /tmp/sub1_only...")
+    sub_mount = BetaContextMount.new(
+        context_id=context.id,
+        path="/tmp/sub1_only",
+        source_path="/sub1",
+    )
+    sub_session_result = await agent_bay.create(
+        CreateSessionParams(image_id=image_id, beta_context_mounts=[sub_mount])
+    )
+    if not sub_session_result.success:
+        print(f"❌ Subdirectory session creation failed: {sub_session_result.error_message}")
+    else:
+        sub_session = sub_session_result.session
+        print(f"✅ Session created with source_path=/sub1: {sub_session.session_id}")
+
+        # sub1's contents are projected to the mount root (not nested under /sub1)
+        for filename in ["file_a.txt", "file_b.txt"]:
+            read_result = await sub_session.file_system.read_file(
+                f"/tmp/sub1_only/{filename}"
+            )
+            if read_result.success:
+                print(f"✅ /tmp/sub1_only/{filename} readable: {read_result.content}")
+            else:
+                print(f"❌ /tmp/sub1_only/{filename} NOT readable: {read_result.error_message}")
+
+        # sub2 should NOT be visible (partial mount filters it out)
+        list_sub2 = await sub_session.command.execute_command(
+            "ls /tmp/sub1_only/sub2 2>&1 || echo NOT_FOUND"
+        )
+        if "NOT_FOUND" in list_sub2.output or "No such file" in list_sub2.output:
+            print("✅ /tmp/sub1_only/sub2 correctly NOT visible (sourcePath filter working)")
+        else:
+            print(f"⚠️  /tmp/sub1_only/sub2 unexpectedly visible: {list_sub2.output}")
+
+        await agent_bay.delete(sub_session)
+
+    # Step 3: Cleanup
+    print("\n🧹 Cleaning up partial-mount context...")
     delete_ctx_result = await agent_bay.context.delete(context)
     if delete_ctx_result.success:
         print(f"✅ Context deleted: {delete_ctx_result.request_id}")

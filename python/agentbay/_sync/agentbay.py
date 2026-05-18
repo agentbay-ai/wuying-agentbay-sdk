@@ -683,6 +683,7 @@ class AgentBay:
                     mount_config = CreateMcpSessionRequestPersistenceDataListMountConfig(
                         access_mode=mount_config_dict.get("accessMode"),
                         storage_mode=mount_config_dict.get("storageMode"),
+                        source_path=mount_config_dict.get("sourcePath"),
                     )
                     request.persistence_data_list.append(
                         CreateMcpSessionRequestPersistenceDataList(

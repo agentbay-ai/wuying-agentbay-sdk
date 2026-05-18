@@ -83,6 +83,7 @@ class AsyncContextManager:
                 item.mount_config = BindContextsRequestPersistenceDataListMountConfig(
                     access_mode=mount_config_dict.get("accessMode"),
                     storage_mode=mount_config_dict.get("storageMode"),
+                    source_path=mount_config_dict.get("sourcePath"),
                 )
             elif isinstance(ctx, ContextSync) and ctx.policy:
                 item.policy = json.dumps(ctx.policy.__dict__())
