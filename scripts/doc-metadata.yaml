@@ -334,6 +334,32 @@ modules:
     emoji: 🔄
     category: common-features/basics
 
+  # Context Mount module (Beta)
+  context-mount:
+    python: agentbay._common.params.beta_context_mount
+    typescript: beta-context-mount
+    golang: pkg/agentbay
+    java: com.aliyun.agentbay.context
+
+    tutorial:
+      url: ../../../../../docs/guides/common-features/basics/data-persistence.md
+      text: Data Persistence Guide
+      description: Learn how Context Mount provides direct-mount write-through persistence
+
+    overview: |
+      [Beta] BetaContextMount provides direct-mount write-through persistence where data is persisted immediately without manual sync calls. Unlike ContextSync, mounted paths act as live persistent storage. Requires imageId=aio-ubuntu-2404 on the session.
+
+    related_resources:
+      - name: Context Manager API Reference
+        module: context-manager
+        category: common-features/basics
+      - name: Session API Reference
+        module: session
+        category: common-features/basics
+
+    emoji: 📂
+    category: common-features/basics
+
   # Logging module
   logging:
     python: agentbay.logger

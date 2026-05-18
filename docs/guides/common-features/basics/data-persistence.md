@@ -10,7 +10,7 @@ This guide covers AgentBay SDK's data persistence features, including context co
 - [Context Management](#context-management)
 - [Dynamic Context Binding](#dynamic-context-binding)
 - [Data Synchronization Strategies](#data-synchronization-strategies)
-- [Context Mount (Direct-Mount Persistence)](#context-mount-direct-mount-persistence)
+- [Context Mount (Direct-Mount Persistence) [Beta]](#context-mount-direct-mount-persistence-beta)
 
 <a id="core-concepts"></a>
 ## 🎯 Core Concepts
