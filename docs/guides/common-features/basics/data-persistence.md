@@ -1512,7 +1512,6 @@ mount = (
 |-------------|-------------|
 | **Mount path must be empty** | If the target path already contains files, the mount will fail. Use an empty or non-existent directory. |
 | **No duplicate mount paths** | You cannot mount two different contexts to the same path in one session. |
-| **Max mount count** | Each session supports up to **3** mounted contexts. Exceeding this limit may degrade performance. |
 | **No file locks** | Both strategies use OSS-backed FUSE; file locking is not supported. |
 | **No unmount** | Dynamic unmounting during a session is not currently supported; mounted contexts remain until the session ends. |
 
