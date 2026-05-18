@@ -232,6 +232,9 @@ public class CreateMcpSessionRequest extends TeaModel {
         @NameInMap("ObjectKey")
         public String objectKey;
 
+        @NameInMap("SourcePath")
+        public String sourcePath;
+
         public static CreateMcpSessionRequestPersistenceDataListMountConfig build(java.util.Map<String, ?> map) throws Exception {
             CreateMcpSessionRequestPersistenceDataListMountConfig self = new CreateMcpSessionRequestPersistenceDataListMountConfig();
             return TeaModel.build(map, self);
@@ -259,6 +262,14 @@ public class CreateMcpSessionRequest extends TeaModel {
         }
         public String getObjectKey() {
             return this.objectKey;
+        }
+
+        public CreateMcpSessionRequestPersistenceDataListMountConfig setSourcePath(String sourcePath) {
+            this.sourcePath = sourcePath;
+            return this;
+        }
+        public String getSourcePath() {
+            return this.sourcePath;
         }
     }
 

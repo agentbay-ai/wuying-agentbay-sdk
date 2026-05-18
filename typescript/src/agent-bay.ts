@@ -424,6 +424,7 @@ export class AgentBay {
                 new CreateMcpSessionRequestPersistenceDataListMountConfig({
                   accessMode: mount.accessMode,
                   storageMode: mount.strategy,
+                  sourcePath: mount.sourcePath,
                 }),
             });
           request.persistenceDataList.push(persistenceItem);

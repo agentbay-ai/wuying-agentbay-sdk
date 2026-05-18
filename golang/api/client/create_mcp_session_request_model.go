@@ -258,6 +258,7 @@ type CreateMcpSessionRequestPersistenceDataListMountConfig struct {
 	AccessMode  *string `json:"AccessMode,omitempty" xml:"AccessMode,omitempty"`
 	StorageMode *string `json:"StorageMode,omitempty" xml:"StorageMode,omitempty"`
 	ObjectKey   *string `json:"ObjectKey,omitempty" xml:"ObjectKey,omitempty"`
+	SourcePath  *string `json:"SourcePath,omitempty" xml:"SourcePath,omitempty"`
 }
 
 func (s CreateMcpSessionRequestPersistenceDataListMountConfig) String() string {
@@ -293,6 +294,15 @@ func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) SetObjectKey(v s
 
 func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) GetObjectKey() *string {
 	return s.ObjectKey
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) SetSourcePath(v string) *CreateMcpSessionRequestPersistenceDataListMountConfig {
+	s.SourcePath = &v
+	return s
+}
+
+func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) GetSourcePath() *string {
+	return s.SourcePath
 }
 
 func (s *CreateMcpSessionRequestPersistenceDataListMountConfig) Validate() error {

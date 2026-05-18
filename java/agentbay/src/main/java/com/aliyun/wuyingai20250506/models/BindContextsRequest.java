@@ -52,6 +52,9 @@ public class BindContextsRequest extends TeaModel {
         @NameInMap("ObjectKey")
         public String objectKey;
 
+        @NameInMap("SourcePath")
+        public String sourcePath;
+
         public static BindContextsRequestPersistenceDataListMountConfig build(java.util.Map<String, ?> map) throws Exception {
             BindContextsRequestPersistenceDataListMountConfig self = new BindContextsRequestPersistenceDataListMountConfig();
             return TeaModel.build(map, self);
@@ -79,6 +82,14 @@ public class BindContextsRequest extends TeaModel {
         }
         public String getObjectKey() {
             return this.objectKey;
+        }
+
+        public BindContextsRequestPersistenceDataListMountConfig setSourcePath(String sourcePath) {
+            this.sourcePath = sourcePath;
+            return this;
+        }
+        public String getSourcePath() {
+            return this.sourcePath;
         }
     }
 

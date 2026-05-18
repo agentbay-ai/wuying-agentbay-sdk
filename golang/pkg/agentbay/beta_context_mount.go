@@ -25,6 +25,14 @@ const (
 // BetaContextMount defines the context mount configuration for direct-mount persistence.
 // Unlike ContextSync which requires explicit synchronization, BetaContextMount provides
 // write-through persistence where data is persisted immediately.
+//
+// IMPORTANT: BetaContextMount requires ImageID="aio-ubuntu-2404" on the session.
+// Other images do not provide a real OSS-backed mount — writes are not persisted to
+// the shared context store and are invisible to other sessions even with the same
+// ContextID and mount path.
+//
+// Use WithSourcePath() to mount only a subdirectory of the context. The subdirectory's
+// contents are projected to the mount root.
 type BetaContextMount struct {
 	// ContextID is the ID of the context to mount
 	ContextID string
@@ -34,6 +42,8 @@ type BetaContextMount struct {
 	AccessMode BetaContextMountAccessMode
 	// Strategy defines the mount strategy (standard or performance)
 	Strategy BetaContextMountStrategy
+	// SourcePath is the subpath within the context to mount; empty string mounts entire context
+	SourcePath string
 }
 
 // NewBetaContextMount creates a new context mount configuration with default values.
@@ -43,6 +53,7 @@ func NewBetaContextMount(contextID, path string) *BetaContextMount {
 		Path:       path,
 		AccessMode: BetaAccessModeReadWrite,
 		Strategy:   BetaMountStrategyStandard,
+		SourcePath: "",
 	}
 }
 
@@ -58,11 +69,20 @@ func (cm *BetaContextMount) WithStrategy(strategy BetaContextMountStrategy) *Bet
 	return cm
 }
 
+// WithSourcePath sets the subpath within the context to mount and returns the
+// context mount for chaining. Empty string (default) mounts the entire context.
+// The selected subdirectory's contents are projected to the mount root.
+func (cm *BetaContextMount) WithSourcePath(sourcePath string) *BetaContextMount {
+	cm.SourcePath = sourcePath
+	return cm
+}
+
 // mountConfigJSON returns the JSON string for the mountConfig protocol field.
 func (cm *BetaContextMount) mountConfigJSON() (string, error) {
 	config := map[string]string{
 		"accessMode":  string(cm.AccessMode),
 		"storageMode": string(cm.Strategy),
+		"sourcePath":  cm.SourcePath,
 	}
 	data, err := json.Marshal(config)
 	if err != nil {

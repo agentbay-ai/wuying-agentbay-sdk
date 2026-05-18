@@ -388,6 +388,7 @@ public class AgentBay {
                         new CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataListMountConfig();
                     mountConfig.setAccessMode(cm.getAccessMode().getValue());
                     mountConfig.setStorageMode(cm.getStrategy().getValue());
+                    mountConfig.setSourcePath(cm.getSourcePath());
 
                     CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataList persistenceData =
                         new CreateMcpSessionRequest.CreateMcpSessionRequestPersistenceDataList();

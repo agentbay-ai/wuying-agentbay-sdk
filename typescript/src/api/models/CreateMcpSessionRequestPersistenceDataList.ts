@@ -6,11 +6,13 @@ export class CreateMcpSessionRequestPersistenceDataListMountConfig extends $dara
   accessMode?: string;
   storageMode?: string;
   objectKey?: string;
+  sourcePath?: string;
   static names(): { [key: string]: string } {
     return {
       accessMode: 'AccessMode',
       storageMode: 'StorageMode',
       objectKey: 'ObjectKey',
+      sourcePath: 'SourcePath',
     };
   }
 
@@ -19,6 +21,7 @@ export class CreateMcpSessionRequestPersistenceDataListMountConfig extends $dara
       accessMode: 'string',
       storageMode: 'string',
       objectKey: 'string',
+      sourcePath: 'string',
     };
   }
 

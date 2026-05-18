@@ -9,6 +9,14 @@ import java.util.Map;
  *
  * <p>Unlike ContextSync which requires explicit synchronization, BetaContextMount provides
  * write-through persistence where data is persisted immediately without manual sync calls.</p>
+ *
+ * <p><b>IMPORTANT:</b> BetaContextMount requires {@code imageId="aio-ubuntu-2404"} on
+ * the session. Other images do not provide a real OSS-backed mount — writes are not
+ * persisted to the shared context store and are invisible to other sessions even with
+ * the same contextId and mount path.</p>
+ *
+ * <p>Use {@link #withSourcePath(String)} to mount only a subdirectory of the context.
+ * The subdirectory's contents are projected to the mount root.</p>
  */
 public class BetaContextMount {
 
@@ -54,10 +62,12 @@ public class BetaContextMount {
     private String path;
     private AccessMode accessMode;
     private Strategy strategy;
+    private String sourcePath;
 
     public BetaContextMount() {
         this.accessMode = AccessMode.READ_WRITE;
         this.strategy = Strategy.STANDARD;
+        this.sourcePath = "";
     }
 
     public BetaContextMount(String contextId, String path) {
@@ -65,6 +75,7 @@ public class BetaContextMount {
         this.path = path;
         this.accessMode = AccessMode.READ_WRITE;
         this.strategy = Strategy.STANDARD;
+        this.sourcePath = "";
     }
 
     public BetaContextMount(String contextId, String path, AccessMode accessMode, Strategy strategy) {
@@ -72,6 +83,7 @@ public class BetaContextMount {
         this.path = path;
         this.accessMode = accessMode != null ? accessMode : AccessMode.READ_WRITE;
         this.strategy = strategy != null ? strategy : Strategy.STANDARD;
+        this.sourcePath = "";
     }
 
     public static BetaContextMount create(String contextId, String path) {
@@ -85,6 +97,16 @@ public class BetaContextMount {
 
     public BetaContextMount withStrategy(Strategy strategy) {
         this.strategy = strategy;
+        return this;
+    }
+
+    /**
+     * Set the subpath within the context to mount. Empty string (default) mounts
+     * the entire context. The selected subdirectory's contents are projected to
+     * the mount root.
+     */
+    public BetaContextMount withSourcePath(String sourcePath) {
+        this.sourcePath = sourcePath != null ? sourcePath : "";
         return this;
     }
 
@@ -120,6 +142,14 @@ public class BetaContextMount {
         this.strategy = strategy;
     }
 
+    public String getSourcePath() {
+        return sourcePath;
+    }
+
+    public void setSourcePath(String sourcePath) {
+        this.sourcePath = sourcePath != null ? sourcePath : "";
+    }
+
     /**
      * Returns the mount config as a JSON string for the protocol layer.
      */
@@ -128,9 +158,10 @@ public class BetaContextMount {
             Map<String, String> config = new LinkedHashMap<>();
             config.put("accessMode", accessMode.getValue());
             config.put("storageMode", strategy.getValue());
+            config.put("sourcePath", sourcePath);
             return objectMapper.writeValueAsString(config);
         } catch (Exception e) {
-            return "{\"accessMode\":\"" + accessMode.getValue() + "\",\"storageMode\":\"" + strategy.getValue() + "\"}";
+            return "{\"accessMode\":\"" + accessMode.getValue() + "\",\"storageMode\":\"" + strategy.getValue() + "\",\"sourcePath\":\"" + sourcePath + "\"}";
         }
     }
 }

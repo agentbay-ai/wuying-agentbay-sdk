@@ -26,6 +26,11 @@ class BetaContextMount:
     provides write-through persistence where data is persisted immediately
     without manual sync calls.
 
+    IMPORTANT: BetaContextMount requires image_id="aio-ubuntu-2404" on the
+    session. Other images do not provide a real OSS-backed mount — writes are
+    not persisted to the shared context store and are invisible to other
+    sessions even with the same context_id and mount path.
+
     Attributes:
         context_id: ID of the context to mount
         path: Path where the context should be mounted in the session

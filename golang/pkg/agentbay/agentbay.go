@@ -346,6 +346,7 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 				MountConfig: &mcp.CreateMcpSessionRequestPersistenceDataListMountConfig{
 					AccessMode:  tea.String(string(contextMount.AccessMode)),
 					StorageMode: tea.String(string(contextMount.Strategy)),
+					SourcePath:  tea.String(contextMount.SourcePath),
 				},
 			}
 			persistenceDataList = append(persistenceDataList, persistenceItem)

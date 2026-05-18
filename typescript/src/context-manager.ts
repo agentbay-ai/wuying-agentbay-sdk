@@ -638,6 +638,7 @@ export class ContextManager {
           new BindContextsRequestPersistenceDataListMountConfig({
             accessMode: ctx.accessMode,
             storageMode: ctx.strategy,
+            sourcePath: ctx.sourcePath,
           });
       } else if (ctx instanceof ContextSync && ctx.policy) {
         item.policy = JSON.stringify(ctx.policy);

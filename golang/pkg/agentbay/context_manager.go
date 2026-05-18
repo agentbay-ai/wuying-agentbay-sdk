@@ -669,6 +669,7 @@ func (cm *ContextManager) BetaMount(contexts []*BetaContextMount, waitForComplet
 			MountConfig: &mcp.BindContextsRequestPersistenceDataListMountConfig{
 				AccessMode:  tea.String(string(ctx.AccessMode)),
 				StorageMode: tea.String(string(ctx.Strategy)),
+				SourcePath:  tea.String(ctx.SourcePath),
 			},
 		}
 		persistenceDataList = append(persistenceDataList, item)

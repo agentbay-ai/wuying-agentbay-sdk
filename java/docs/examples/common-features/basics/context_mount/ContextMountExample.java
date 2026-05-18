@@ -65,7 +65,10 @@ public class ContextMountExample {
         System.out.println("\n🔧 Step 2: Creating first session with context mount...");
         BetaContextMount contextMount = new BetaContextMount(context.getId(), "/tmp/mounted_data");
 
+        // BetaContextMount requires imageId="aio-ubuntu-2404"
+        String imageId = "aio-ubuntu-2404";
         CreateSessionParams params1 = new CreateSessionParams();
+        params1.setImageId(imageId);
         params1.setBetaContextMounts(Arrays.asList(contextMount));
 
         SessionResult session1Result = agentBay.create(params1);
@@ -104,7 +107,7 @@ public class ContextMountExample {
 
             // List files
             System.out.println("\n📋 Files in mounted path:");
-            CommandResult listResult = session1.getCommand().executeCommand("find /tmp/mounted_data -type f -ls", 5000);
+            CommandResult listResult = session1.getCommand().executeCommand("find -L /tmp/mounted_data -type f", 5000);
             if (listResult.isSuccess()) {
                 System.out.println(listResult.getOutput());
             }
@@ -124,6 +127,7 @@ public class ContextMountExample {
         System.out.println("\n🔧 Step 4: Creating second session to verify persistence...");
 
         CreateSessionParams params2 = new CreateSessionParams();
+        params2.setImageId(imageId);
         params2.setBetaContextMounts(Arrays.asList(contextMount));
 
         SessionResult session2Result = agentBay.create(params2);

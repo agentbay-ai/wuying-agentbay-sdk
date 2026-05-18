@@ -75,6 +75,7 @@ type BindContextsRequestPersistenceDataListMountConfig struct {
 	AccessMode  *string `json:"AccessMode,omitempty" xml:"AccessMode,omitempty"`
 	StorageMode *string `json:"StorageMode,omitempty" xml:"StorageMode,omitempty"`
 	ObjectKey   *string `json:"ObjectKey,omitempty" xml:"ObjectKey,omitempty"`
+	SourcePath  *string `json:"SourcePath,omitempty" xml:"SourcePath,omitempty"`
 }
 
 func (s BindContextsRequestPersistenceDataListMountConfig) String() string {
@@ -110,6 +111,15 @@ func (s *BindContextsRequestPersistenceDataListMountConfig) SetObjectKey(v strin
 
 func (s *BindContextsRequestPersistenceDataListMountConfig) GetObjectKey() *string {
 	return s.ObjectKey
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) SetSourcePath(v string) *BindContextsRequestPersistenceDataListMountConfig {
+	s.SourcePath = &v
+	return s
+}
+
+func (s *BindContextsRequestPersistenceDataListMountConfig) GetSourcePath() *string {
+	return s.SourcePath
 }
 
 func (s *BindContextsRequestPersistenceDataListMountConfig) Validate() error {

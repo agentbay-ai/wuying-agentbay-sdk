@@ -16,12 +16,21 @@ type BetaContextMount struct {
 	AccessMode	BetaContextMountAccessMode
 	// Strategy defines the mount strategy (standard or performance)
 	Strategy	BetaContextMountStrategy
+	// SourcePath is the subpath within the context to mount; empty string mounts entire context
+	SourcePath	string
 }
 ```
 
 BetaContextMount defines the context mount configuration for direct-mount persistence. Unlike
 ContextSync which requires explicit synchronization, BetaContextMount provides write-through
 persistence where data is persisted immediately.
+
+IMPORTANT: BetaContextMount requires ImageID="aio-ubuntu-2404" on the session. Other images do
+not provide a real OSS-backed mount — writes are not persisted to the shared context store and are
+invisible to other sessions even with the same ContextID and mount path.
+
+Use WithSourcePath() to mount only a subdirectory of the context. The subdirectory's contents are
+projected to the mount root.
 
 ### Methods
 
@@ -32,6 +41,16 @@ func (cm *BetaContextMount) WithAccessMode(accessMode BetaContextMountAccessMode
 ```
 
 WithAccessMode sets the access mode and returns the context mount for chaining.
+
+### WithSourcePath
+
+```go
+func (cm *BetaContextMount) WithSourcePath(sourcePath string) *BetaContextMount
+```
+
+WithSourcePath sets the subpath within the context to mount and returns the context mount for
+chaining. Empty string (default) mounts the entire context. The selected subdirectory's contents are
+projected to the mount root.
 
 ### WithStrategy
 

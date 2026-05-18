@@ -500,6 +500,7 @@ public class ContextManager {
                 new BindContextsRequest.BindContextsRequestPersistenceDataListMountConfig();
             mountConfig.setAccessMode(context.getAccessMode().getValue());
             mountConfig.setStorageMode(context.getStrategy().getValue());
+            mountConfig.setSourcePath(context.getSourcePath());
 
             BindContextsRequest.BindContextsRequestPersistenceDataList item =
                 new BindContextsRequest.BindContextsRequestPersistenceDataList();

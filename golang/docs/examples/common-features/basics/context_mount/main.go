@@ -48,10 +48,12 @@ func contextMountDemo(ab *agentbay.AgentBay) error {
 	fmt.Printf("✅ Context created: %s (name: %s)\n", ctx.ID, ctx.Name)
 
 	// Step 2: Create first session with context mount
+	// BetaContextMount requires ImageId="aio-ubuntu-2404"
 	fmt.Println("\n🔧 Step 2: Creating first session with context mount...")
 	contextMount := agentbay.NewBetaContextMount(ctx.ID, "/tmp/mounted_data")
+	imageID := "aio-ubuntu-2404"
 
-	params1 := agentbay.NewCreateSessionParams()
+	params1 := agentbay.NewCreateSessionParams().WithImageId(imageID)
 	params1.AddBetaContextMount(contextMount)
 	params1.WithLabels(map[string]string{
 		"example": "context-mount",
@@ -100,7 +102,7 @@ func contextMountDemo(ab *agentbay.AgentBay) error {
 
 	// List files
 	fmt.Println("\n📋 Files in mounted path:")
-	listResult, err := session1.Command.ExecuteCommand("find /tmp/mounted_data -type f -ls")
+	listResult, err := session1.Command.ExecuteCommand("find -L /tmp/mounted_data -type f")
 	if err == nil {
 		fmt.Println(listResult.Output)
 	}
@@ -117,7 +119,7 @@ func contextMountDemo(ab *agentbay.AgentBay) error {
 	// Step 4: Create second session to verify persistence
 	fmt.Println("\n🔧 Step 4: Creating second session to verify persistence...")
 
-	params2 := agentbay.NewCreateSessionParams()
+	params2 := agentbay.NewCreateSessionParams().WithImageId(imageID)
 	params2.AddBetaContextMount(contextMount)
 	params2.WithLabels(map[string]string{
 		"example": "context-mount",

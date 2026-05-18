@@ -2,6 +2,14 @@
 
 [Beta] Represents a context mount configuration for direct-mount persistence.
 
+IMPORTANT: BetaContextMount requires `imageId: "aio-ubuntu-2404"` on the session.
+Other images do not provide a real OSS-backed mount — writes are not persisted to
+the shared context store and are invisible to other sessions even with the same
+contextId and mount path.
+
+Use `withSourcePath()` to mount only a subdirectory of the context. The
+subdirectory's contents are projected to the mount root.
+
 ## Table of contents
 
 
@@ -12,6 +20,7 @@
 
 - `toMountConfigJSON`
 - `withAccessMode`
+- `withSourcePath`
 - `withStrategy`
 
 ## Properties
@@ -20,6 +29,7 @@
 accessMode: ``BetaContextMountAccessMode``
 contextId: `string`
 path: `string`
+sourcePath: `string`
 strategy: ``BetaContextMountStrategy``
 ```
 
@@ -45,6 +55,26 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `accessMode` | ``BetaContextMountAccessMode`` |
+
+#### Returns
+
+``BetaContextMount``
+
+___
+
+### withSourcePath
+
+▸ **withSourcePath**(`sourcePath`): ``BetaContextMount``
+
+Set the subpath within the context to mount. Empty string (default) mounts
+the entire context. The selected subdirectory's contents are projected to
+the mount root.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `sourcePath` | `string` |
 
 #### Returns
 

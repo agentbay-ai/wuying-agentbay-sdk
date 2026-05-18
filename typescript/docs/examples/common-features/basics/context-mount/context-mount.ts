@@ -51,10 +51,13 @@ async function contextMountDemo(agentBay: AgentBay): Promise<void> {
     console.log(`✅ Context created: ${context.id} (name: ${context.name})`);
 
     // Step 2: Create first session with context mount
+    // BetaContextMount requires imageId="aio-ubuntu-2404"
     console.log('\n🔧 Step 2: Creating first session with context mount...');
     const contextMount = new BetaContextMount(context.id, '/tmp/mounted_data');
+    const imageId = 'aio-ubuntu-2404';
 
     const params1: CreateSessionParams = {
+        imageId,
         betaContextMount: [contextMount]
     };
     const session1Result = await agentBay.create(params1);
@@ -102,7 +105,7 @@ async function contextMountDemo(agentBay: AgentBay): Promise<void> {
 
         // List files
         console.log('\n📋 Files in mounted path:');
-        const listResult = await session1.command.executeCommand('find /tmp/mounted_data -type f -ls');
+        const listResult = await session1.command.executeCommand('find -L /tmp/mounted_data -type f');
         if (listResult.success) {
             console.log(listResult.output);
         }
@@ -122,6 +125,7 @@ async function contextMountDemo(agentBay: AgentBay): Promise<void> {
     console.log('\n🔧 Step 4: Creating second session to verify persistence...');
 
     const params2: CreateSessionParams = {
+        imageId,
         betaContextMount: [contextMount]
     };
     const session2Result = await agentBay.create(params2);
