@@ -677,11 +677,10 @@ class AsyncAgentBay:
                 if not hasattr(request, "persistence_data_list") or request.persistence_data_list is None:
                     request.persistence_data_list = []
                 for cm in params.beta_context_mounts:
-                    mount_config_dict = cm._to_mount_config_dict()
                     mount_config = CreateMcpSessionRequestPersistenceDataListMountConfig(
-                        access_mode=mount_config_dict.get("accessMode"),
-                        storage_mode=mount_config_dict.get("storageMode"),
-                        source_path=mount_config_dict.get("sourcePath"),
+                        access_mode=cm.access_mode.value,
+                        storage_mode=cm.strategy.value,
+                        source_path=cm.source_path,
                     )
                     request.persistence_data_list.append(
                         CreateMcpSessionRequestPersistenceDataList(

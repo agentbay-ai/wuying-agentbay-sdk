@@ -1,9 +1,5 @@
 package com.aliyun.agentbay.context;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
  * [Beta] Defines the context mount configuration for direct-mount persistence.
  *
@@ -19,8 +15,6 @@ import java.util.Map;
  * The subdirectory's contents are projected to the mount root.</p>
  */
 public class BetaContextMount {
-
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Access mode for context mount.
@@ -150,18 +144,4 @@ public class BetaContextMount {
         this.sourcePath = sourcePath != null ? sourcePath : "";
     }
 
-    /**
-     * Returns the mount config as a JSON string for the protocol layer.
-     */
-    public String toMountConfigJSON() {
-        try {
-            Map<String, String> config = new LinkedHashMap<>();
-            config.put("accessMode", accessMode.getValue());
-            config.put("storageMode", strategy.getValue());
-            config.put("sourcePath", sourcePath);
-            return objectMapper.writeValueAsString(config);
-        } catch (Exception e) {
-            return "{\"accessMode\":\"" + accessMode.getValue() + "\",\"storageMode\":\"" + strategy.getValue() + "\",\"sourcePath\":\"" + sourcePath + "\"}";
-        }
-    }
 }

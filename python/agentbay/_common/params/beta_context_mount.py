@@ -73,10 +73,3 @@ class BetaContextMount:
     def with_source_path(self, source_path: str):
         self.source_path = source_path
         return self
-
-    def _to_mount_config_dict(self):
-        return {
-            "accessMode": self.access_mode.value,
-            "storageMode": self.strategy.value,
-            "sourcePath": self.source_path,
-        }

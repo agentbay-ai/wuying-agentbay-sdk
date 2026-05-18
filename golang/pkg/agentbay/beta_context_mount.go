@@ -1,7 +1,5 @@
 package agentbay
 
-import "encoding/json"
-
 // BetaContextMountAccessMode defines the access mode for context mount
 type BetaContextMountAccessMode string
 
@@ -75,18 +73,4 @@ func (cm *BetaContextMount) WithStrategy(strategy BetaContextMountStrategy) *Bet
 func (cm *BetaContextMount) WithSourcePath(sourcePath string) *BetaContextMount {
 	cm.SourcePath = sourcePath
 	return cm
-}
-
-// mountConfigJSON returns the JSON string for the mountConfig protocol field.
-func (cm *BetaContextMount) mountConfigJSON() (string, error) {
-	config := map[string]string{
-		"accessMode":  string(cm.AccessMode),
-		"storageMode": string(cm.Strategy),
-		"sourcePath":  cm.SourcePath,
-	}
-	data, err := json.Marshal(config)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }

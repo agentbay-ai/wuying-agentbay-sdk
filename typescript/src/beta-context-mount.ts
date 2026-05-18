@@ -58,14 +58,6 @@ export class BetaContextMount {
     this.sourcePath = sourcePath;
     return this;
   }
-
-  toMountConfigJSON(): string {
-    return JSON.stringify({
-      accessMode: this.accessMode,
-      storageMode: this.strategy,
-      sourcePath: this.sourcePath,
-    });
-  }
 }
 
 export function newBetaContextMount(

@@ -1344,26 +1344,28 @@ agent_bay.delete(session)
 
 ### Cross-Session Data Persistence
 
-Because Context Mount persists data immediately, it is straightforward to share data across sessions:
+Because Context Mount persists data to shared OSS storage immediately, sessions sharing the same `context_id` can see each other's writes — **even when mounted at different local paths**. Persistence is keyed by context, not by mount path.
 
 ```python
 from agentbay import AgentBay, BetaContextMount, CreateSessionParams
 
 agent_bay = AgentBay()
 context = agent_bay.context.get("cross-session-mount", create=True).context
-mount = BetaContextMount.new(context.id, "/tmp/shared")
 
-def mount_params():
-    return CreateSessionParams(image_id="aio-ubuntu-2404", beta_context_mounts=[mount])
-
-# Session A: write data
-session_a = agent_bay.create(mount_params()).session
+# Session A writes at /tmp/shared
+session_a = agent_bay.create(CreateSessionParams(
+    image_id="aio-ubuntu-2404",
+    beta_context_mounts=[BetaContextMount.new(context.id, "/tmp/shared")],
+)).session
 session_a.file_system.write_file("/tmp/shared/config.json", '{"version": "2.0"}')
 agent_bay.delete(session_a)  # No sync needed
 
-# Session B: read data written by Session A
-session_b = agent_bay.create(mount_params()).session
-content = session_b.file_system.read_file("/tmp/shared/config.json")
+# Session B reads at a DIFFERENT local path /tmp/imported — same context, same data
+session_b = agent_bay.create(CreateSessionParams(
+    image_id="aio-ubuntu-2404",
+    beta_context_mounts=[BetaContextMount.new(context.id, "/tmp/imported")],
+)).session
+content = session_b.file_system.read_file("/tmp/imported/config.json")
 print(content.content)  # '{"version": "2.0"}'
 agent_bay.delete(session_b)
 ```

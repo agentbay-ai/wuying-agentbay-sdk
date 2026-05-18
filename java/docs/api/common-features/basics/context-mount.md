@@ -106,14 +106,6 @@ public String getSourcePath()
 public void setSourcePath(String sourcePath)
 ```
 
-### toMountConfigJSON
-
-```java
-public String toMountConfigJSON()
-```
-
-Returns the mount config as a JSON string for the protocol layer.
-
 
 
 ## 🔗 Related Resources

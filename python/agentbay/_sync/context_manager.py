@@ -81,11 +81,10 @@ class ContextManager:
             )
             if isinstance(ctx, BetaContextMount):
                 item.type = "mount"
-                mount_config_dict = ctx._to_mount_config_dict()
                 item.mount_config = BindContextsRequestPersistenceDataListMountConfig(
-                    access_mode=mount_config_dict.get("accessMode"),
-                    storage_mode=mount_config_dict.get("storageMode"),
-                    source_path=mount_config_dict.get("sourcePath"),
+                    access_mode=ctx.access_mode.value,
+                    storage_mode=ctx.strategy.value,
+                    source_path=ctx.source_path,
                 )
             elif isinstance(ctx, ContextSync) and ctx.policy:
                 item.policy = json.dumps(ctx.policy.__dict__())

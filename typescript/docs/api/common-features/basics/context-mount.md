@@ -26,7 +26,6 @@ subdirectory's contents are projected to the mount root.
 
 ### Methods
 
-- `toMountConfigJSON`
 - `withAccessMode`
 - `withSourcePath`
 - `withStrategy`
@@ -43,16 +42,6 @@ strategy: ``BetaContextMountStrategy``
 
 
 ## Methods
-
-### toMountConfigJSON
-
-▸ **toMountConfigJSON**(): `string`
-
-#### Returns
-
-`string`
-
-___
 
 ### withAccessMode
 
