@@ -1414,13 +1414,14 @@ Context Mount supports two configuration dimensions:
 
 | Strategy | Description | Compatibility | Best For |
 |----------|-------------|---------------|----------|
-| `STANDARD` (default) | High POSIX compatibility via ossfs 1.0 | Supports random writes; does **not** support file locks | General file storage, project workspaces, configuration persistence |
-| `PERFORMANCE` | High-throughput via ossfs 2.0 | Does **not** support file locks, symlinks, random writes, or permission changes | Sequential I/O, large datasets, AI training/inference data |
+| `STANDARD` (default) | High POSIX compatibility via ossfs 1.0 | Supports symlinks, random writes, and permission changes; file locks are not reliable across sessions | General file storage, project workspaces, configuration persistence |
+| `PERFORMANCE` | High-throughput via ossfs 2.0 | Does **not** support reliable cross-session file locks, symlinks, random writes, or permission changes | Sequential I/O, large datasets, AI training/inference data |
 
 **Important compatibility notes:**
-- Neither strategy supports file locks (`flock`/`fcntl`). Applications that rely on lock files (Git, Chrome, database engines) **will not work** on a mounted path.
-- `PERFORMANCE` does not support random writes (`lseek` + `write`). It is optimized for sequential read, sequential append, and random read patterns.
-- If your workflow requires file locks or random writes, use **Context Sync** (which operates on local disk) instead.
+- File locks (`flock`/`fcntl`) are not enforced across sessions that mount the same context. Locks may appear to work within one session, but they must not be used for cross-session coordination.
+- Database engines such as SQLite should not be placed on a mounted path for concurrent/shared writes. In `STANDARD`, simple committed reads can be visible across sessions, but transaction locks are not coordinated across sessions. In `PERFORMANCE`, SQLite-style database I/O can fail outright.
+- `PERFORMANCE` does not support symlink creation, random writes (`lseek` + `write`), or permission changes. It is optimized for sequential read, sequential append, and random read patterns.
+- If your workflow requires reliable file locks or full local POSIX semantics, use **Context Sync** (which operates on local disk) instead.
 
 ```python
 from agentbay import BetaContextMount, BetaContextMountAccessMode, BetaContextMountStrategy
@@ -1512,25 +1513,27 @@ mount = (
 |-------------|-------------|
 | **Mount path must be empty** | If the target path already contains files, the mount will fail. Use an empty or non-existent directory. |
 | **No duplicate mount paths** | You cannot mount two different contexts to the same path in one session. |
-| **No file locks** | Both strategies use OSS-backed FUSE; file locking is not supported. |
+| **No reliable cross-session file locks** | Both strategies use OSS-backed FUSE. Do not rely on `flock`/`fcntl` to coordinate multiple sessions that mount the same context. |
 | **No unmount** | Dynamic unmounting during a session is not currently supported; mounted contexts remain until the session ends. |
 
-**Applications known to fail on mounted paths:**
+**Application compatibility considerations:**
 
-| Application | Reason |
-|-------------|--------|
-| Chrome / browser user data | Creates file locks and symlinks on startup |
-| Git operations | Relies on lock files (`.git/index.lock`) |
-| VS Code / IDE projects | Build tooling uses file locks |
-| npm / yarn install | Uses symlinks for `node_modules` |
+| Application | Guidance |
+|-------------|----------|
+| Chrome / browser user data | Prefer **Context Sync**. Browser profiles rely on locks and symlinks, and concurrent profile access is unsafe. |
+| Git repositories | Basic `git init` / `add` / `commit` / `status` can work, but shared or concurrent Git operations are unsafe because `.git/index.lock` is not reliable across sessions. Prefer **Context Sync** for active repositories. |
+| SQLite / embedded databases | Prefer **Context Sync**. SQLite transaction locks are not coordinated across mounted sessions, and `PERFORMANCE` may fail database I/O. |
+| VS Code / IDE projects | Prefer **Context Sync** for full workspaces. Build tools, package managers, and IDE metadata often rely on locks, symlinks, and random writes. |
+| npm / yarn install | `STANDARD` can handle symlink-based local installs, but `PERFORMANCE` rejects symlink creation. Prefer **Context Sync** for robust package manager caches and installs. |
 
-For these use cases, use **Context Sync** which operates on local disk with full POSIX semantics.
+For workflows that need full POSIX semantics, use **Context Sync** which operates on local disk.
 
 ### Choosing Between Context Sync and Context Mount
 
 #### Quick Decision Guide
 
-- **Need file locks, symlinks, or random writes?** → Use **Context Sync** (local disk, full POSIX)
+- **Need reliable file locks or full local POSIX semantics?** → Use **Context Sync** (local disk)
+- **Need symlinks, random writes, or permission changes with live persistence?** → Use **Context Mount (Standard)**, not `PERFORMANCE`
 - **Need real-time persistence or multi-session sharing?** → Use **Context Mount (Standard)**
 - **High-throughput sequential I/O on large datasets?** → Use **Context Mount (Performance)**
 
@@ -1554,13 +1557,13 @@ For these use cases, use **Context Sync** which operates on local disk with full
 
 | Use Case | Recommended Mode |
 |----------|-----------------|
-| Browser cookie / user data persistence | **Context Sync** — Chrome requires file locks and symlinks |
-| Git repository workspace | **Context Sync** — Git relies on lock files |
-| IDE / build toolchain projects | **Context Sync** — compilers and package managers use file locks |
+| Browser cookie / user data persistence | **Context Sync** — browser profiles rely on locks and symlinks |
+| Git repository workspace | **Context Sync** for active or shared repos; **Context Mount (Standard)** only for simple, non-concurrent Git workflows |
+| IDE / build toolchain projects | **Context Sync** — build tools and package managers often need full local POSIX semantics |
 | Agent working directory (general files) | **Context Mount (Standard)** — good compatibility, real-time persistence |
 | Shared read-only dataset across sessions | **Context Mount (Standard)** with `READ_ONLY` mode |
 | AI training data / large sequential reads | **Context Mount (Performance)** — highest throughput |
-| npm / pip package cache | **Context Sync** — package managers use symlinks and lock files |
+| npm / pip package cache | **Context Sync** for robust installs and caches; avoid `PERFORMANCE` for symlink-heavy package workflows |
 
 > **Tip:** You can use both Context Sync and Context Mount in the same session on different paths. For example, mount a shared dataset at `/tmp/data` while syncing a Git workspace at `/home/wuying/project`.
 
