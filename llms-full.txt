@@ -112,10 +112,6 @@ Directory structure:
     │   │   │   │   │   │   ├── README.md
     │   │   │   │   ├── common-features/
     │   │   │   │   │   ├── basics/
-    │   │   │   │   │   │   ├── archive-upload-mode-example/
-    │   │   │   │   │   │   │   ├── README.md
-    │   │   │   │   │   │   ├── computer_take_screenshot/
-    │   │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   │   ├── context_management/
     │   │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   │   ├── data_persistence/
@@ -124,17 +120,9 @@ Directory structure:
     │   │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   │   ├── file_system/
     │   │   │   │   │   │   │   ├── README.md
-    │   │   │   │   │   │   ├── filesystem_example/
-    │   │   │   │   │   │   │   ├── README.md
-    │   │   │   │   │   │   ├── get/
-    │   │   │   │   │   │   │   ├── README.md
-    │   │   │   │   │   │   ├── label_management/
-    │   │   │   │   │   │   │   ├── README.md
-    │   │   │   │   │   │   ├── list_sessions/
-    │   │   │   │   │   │   │   ├── README.md
     │   │   │   │   │   │   ├── mcp_tool_direct_call/
     │   │   │   │   │   │   │   ├── README.md
-    │   │   │   │   │   │   ├── session_creation/
+    │   │   │   │   │   │   ├── session_get/
     │   │   │   │   │   │   │   ├── README.md
     │   ├── pyproject.toml
     ├── typescript/
@@ -1052,6 +1040,7 @@ This directory is generated. Run `go run scripts/generate_api_docs.go` to refres
 - `common-features/basics/context-manager.md` – Context Manager
 - `common-features/basics/filesystem.md` – File System
 - `common-features/basics/context-sync.md` – Context Sync
+- `common-features/basics/context-mount.md` – Context Mount [Beta]
 - `common-features/basics/logging.md` – Logging
 - `common-features/advanced/agent.md` – Agent
 - `common-features/advanced/oss.md` – OSS
@@ -3849,6 +3838,24 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 		}
 	}
 
+	// Add context mount configurations if provided
+	if len(params.BetaContextMount) > 0 {
+		for _, contextMount := range params.BetaContextMount {
+			persistenceItem := &mcp.CreateMcpSessionRequestPersistenceDataList{
+				ContextId: tea.String(contextMount.ContextID),
+				Path:      tea.String(contextMount.Path),
+				Type:      tea.String("mount"),
+				MountConfig: &mcp.CreateMcpSessionRequestPersistenceDataListMountConfig{
+					AccessMode:  tea.String(string(contextMount.AccessMode)),
+					StorageMode: tea.String(string(contextMount.Strategy)),
+					SourcePath:  tea.String(contextMount.SourcePath),
+				},
+			}
+			persistenceDataList = append(persistenceDataList, persistenceItem)
+			waitContextIDs[contextMount.ContextID] = struct{}{}
+		}
+	}
+
 	// Add BrowserContext as a persistence item if provided
 	if params.BrowserContext != nil {
 		item, err := buildBrowserContextPersistenceDataListItem(params.BrowserContext)
@@ -4038,14 +4045,20 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 			}
 
 			hasFailure := false
-			statusByContextID := map[string]string{}
+			allCompleted := true
+			seenContextIDs := map[string]bool{}
 
 			for _, item := range infoResult.ContextStatusData {
 				if _, ok := waitContextIDs[item.ContextId]; !ok {
 					continue
 				}
-				statusByContextID[item.ContextId] = item.Status
+				seenContextIDs[item.ContextId] = true
 				LogDebug(fmt.Sprintf("Context %s status: %s, path: %s", item.ContextId, item.Status, item.Path))
+
+				// If any task for a waited context is not in terminal state, mark as incomplete
+				if item.Status != "Success" && item.Status != "Failed" {
+					allCompleted = false
+				}
 
 				if item.Status == "Failed" {
 					hasFailure = true
@@ -4053,12 +4066,13 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 				}
 			}
 
-			allCompleted := true
-			for ctxID := range waitContextIDs {
-				st, ok := statusByContextID[ctxID]
-				if !ok || (st != "Success" && st != "Failed") {
-					allCompleted = false
-					break
+			// Also check if all waited contextIds have been seen in the status data
+			if allCompleted {
+				for ctxID := range waitContextIDs {
+					if !seenContextIDs[ctxID] {
+						allCompleted = false
+						break
+					}
 				}
 			}
 
@@ -4071,38 +4085,11 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 				break
 			}
 
-			LogDebug(fmt.Sprintf("Waiting for context synchronization, attempt %d/%d, next interval: %.2fs", retry+1, maxRetries, currentInterval.Seconds()))
-			time.Sleep(currentInterval)
 
-			// Exponential backoff: increase interval for next retry, capped at maxInterval
-			currentInterval = time.Duration(float64(currentInterval) * backoffFactor)
-			if currentInterval > maxInterval {
-				currentInterval = maxInterval
-			}
-		}
-	}
-
-	// If we need to do mobile simulate by command, wait for it
-	if needsMobileSim && mobileSimPath != "" {
-		a.waitForMobileSimulate(session, mobileSimPath, mobileSimMode)
-	}
-
-	// Return result with RequestID
-	return &SessionResult{
-		ApiResponse: models.ApiResponse{
-			RequestID: requestID,
-		},
-		Session: session,
-		Success: true,
-	}, nil
-}
-
-// waitForMobileSimulate waits for mobile simulate command to complete.
-func (a *AgentBay) waitForMobileSimulate(session *Session, mobileSimPath string, mobileSimMode models.MobileSimulateMode) error {
-
-... [truncated, 28,603 chars remaining] ...
+... [truncated, 30,006 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
+func (a *AgentBay) waitForMobileSimulate(session *Session, mobileSimPath string, mobileSimMode models.MobileSimulateM...
 func NewListSessionParams() *ListSessionParams {
 func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32) (*SessionListResult, error) {
 func (a *AgentBay) ListByStatus(status SessionStatus, labels map[string]string, page *int, limit *int32) (*SessionLis...
@@ -5022,10 +5009,10 @@ func (c *Command) executeCommandInternal(
 
 // parsedShellPayload holds the parsed fields from a shell-tool MCP response.
 type parsedShellPayload struct {
-	stdout  string
-	stderr  string
+	stdout   string
+	stderr   string
 	exitCode int
-	traceID string
+	traceID  string
 }
 
 // looksLikeWrappedShellPayload conservatively determines whether a parsed JSON
@@ -8051,9 +8038,9 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/git"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/internal"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/mobile"
-	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/pty"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/models"
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/oss"
+	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay/pty"
 )
 
 // SessionResult wraps Session object and RequestID
@@ -8873,6 +8860,7 @@ This directory is generated. Run `mvn exec:java` in `java/agentbay` to refresh i
 - [common-features/basics/agentbay.md](common-features/basics/agentbay.md)
 - [common-features/basics/command.md](common-features/basics/command.md)
 - [common-features/basics/context-manager.md](common-features/basics/context-manager.md)
+- [common-features/basics/context-mount.md](common-features/basics/context-mount.md)
 - [common-features/basics/context-sync.md](common-features/basics/context-sync.md)
 - [common-features/basics/context.md](common-features/basics/context.md)
 - [common-features/basics/env.md](common-features/basics/env.md)
@@ -9102,6 +9090,11 @@ from ._common.params.context_sync import (
     UploadPolicy,
     UploadStrategy,
     WhiteList,
+)
+from ._common.params.beta_context_mount import (
+    BetaContextMount,
+    BetaContextMountAccessMode,
+    BetaContextMountStrategy,
 )
 from ._sync.extension import Extension, ExtensionOption, ExtensionsService
 from ._common.params.session_params import (
@@ -9346,6 +9339,9 @@ __all__ = [
     "FileUrlResult",
     "ClearContextResult",
     "ContextStatusData",
+    "BetaContextMount",
+    "BetaContextMountAccessMode",
+    "BetaContextMountStrategy",
     # Browser Operator types BEGIN
     "ActOptions",
     "ActResult",
@@ -10469,7 +10465,7 @@ class AsyncAgentBay:
                 consume_time = end_time - start_time
                 _logger.info(
 
-... [truncated, 34,579 chars remaining] ...
+... [truncated, 35,778 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _log_request_debug_info(self, request: CreateMcpSessionRequest) -> None:
@@ -15531,6 +15527,7 @@ Shared classes used by both sync and async APIs are in the `common/` directory:
 - [Exceptions](common/exceptions.md) - `agentbay._common.exceptions`
 - [Logging](common/logging.md) - `agentbay._common.logger`
 - [Context Sync](common/context-sync.md) - `agentbay._common.params.context_sync`
+- [Context Mount [Beta]](common/context-mount.md) - `agentbay._common.params.beta_context_mount`
 - [Lifecycle Policy](common/lifecycle-policy.md) - `agentbay._common.params.lifecycle_policy`
 - [Code Execution Models](common/code-models.md) - `agentbay._common.models.code`
 - [Browser Models](common/browser-models.md) - `agentbay._common.models.browser`
@@ -15624,109 +15621,100 @@ Located in `browser-use/browser/` and `browser-use/extension/`
 **Real-world Examples:**
 - `search_agentbay_doc*.py` - Documentation search examples
 - `game_*.py` - Game automation examples
-- Various domain-specific examples
 
 ### 2. Codespace Examples
 
 Located in `codespace/`
 
-**Development Environments:**
 - `python_development.py` - Python environment setup and package management
 - `nodejs_development.py` - Node.js environment and npm operations
-
-**Version Control:**
 - `git_operations.py` - Git repository initialization and commits
-
-**Containerization:**
-- `docker_operations.py` - Docker container management
-
-**Data Management:**
 - `database_operations.py` - SQLite database operations
-
-**Text Processing:**
 - `text_processing.py` - Text manipulation with grep/sed/awk
-
-**System Operations:**
 - `system_monitoring.py` - System resource monitoring
 - `file_compression.py` - File compression and archiving
-
-**Web Development:**
 - `web_server_setup.py` - HTTP server setup and configuration
-
-**Build Systems:**
 - `build_automation.py` - Build automation with Makefiles
-
-**Code Execution:**
 - `code_execution_example.py` - Code execution patterns
-- `jupyter_context_persistence.py` - Jupyter-like Python context persistence across consecutive `run_code()` calls within the same session
+- `enhanced_code_execution.py` - Advanced code execution with streaming
+- `jupyter_context_persistence.py` - Jupyter-like Python context persistence
+- `jupyter_context_persistence_r_java.py` - R/Java context persistence
+- `run_code_streaming_beta.py` - Streaming code execution (beta)
 
 ### 3. Common-features Examples
 
 Located in `common-features/basics/` and `common-features/advanced/`
 
-**Basic Operations:**
-- `session_creation/` - Creating and managing sessions
-- `command_execution_patterns.py` - Various command execution patterns
-- `file_operations_patterns.py` - File operation patterns
-- `file_system/` - File system operations
-- `session_info.py` - Session information retrieval
-- `working_directory.py` - Working directory management
-- `environment_setup.py` - Environment variable configuration
-- `process_management.py` - Process monitoring and management
-- `data_transfer.py` - Data transfer operations
+**Session Operations (`basics/session_operations/`):**
+- `session_creation.py` - Creating sessions with various configurations
+- `session_link_example.py` - Getting session link URLs
+- `session_label_management.py` - Managing session labels (CRUD + filtering)
+- `session_keep_alive.py` - Keeping sessions alive
 
-**Session Management:**
-- `list_sessions/` - Listing sessions
-- `get/` - Getting session information
+**Session Management (`basics/`):**
+- `session_get/` - Getting session by ID
 - `session_pause_resume/` - Pausing and resuming sessions
-- `label_management/` - Managing session labels
 
-**Data Persistence:**
-- `data_persistence/` - Context synchronization and data persistence
-- `context_management/` - Context management
-- `archive-upload-mode-example/` - Archive upload modes
+**Command & PTY (`basics/`):**
+- `command_operations/` - Command execution patterns
+- `pty_operations/` - PTY terminal operations
 
-**Advanced Features:**
-- `concurrent_sessions.py` - Managing multiple sessions concurrently
-- `resource_cleanup.py` - Proper resource cleanup patterns
-- `error_recovery.py` - Error handling and recovery
-- `error_handling/` - Comprehensive error handling
-- `batch_operations/` - Batch operations
-- `parallel_execution/` - Parallel execution patterns
-- `multi_session_management/` - Multi-session coordination
+**File System (`basics/file_system/`):**
+- `basic_file_operations_example.py` - File read/write/list operations
+- `file_transfer_example.py` - Session-based file upload/download
+- `watch_directory_example.py` - File change monitoring
 
-**Testing and Monitoring:**
-- `api_testing/` - API testing patterns
-- `network_testing/` - Network diagnostics
-- `logging_monitoring/` - Logging and monitoring
-- `performance_monitoring/` - Performance monitoring
-- `screenshot_download/` - Screenshot operations
+**Context & Data Persistence (`basics/`):**
+- `context_management/` - Context CRUD, listing with pagination, session binding
+- `context_file_transfer/` - Context-based file transfer via presigned URLs
+- `data_persistence/` - SyncPolicy, RecyclePolicy, Archive mode, BWList
+- `dynamic_context_binding/` - Dynamic context binding during session
 
-**Infrastructure:**
-- `environment_variables/` - Environment variable management
-- `retry_mechanism/` - Retry patterns with circuit breaker
-- `session_pooling/` - Session pooling for efficiency
-- `oss_management/` - OSS operations
+**Environment (`basics/`):**
+- `env_management/` - Environment variable management
+- `environment_operations/` - Environment operations
 
-**Filesystem:**
-- `filesystem_example/` - Advanced filesystem operations
+**Other (`basics/`):**
 - `mcp_tool_direct_call/` - MCP tool direct calls
 
-**Agent Integration:**
+**Advanced Features (`advanced/`):**
 - `agent_module/` - Agent module usage
+- `batch_operations/` - Batch operations
+- `error_handling/` - Comprehensive error handling
+- `link_url_session/` - Link URL session management
+- `logging_monitoring/` - Logging and monitoring
+- `multi_session_management/` - Multi-session coordination
+- `network_testing/` - Network diagnostics
+- `oss_management/` - OSS operations
+- `parallel_execution/` - Parallel execution patterns
+- `performance_monitoring/` - Performance monitoring
+- `retry_mechanism/` - Retry patterns with circuit breaker
+- `screenshot_download/` - Screenshot operations
+- `session_metrics/` - Session metrics
+- `session_pooling/` - Session pooling for efficiency
+- `environment_variables/` - Environment variable management
 
 ### 4. Computer-use Examples
 
 Located in `computer-use/computer/`
 
+- `screen_operations.py` - Screenshot capture using `computer.beta_take_screenshot()`
 - `windows_app_management_example.py` - Windows application management
 
 ### 5. Mobile-use Examples
 
 Located in `mobile-use/`
 
+- `mobile_agent_streaming.py` - Mobile Agent task execution with streaming output
+- `mobile_app_operations.py` - Mobile app operations
+- `mobile_beta_screenshot.py` - Mobile screenshot capture
+- `mobile_bounds_rect.py` - Mobile UI bounds/rect operations
 - `mobile_get_adb_url_example.py` - Getting ADB connection URL
+- `mobile_simulate_basic_usage.py` - Mobile simulate basic usage
+- `mobile_simulate_with_ctx.py` - Mobile simulate with context
+- `mobile_ui_automation.py` - Mobile UI automation
 - `mobile_system/` - Mobile system operations
+- `get_all_ui_elements_xml/` - Get all UI elements as XML
 
 ## Getting Started
 
@@ -15782,35 +15770,8 @@ async def main():
 
     finally:
         if session:
-            await client.delete(session)
 
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-### Sync Example Template
-
-```python
-from agentbay import AgentBay
-from agentbay import CreateSessionParams
-
-def main():
-    client = AgentBay()
-    session = None
-
-    try:
-        # Create session
-        session_result = client.create(
-            CreateSessionParams(image_id="linux_latest")
-        )
-        session = session_result.session
-
-        # Your code here
-        result = session.command.execute_command("echo 'Hello'")
-        print(result.output)
-
-
-... [truncated, 884 chars remaining] ...
+... [truncated, 1,450 chars remaining] ...
 
 ================================================
 FILE: python/docs/examples/_async/browser-use/browser/README.md
@@ -16113,273 +16074,6 @@ Extensions are synchronized to browser sessions at:
 - Clean up contexts when no longer needed
 
 ================================================
-FILE: python/docs/examples/_async/common-features/basics/archive-upload-mode-example/README.md
-================================================
-# Archive Upload Mode Context Sync Example
-
-This directory contains examples demonstrating the Archive upload mode functionality for context synchronization in the AgentBay SDK.
-
-## Overview
-
-The Archive upload mode is designed for efficient file transfer by compressing files before uploading them to the context storage. This is particularly useful when:
-
-- Working with large files
-- Dealing with many files
-- Optimizing bandwidth usage
-- Reducing upload time for compressible content
-
-## Files
-
-### `main.py`
-
-A comprehensive example that demonstrates:
-
-1. **Context Creation**: Creating a context for Archive upload mode
-2. **Sync Policy Configuration**: Setting up sync policy with Archive uploadMode
-3. **Session Management**: Creating and managing sessions with context sync
-4. **File Operations**: Writing files to the context path
-5. **Context Sync**: Synchronizing context before retrieving information
-6. **Context Info**: Retrieving context status information
-7. **File Listing**: Listing files in context sync directory
-8. **Cleanup**: Proper session cleanup and error handling
-
-## Key Features Demonstrated
-
-### Archive Upload Mode Configuration
-
-```python
-# Configure sync policy with Archive upload mode
-upload_policy = UploadPolicy(upload_mode=UploadMode.ARCHIVE)
-sync_policy = SyncPolicy(upload_policy=upload_policy)
-
-# Create context sync with Archive mode
-context_sync = ContextSync(
-    context_id=context_result.context_id,
-    path="/tmp/archive-mode-test",
-    policy=sync_policy
-)
-```
-
-### Session Creation with Context Sync
-
-```python
-session_params = CreateSessionParams(
-    labels={
-        "example": f"archive-mode-{unique_id}",
-        "type": "archive-upload-demo",
-        "uploadMode": UploadMode.ARCHIVE.value
-    },
-    context_syncs=[context_sync]
-)
-
-session_result = await agent_bay.create(session_params)
-```
-
-### File Operations
-
-```python
-# Write file to context path
-write_result = session.file_system.write_file(file_path, file_content, mode="overwrite")
-```
-
-### Context Sync and Information Retrieval
-
-```python
-# Call context sync before getting info (async operation)
-import asyncio
-
-async def run_sync():
-    return await session.context.sync()
-
-sync_result = asyncio.run(run_sync())
-
-# Get context status information after sync
-info_result = session.context.info()
-
-# Display context status details
-for index, status in enumerate(info_result.context_status_data):
-    print(f"Context ID: {status.context_id}")
-    print(f"Path: {status.path}")
-    print(f"Status: {status.status}")
-    print(f"Task Type: {status.task_type}")
-```
-
-### File Listing in Context Directory
-
-```python
-# List files in context sync directory
-list_result = await agent_bay.context.list_files(context_id, sync_dir_path, max_results=10)
-
-# Display file entries
-for index, entry in enumerate(list_result.entries):
-    print(f"FilePath: {entry.file_path}")
-    print(f"FileType: {entry.file_type}")
-    print(f"FileName: {entry.file_name}")
-    print(f"Size: {entry.size} bytes")
-```
-
-## Running the Example
-
-### Prerequisites
-
-1. **Environment Setup**: Set your AgentBay API key
-   ```bash
-   export AGENTBAY_API_KEY="your-api-key-here"
-   ```
-
-2. **Dependencies**: Ensure you have the AgentBay SDK installed
-   ```bash
-   pip install wuying-agentbay-sdk-test
-   ```
-
-### Execution
-
-```bash
-# Navigate to the python directory
-cd python
-
-# Run the example
-python docs/examples/archive-upload-mode-example/main.py
-```
-
-### Expected Output
-
-The example will output detailed logs showing:
-
-```
-🚀 AgentBay Archive Upload Mode Context Sync Example
-============================================================
-
-📦 Step 1: Creating context for Archive upload mode...
-✅ Context created successfully!
-   Context ID: ctx_xxxxx
-   Request ID: req_xxxxx
-
-⚙️  Step 2: Configuring sync policy with Archive upload mode...
-✅ Sync policy configured with uploadMode: Archive
-
-🔧 Step 3: Creating context sync configuration...
-✅ Context sync created:
-   Context ID: ctx_xxxxx
-   Path: /tmp/archive-mode-test
-   Upload Mode: Archive
-
-🏗️  Step 4: Creating session with Archive mode context sync...
-✅ Session created successfully!
-   Session ID: sess_xxxxx
-   Request ID: req_xxxxx
-   App Instance ID: app_xxxxx
-
-📝 Step 5: Creating test files in Archive mode context...
-📄 Creating file: /tmp/archive-mode-test/test-file-5kb.txt
-📊 File content size: 5120 bytes
-✅ File write successful!
-   Request ID: req_xxxxx
-
-📊 Step 6: Testing context sync and info functionality...
-🔄 Calling context sync before getting info...
-✅ Context sync successful!
-   Sync Request ID: req_xxxxx
-📋 Calling context info after sync...
-✅ Context info retrieved successfully!
-   Info Request ID: req_xxxxx
-   Context status data count: X
-
-📋 Context status details:
-   [0] Context ID: ctx_xxxxx
-       Path: /tmp/archive-mode-test
-       Status: Success
-       Task Type: upload
-
-🔍 Step 7: Listing files in context sync directory...
-✅ List files successful!
-   Request ID: req_xxxxx
-   Total files found: X
-
-📋 Files in context sync directory:
-   [0] FilePath: /tmp/archive-mode-test/test-file-5kb.txt
-       FileType: file
-       FileName: test-file-5kb.txt
-       Size: 5120 bytes
-
-🎉 Archive upload mode example completed successfully!
-✅ All operations completed without errors.
-
-🧹 Step 8: Cleaning up session...
-✅ Session deleted successfully!
-   Success: true
-   Request ID: req_xxxxx
-```
-
-## Related Documentation
-
-- [Context Sync Documentation](../../../../../../../docs/guides/common-features/basics/data-persistence.md)
-- [Session Management Guide](../../../../../../../docs/guides/common-features/basics/session-management.md)
-- [File Operations Guide](../../../../../../../docs/guides/common-features/basics/file-operations.md)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **API Key Not Set**
-   ```
-   Warning: AGENTBAY_API_KEY environment variable not set
-   ```
-   **Solution**: Set the environment variable or update the API key in the code
-
-2. **Context Creation Failed**
-   ```
-   Context creation failed: [error message]
-   ```
-   **Solution**: Check your API key and network connectivity
-
-3. **Session Creation Failed**
-   ```
-   Session creation failed: [error message]
-   ```
-   **Solution**: Verify context sync configuration and try again
-
-4. **File Operation Failed**
-   ```
-   File write failed: [error message]
-   ```
-   **Solution**: Check file path permissions and available disk space
-
-## Support
-
-For additional help:
-- [GitHub Issues](https://github.com/agentbay-ai/wuying-agentbay-sdk/issues)
-- [Documentation Home](../../../../README.md)
-
-================================================
-FILE: python/docs/examples/_async/common-features/basics/computer_take_screenshot/README.md
-================================================
-## Computer Take Screenshot (Async)
-
-This example demonstrates how to take a desktop screenshot using the MCP `screenshot` tool via `AsyncComputer.beta_take_screenshot()`.
-
-### Prerequisites
-
-- Python 3.10+
-- Set `AGENTBAY_API_KEY` environment variable
-
-### Run
-
-```bash
-export AGENTBAY_API_KEY=your_api_key_here
-python main.py
-```
-
-### What it does
-
-- Creates a `linux_latest` session
-- Takes a screenshot in `jpg` format (normalized to `jpeg`)
-- Saves the result to `./tmp/computer_take_screenshot.jpg`
-- Deletes the session
-
-
-
-================================================
 FILE: python/docs/examples/_async/common-features/basics/context_management/README.md
 ================================================
 # Context Management Example
@@ -16600,7 +16294,7 @@ This directory contains comprehensive examples demonstrating the FileSystem func
 
 ## Examples
 
-### Basic Operations Example ([main.py](./main.py))
+### Basic Operations Example ([basic_file_operations_example.py](./basic_file_operations_example.py))
 
 Demonstrates fundamental file system operations:
 
@@ -16689,7 +16383,7 @@ export AGENTBAY_API_KEY=your_api_key_here
 
 ```bash
 # Basic file operations
-python main.py
+python basic_file_operations_example.py
 
 # Directory monitoring
 python watch_directory_example.py
@@ -16700,7 +16394,7 @@ python file_transfer_example.py
 
 ## Code Explanation
 
-### Basic Operations Example (main.py)
+### Basic Operations Example (basic_file_operations_example.py)
 
 The basic operations example demonstrates the following workflow:
 
@@ -16747,490 +16441,6 @@ Each section of the examples is clearly marked and includes verification steps t
 ## API Reference
 
 For more detailed information on the FileSystem API methods, refer to the SDK documentation.
-
-================================================
-FILE: python/docs/examples/_async/common-features/basics/filesystem_example/README.md
-================================================
-# FileSystem Examples
-
-This directory contains comprehensive examples demonstrating the FileSystem functionality in the AgentBay SDK for Python. It covers both basic file operations and advanced features like file monitoring and transfers.
-
-## Examples
-
-### Basic Operations Example ([main.py](./main.py))
-
-Demonstrates fundamental file system operations:
-
-- Basic file reading and writing
-- Directory creation and listing
-- File information retrieval
-- File editing and moving
-- File searching
-- Multiple file reading
-- Large file operations with automatic chunking
-
-### Watch Directory Example ([watch_directory_example.py](./watch_directory_example.py))
-
-Demonstrates how to monitor file changes in a directory:
-
-- Creating directories for monitoring
-- Setting up file change monitoring with callbacks
-- Performing file operations to trigger events
-- Processing different types of file events (create, modify, delete)
-- Proper resource cleanup
-
-### File Transfer Example ([file_transfer_example.py](./file_transfer_example.py))
-
-Demonstrates file upload and download operations:
-
-- Creating contexts and sessions with file transfer capabilities
-- Using the simplified FileSystem API for file transfers
-- Uploading files from local storage to the cloud
-- Downloading files from the cloud to local storage
-- Tracking file transfer progress with callbacks
-- Verifying file content integrity after transfers
-- Proper resource cleanup
-
-## Features Demonstrated
-
-### Basic File Operations
-- **File Writing**: Create new files with content
-- **File Reading**: Read file contents
-- **File Appending**: Add content to existing files
-
-### Directory Operations
-- **Directory Creation**: Create new directories
-- **Directory Listing**: List contents of directories
-
-### File Information
-- **File Info Retrieval**: Get detailed information about files (size, permissions, etc.)
-
-### File Manipulation
-- **File Editing**: Edit specific parts of file content
-- **File Moving**: Move files between directories
-
-### Search Operations
-- **File Searching**: Search for files containing specific patterns
-
-### Multiple File Operations
-- **Multiple File Reading**: Read multiple files in a single operation
-
-### Large File Operations
-- **Large File Writing**: Write files larger than the default API size limits using automatic chunking
-- **Large File Reading**: Read large files using automatic chunking
-- **Custom Chunk Size**: Specify custom chunk sizes for both reading and writing operations
-- **Performance Measurement**: Measure and compare operation times with different chunk sizes
-
-### Advanced Features
-- **Real-time File Monitoring**: Monitor directory changes with event callbacks
-- **File Transfer Operations**: Upload and download files with progress tracking
-- **Context Synchronization**: Use contexts for persistent file operations
-
-## Prerequisites
-
-- Python 3.10 or later
-- Wuying AgentBay SDK installed:
-  ```bash
-  pip install wuying-agentbay-sdk
-  ```
-
-## Running the Examples
-
-1. Make sure you have set the `AGENTBAY_API_KEY` environment variable:
-
-```bash
-export AGENTBAY_API_KEY=your_api_key_here
-```
-
-2. Run any of the examples:
-
-```bash
-# Basic file operations
-python main.py
-
-# Directory monitoring
-python watch_directory_example.py
-
-# File transfers
-python file_transfer_example.py
-```
-
-## Code Explanation
-
-### Basic Operations Example (main.py)
-
-The basic operations example demonstrates the following workflow:
-
-1. **Session Creation**: Creates a new session with the specified image ID
-2. **Basic File Operations**: Demonstrates writing, reading, and appending to files
-3. **Directory Operations**: Shows how to create directories and list their contents
-4. **File Information**: Retrieves and displays detailed file information
-5. **File Editing**: Demonstrates how to edit specific parts of a file
-6. **File Moving**: Shows how to move files between directories
-7. **File Searching**: Searches for files containing specific patterns
-8. **Multiple File Reading**: Reads multiple files in a single operation
-9. **Large File Operations**: Demonstrates reading and writing large files with both default and custom chunk sizes
-10. **Content Verification**: Verifies that file operations maintain content integrity
-11. **Performance Comparison**: Measures and reports the time taken for large file operations
-
-### Watch Directory Example
-
-The watch directory example demonstrates real-time file monitoring capabilities:
-
-1. Initialize the AgentBay client with an API key
-2. Create a session with a suitable image
-3. Create a test directory to monitor
-4. Set up monitoring with a callback function to handle file events
-5. Perform various file operations to trigger events
-6. Process and display the detected file changes
-7. Clean up resources properly
-
-### File Transfer Example
-
-The file transfer example demonstrates uploading and downloading files:
-
-1. Initialize the AgentBay client with an API key
-2. Create a context for file operations
-3. Create a browser session with context synchronization
-4. Create test files for upload
-5. Upload files to the cloud using the simplified API
-6. Download files from the cloud to local storage
-7. Track progress during transfers
-8. Verify file content integrity
-9. Clean up resources properly
-
-Each section of the examples is clearly marked and includes verification steps to ensure operations are working correctly.
-
-## API Reference
-
-For more detailed information on the FileSystem API methods, refer to the SDK documentation.
-
-================================================
-FILE: python/docs/examples/_async/common-features/basics/get/README.md
-================================================
-# Get API Example
-
-This example demonstrates how to use the `get` API to retrieve a session by its ID.
-
-## Description
-
-The `get` API allows you to retrieve a session object by providing its session ID. This is useful when you have a session ID from a previous operation and want to access or manage that session.
-
-## Prerequisites
-
-- Python 3.8 or higher
-- Valid API key set in `AGENTBAY_API_KEY` environment variable
-- agentbay package installed
-
-## Installation
-
-```bash
-pip install agentbay
-```
-
-## Usage
-
-```bash
-# Set your API key
-export AGENTBAY_API_KEY="your-api-key-here"
-
-# Run the example
-python main.py
-```
-
-## API Reference
-
-### get
-
-```python
-async def get(session_id: str) -> SessionResult
-```
-
-Get a session by its ID.
-
-**Parameters:**
-- `session_id` (str): The ID of the session to retrieve
-
-**Returns:**
-- `SessionResult`: Result object containing:
-  - `success` (bool): Whether the operation succeeded
-  - `session` (Session): The Session instance if successful
-  - `request_id` (str): The API request ID
-  - `error_message` (str): Error message if failed
-
-## Expected Output
-
-```
-Creating a session...
-Created session with ID: session-xxxxxxxxxxxxx
-
-Retrieving session using Get API...
-Successfully retrieved session:
-  Session ID: session-xxxxxxxxxxxxx
-  Request ID: DAD825FE-2CD8-19C8-BB30-CC3BA26B9398
-
-Session is ready for use
-
-Cleaning up...
-Session session-xxxxxxxxxxxxx deleted successfully
-
-Attempting to get the deleted session...
-Expected behavior: Cannot retrieve deleted session
-Error message: Failed to get session: session not found or has been deleted
-```
-
-## Notes
-
-- The session ID must be valid and from an existing session
-- The get API internally calls the GetSession API endpoint
-- The returned session object can be used for all session operations (commands, files, etc.)
-- Always clean up sessions when done to avoid resource waste
-- Attempting to get a deleted session will return an error, demonstrating proper lifecycle management
-
-## Error Handling
-
-The `get` method returns a `SessionResult` object with error information:
-
-1. **Empty session_id**: Result will have `success=False`
-2. **Non-existent session**: Result will have `success=False`
-3. **Deleted session**: Result will have `success=False`
-
-================================================
-FILE: python/docs/examples/_async/common-features/basics/label_management/README.md
-================================================
-# Label Management Example
-
-This example demonstrates how to use the label management features of the AgentBay SDK for Python.
-
-## Features Demonstrated
-
-- Creating sessions with custom labels
-- Getting labels from a session
-- Updating labels for a session
-- Listing all sessions
-- Filtering sessions by labels
-- Retrieving label information from filtered sessions
-
-## Running the Example
-
-1. Make sure you have installed the AgentBay SDK:
-
-```bash
-pip install wuying-agentbay-sdk
-```
-
-2. Set your API key as an environment variable (recommended):
-
-```bash
-export AGENTBAY_API_KEY=your_api_key_here
-```
-
-3. Run the example:
-
-```bash
-python main.py
-```
-
-## Code Explanation
-
-The example demonstrates a full lifecycle of label management:
-
-1. Create a session with initial labels
-2. Retrieve the labels from the session
-3. Create another session with different labels
-4. Update the labels for the second session
-5. Retrieve the updated labels
-6. List all sessions
-7. Filter sessions by label criteria
-8. Clean up by deleting the sessions
-
-Labels are useful for organizing and categorizing sessions, making it easier to find and manage them. You can use labels to:
-
-- Group sessions by project
-- Mark sessions with their purpose
-- Tag sessions with version information
-- Indicate session status
-- Filter sessions based on any criteria
-
-For more details on session management, see the [Session API Reference](../../../../../../../typescript/docs/api/common-features/basics/session.md) and [Session Management Tutorial](../../../../../../../docs/guides/common-features/basics/session-management.md). 
-
-================================================
-FILE: python/docs/examples/_async/common-features/basics/list_sessions/README.md
-================================================
-# List Sessions Example
-
-This example demonstrates how to use the `list()` API to query and filter sessions in AgentBay.
-
-## Overview
-
-The `list()` API provides a simple and intuitive interface for querying sessions with optional filtering and pagination support. It's designed to be more user-friendly than the deprecated `list_by_labels()` API.
-
-## Features Demonstrated
-
-This example shows:
-
-1. **List all sessions** - Query all sessions without any filters
-2. **Filter by labels** - Query sessions that match specific labels
-3. **Multiple label filtering** - Query sessions that match multiple label criteria
-4. **Pagination** - Retrieve results page by page
-5. **Iterate all pages** - Automatically fetch all results across multiple pages
-
-## Prerequisites
-
-Before running this example, ensure you have:
-
-1. **AgentBay SDK installed**:
-   ```bash
-   pip install wuying-agentbay-sdk
-   ```
-
-2. **API Key configured**:
-   ```bash
-   export AGENTBAY_API_KEY='your-api-key-here'
-   ```
-
-## Running the Example
-
-```bash
-cd /path/to/wuying-agentbay-sdk/python/docs/examples/list_sessions
-python main.py
-```
-
-## API Reference
-
-### Method Signature
-
-```python
-async def list(
-    labels: Optional[Dict[str, str]] = None,
-    page: Optional[int] = None,
-    limit: Optional[int] = None
-) -> SessionListResult
-```
-
-### Parameters
-
-- **labels** (Optional[Dict[str, str]]): Labels to filter sessions. All specified labels must match.
-  - Default: `None` (no filtering, returns all sessions)
-  - Example: `{"project": "demo", "environment": "prod"}`
-
-- **page** (Optional[int]): Page number for pagination, starting from 1.
-  - Default: `None` (returns first page)
-  - Example: `2` (returns second page)
-
-- **limit** (Optional[int]): Maximum number of items per page.
-  - Default: `None` (uses default of 10)
-  - Example: `20` (returns up to 20 items per page)
-
-### Return Value
-
-Returns a `SessionListResult` object with:
-
-- **success** (bool): Whether the operation was successful
-- **sessions** (List[Session]): List of Session objects matching the filter
-- **total_count** (int): Total number of matching sessions
-- **next_token** (str): Token for the next page (empty if no more pages)
-- **max_results** (int): Maximum results per page
-- **request_id** (str): Unique request identifier for tracking
-- **error_message** (str): Error message if operation failed
-
-## Use Cases
-
-### 1. Session Inventory
-List all sessions to get an overview of your current session inventory.
-
-### 2. Project Management
-Find all sessions for a specific project.
-
-### 3. Environment-Specific Queries
-Query sessions by environment (dev, staging, prod).
-
-### 4. Bulk Operations
-Retrieve all matching sessions and perform batch operations.
-
-## Key Advantages over list_by_labels()
-
-The new `list()` API offers several advantages:
-
-1. **Simpler Interface**: No need to create `ListSessionParams` objects
-2. **Intuitive Pagination**: Use familiar `page` and `limit` parameters
-3. **Request Tracking**: All responses include `request_id` for debugging
-4. **Cleaner Code**: More readable and maintainable code
-5. **Type Safety**: Better IDE autocomplete support
-
-## Expected Output
-
-```
-✅ AgentBay client initialized
-
-📝 Creating test sessions...
-✅ Created session 1: session-xxxxx
-   Request ID: xxxxx-xxxxx-xxxxx
-✅ Created session 2: session-yyyyy
-   Request ID: yyyyy-yyyyy-yyyyy
-✅ Created session 3: session-zzzzz
-   Request ID: zzzzz-zzzzz-zzzzz
-
-============================================================
-Example 1: List all sessions (no filter)
-============================================================
-✅ Found 15 total sessions
-📄 Showing 10 sessions on this page
-🔑 Request ID: req-xxxxx-xxxxx
-📊 Max results per page: 10
-   1. Session ID: session-xxxxx
-   2. Session ID: session-yyyyy
-   3. Session ID: session-zzzzz
-
-[... more examples ...]
-
-============================================================
-🧹 Cleaning up test sessions...
-============================================================
-✅ Deleted session: session-xxxxx
-   Request ID: req-delete-xxxxx
-✅ Deleted session: session-yyyyy
-   Request ID: req-delete-yyyyy
-✅ Deleted session: session-zzzzz
-   Request ID: req-delete-zzzzz
-
-✨ Demo completed successfully!
-```
-
-## Troubleshooting
-
-### API Key Not Set
-```
-Error: AGENTBAY_API_KEY environment variable not set
-```
-**Solution**: Set your API key:
-```bash
-export AGENTBAY_API_KEY='your-api-key-here'
-```
-
-### No Sessions Found
-```
-Found 0 sessions with specified labels
-```
-**Solution**: Check that:
-1. You have active sessions with the specified labels
-2. Label keys and values match exactly (case-sensitive)
-3. All specified labels must match (AND logic, not OR)
-
-### Rate Limiting
-If you encounter rate limiting, add delays between requests.
-
-## Related Documentation
-
-- [Session Management Guide](../../../../../../../docs/guides/common-features/basics/session-management.md)
-- [AgentBay API Reference](../../../../../../../typescript/docs/api/common-features/basics/agentbay.md)
-- [Label Management Example](../label_management/README.md)
-
-## Support
-
-For issues or questions:
-- GitHub Issues: https://github.com/agentbay-ai/wuying-agentbay-sdk/issues
-- Documentation: https://github.com/agentbay-ai/wuying-agentbay-sdk
 
 ================================================
 FILE: python/docs/examples/_async/common-features/basics/mcp_tool_direct_call/README.md
@@ -17380,66 +16590,101 @@ This direct MCP tool calling approach is useful when you need to:
 
 
 ================================================
-FILE: python/docs/examples/_async/common-features/basics/session_creation/README.md
+FILE: python/docs/examples/_async/common-features/basics/session_get/README.md
 ================================================
-# Session Creation and Management Example
+# Get API Example
 
-This example demonstrates comprehensive session creation and management using the Wuying AgentBay SDK. It covers various session types and configurations:
+This example demonstrates how to use the `get` API to retrieve a session by its ID.
 
-## Features Demonstrated
+## Description
 
-### 1. Basic Session Management
-- Initializing the AgentBay client
-- Creating a session with default parameters
-- Listing all available sessions
-- Deleting sessions
-- Verifying session deletion
+The `get` API allows you to retrieve a session object by providing its session ID. This is useful when you have a session ID from a previous operation and want to access or manage that session.
 
-### 2. Session with Labels
-- Creating sessions with custom labels for organization
-- Retrieving and displaying session labels
-- Using labels for project management and environment tracking
+## Prerequisites
 
-### 3. Context-Enabled Sessions
-- Creating sessions with predefined contexts
-- Context synchronization during session creation
-- Managing persistent data across sessions
+- Python 3.8 or higher
+- Valid API key set in `AGENTBAY_API_KEY` environment variable
+- agentbay package installed
 
-### 4. Context Synchronization
-- Advanced context management with multiple contexts
-- Listing and managing synchronized contexts
-- Understanding context states and availability
-
-### 5. Browser Context Sessions
-- Creating sessions with browser-specific contexts
-- Persistent browser data (cookies, localStorage, etc.)
-- Context synchronization on session deletion
-
-### 6. Mobile Configuration Sessions 
-- Creating mobile sessions with app management rules
-- Resolution Control: Locking screen resolution for consistent testing
-- Package Management: Configuring allowed app packages
-- Mobile-specific session parameters and cleanup
-
-
-This example is useful for understanding the complete session lifecycle, advanced configuration options, and mobile-specific session management.
-
-## Running the Example
+## Installation
 
 ```bash
-cd session_creation
+pip install agentbay
+```
+
+## Usage
+
+```bash
+# Set your API key
+export AGENTBAY_API_KEY="your-api-key-here"
+
+# Run the example
 python main.py
 ```
 
-Make sure you have set the `AGENTBAY_API_KEY` environment variable or replace the placeholder in the code with your actual API key.
+## API Reference
 
+### get
+
+```python
+async def get(session_id: str) -> SessionResult
+```
+
+Get a session by its ID.
+
+**Parameters:**
+- `session_id` (str): The ID of the session to retrieve
+
+**Returns:**
+- `SessionResult`: Result object containing:
+  - `success` (bool): Whether the operation succeeded
+  - `session` (Session): The Session instance if successful
+  - `request_id` (str): The API request ID
+  - `error_message` (str): Error message if failed
+
+## Expected Output
+
+```
+Creating a session...
+Created session with ID: session-xxxxxxxxxxxxx
+
+Retrieving session using Get API...
+Successfully retrieved session:
+  Session ID: session-xxxxxxxxxxxxx
+  Request ID: DAD825FE-2CD8-19C8-BB30-CC3BA26B9398
+
+Session is ready for use
+
+Cleaning up...
+Session session-xxxxxxxxxxxxx deleted successfully
+
+Attempting to get the deleted session...
+Expected behavior: Cannot retrieve deleted session
+Error message: Failed to get session: session not found or has been deleted
+```
+
+## Notes
+
+- The session ID must be valid and from an existing session
+- The get API internally calls the GetSession API endpoint
+- The returned session object can be used for all session operations (commands, files, etc.)
+- Always clean up sessions when done to avoid resource waste
+- Attempting to get a deleted session will return an error, demonstrating proper lifecycle management
+
+## Error Handling
+
+The `get` method returns a `SessionResult` object with error information:
+
+1. **Empty session_id**: Result will have `success=False`
+2. **Non-existent session**: Result will have `success=False`
+3. **Deleted session**: Result will have `success=False`
 
 ================================================
 FILE: python/pyproject.toml
 ================================================
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.20.0"
+version = "0.21.0"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
@@ -17656,6 +16901,7 @@ These documents are generated automatically using TypeDoc. Run `npm run docs:gen
   - agentbay.md
   - command.md
   - context-manager.md
+  - context-mount.md
   - context-sync.md
   - context.md
   - env.md
@@ -19626,7 +18872,7 @@ FILE: typescript/package.json
 ================================================
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.20.0",
+    "version": "0.21.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",
@@ -19739,6 +18985,7 @@ import * as $_client from "./api";
 import {
   ListSessionRequest,
   CreateMcpSessionRequestPersistenceDataList,
+  CreateMcpSessionRequestPersistenceDataListMountConfig,
   GetSessionRequest as $GetSessionRequest,
 } from "./api/models/model";
 import type { McpTool } from "./session";
@@ -19762,7 +19009,10 @@ import {
   CreateSessionParamsInterface,
   CreateSessionParams as CreateSessionParamsClass,
 } from "./session-params";
-export { LifecyclePolicy, type LifecyclePolicyOptions } from "./lifecycle-policy";
+export {
+  LifecyclePolicy,
+  type LifecyclePolicyOptions,
+} from "./lifecycle-policy";
 import { BrowserSyncMode } from "./session-params";
 import { Context } from "./context";
 import { ExtraConfigs } from "./types/extra-configs";
@@ -20134,6 +19384,33 @@ export class AgentBay {
         needsContextSync = persistenceDataList.length > 0;
       }
 
+      // Add context mounts if provided
+      if (
+        paramsCopy.betaContextMount &&
+        paramsCopy.betaContextMount.length > 0
+      ) {
+        if (!request.persistenceDataList) {
+          request.persistenceDataList = [];
+        }
+        for (const mount of paramsCopy.betaContextMount) {
+          const persistenceItem =
+            new CreateMcpSessionRequestPersistenceDataList({
+              contextId: mount.contextId,
+              path: mount.path,
+              type: "mount",
+              mountConfig:
+                new CreateMcpSessionRequestPersistenceDataListMountConfig({
+                  accessMode: mount.accessMode,
+                  storageMode: mount.strategy,
+                  sourcePath: mount.sourcePath,
+                }),
+            });
+          request.persistenceDataList.push(persistenceItem);
+          waitContextIds.add(mount.contextId);
+        }
+        needsContextSync = true;
+      }
+
       // Add BrowserContext as a ContextSync if provided
       if (paramsCopy.browserContext) {
         const bc = paramsCopy.browserContext;
@@ -20265,47 +19542,16 @@ export class AgentBay {
           requestId,
           success: false,
           errorMessage: "Invalid response format: expected a dictionary",
-        };
-      }
 
-      // Check for API-level errors
-      if (sessionData.success === false && sessionData.code) {
-        const errorMessage = `[${sessionData.code}] ${
-          sessionData.message || "Unknown error"
-        }`;
-        logAPIResponseWithDetails(
-          "CreateMcpSession",
-          requestId,
-          false,
-          {},
-          errorMessage
-        );
-        logDebug("Full response:", JSON.stringify(sessionData, null, 2));
-        return {
-          requestId,
-          success: false,
-          errorMessage,
-        };
-      }
-
-      const data = sessionData.data;
-      if (!data || typeof data !== "object") {
-        logAPIResponseWithDetails(
-          "CreateMcpSession",
-          requestId,
-          false,
-          {},
-          "Invalid response format: 'data' field is not a dictionary"
-        );
-        logDebug("Full response:", JSON.stringify(sessionData, null, 2));
-        return {
-          requestId,
-          success: false,
-          errorMessage:
-
-... [truncated, 30,437 chars remaining] ...
+... [truncated, 31,449 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
+      if (sessionData.success === false && sessionData.code) {
+        logAPIResponseWithDetails(
+        logDebug("Full response:", JSON.stringify(sessionData, null, 2));
+      if (!data || typeof data !== "object") {
+        logAPIResponseWithDetails(
+        logDebug("Full response:", JSON.stringify(sessionData, null, 2));
       if (data.success === false) {
         logAPIResponseWithDetails(
         logDebug("Full response:", JSON.stringify(sessionData, null, 2));
@@ -22482,8 +21728,7 @@ function parseShellPayload(rawData: string): ParsedShellPayload {
       return {
         stdout: parsed.stdout || "",
         stderr: parsed.stderr || "",
-        exitCode:
-          typeof parsed.exit_code === "number" ? parsed.exit_code : 0,
+        exitCode: typeof parsed.exit_code === "number" ? parsed.exit_code : 0,
         traceId: parsed.traceId || "",
       };
     }
@@ -22622,8 +21867,8 @@ export class Command {
           result.data == null
             ? ""
             : typeof result.data === "string"
-              ? result.data
-              : String(result.data);
+            ? result.data
+            : String(result.data);
         const parsed = parseShellPayload(rawData);
         return {
           requestId: result.requestId,
@@ -25144,6 +24389,7 @@ export { Session } from "./session";
 export { type ListSessionParams } from "./types";
 export * from "./types";
 export * from "./context-sync";
+export * from "./beta-context-mount";
 export * from "./context-manager";
 export * from "./session-params";
 export * from "./browser/eval";

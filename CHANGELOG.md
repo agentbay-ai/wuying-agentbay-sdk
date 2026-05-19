@@ -2,6 +2,30 @@
 
 All notable changes to the Wuying AgentBay SDK will be documented in this file.
 
+## [0.21.0] - 2026-05-19
+
+### Added
+
+- **BetaContextMount (Beta)** (All SDKs): New direct-mount persistence model that exposes a context as a filesystem mount point inside the session, complementing the existing Context Sync workflow.
+  - `BetaContextMount` model with `access_mode` (`READ_ONLY` / `READ_WRITE`) and `strategy` (`STANDARD` / `PERFORMANCE`).
+  - Static mount via `CreateSessionParams.beta_context_mounts`.
+  - Dynamic runtime mount via `session.context.bind()` (Python / TypeScript / Java) and `session.Context.BetaMount()` (Go).
+  - `source_path` / `sourcePath` field for partial subdirectory mounts — projects only the named subdirectory of the context to the mount path.
+  - Requires `image_id="aio-ubuntu-2404"`; other images do not provide the OSS-backed mount.
+  - Includes async + sync examples (Python), e2e demos, and a "Migrating from Context Sync to Context Mount" guide in `data-persistence.md`.
+
+### Fixed
+
+- **Java**: Fixed dynamic context bind params error.
+- **Java & Go context sync**: Fixed a map-overwrite bug in the wait-for-sync logic when the same `contextId` was bound to multiple paths, which caused only the last path's status to be observed.
+- **Python**: Removed a leftover debug print statement from `browser_operator`.
+
+### Changed
+
+- **TypeScript**: Applied Prettier formatting across source and tests.
+- **Golang**: Fixed formatting and lint issues.
+- **CI**: Removed Playwright Chromium installation steps; added `ci-stable` label for continuous integration.
+
 ## [0.20.0] - 2026-05-09
 
 ### Added
