@@ -110,39 +110,51 @@ func TestRegionIDSupport(t *testing.T) {
 		}
 	})
 
-	t.Run("PrePrefixNormalizesRegion", func(t *testing.T) {
-		config := &agentbay.Config{
-			TimeoutMs: 60000,
-			RegionID:  "pre-cn-hangzhou",
+	t.Run("PrePrefixUsesHardcodedMapping", func(t *testing.T) {
+		// Known pre regions resolve via the hardcoded mapping. Different
+		// regions can use different pre-release naming conventions:
+		// cn-hangzhou uses agentbay-pre.* while ap-southeast-1 uses wuyingai-pre.*.
+		cases := []struct {
+			input    string
+			region   string
+			endpoint string
+		}{
+			{"pre-cn-hangzhou", "cn-hangzhou", "agentbay-pre.cn-hangzhou.aliyuncs.com"},
+			{"pre-ap-southeast-1", "ap-southeast-1", "wuyingai-pre.ap-southeast-1.aliyuncs.com"},
 		}
-		client, err := agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
-		if err != nil {
-			t.Fatalf("Failed to create AgentBay client: %v", err)
-		}
-
-		// pre- prefix is stripped from the stored region.
-		if client.GetRegionID() != "cn-hangzhou" {
-			t.Errorf("Expected RegionID to be normalized to 'cn-hangzhou', got '%s'", client.GetRegionID())
-		}
-		// Endpoint should be the pre-release domain.
-		if got, want := *client.Client.Endpoint, "agentbay-pre.cn-hangzhou.aliyuncs.com"; got != want {
-			t.Errorf("Expected Endpoint to be %q, got %q", want, got)
+		for _, tc := range cases {
+			tc := tc
+			t.Run(tc.input, func(t *testing.T) {
+				config := &agentbay.Config{RegionID: tc.input}
+				client, err := agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
+				if err != nil {
+					t.Fatalf("Failed to create AgentBay client: %v", err)
+				}
+				if client.GetRegionID() != tc.region {
+					t.Errorf("RegionID: want %q, got %q", tc.region, client.GetRegionID())
+				}
+				if got := *client.Client.Endpoint; got != tc.endpoint {
+					t.Errorf("Endpoint: want %q, got %q", tc.endpoint, got)
+				}
+			})
 		}
 	})
 
 	t.Run("RegionMapsByDirectSubstitution", func(t *testing.T) {
-		// No whitelist — any non-empty region composes the pattern-based
-		// endpoint. Includes known regions and arbitrary unknown ones to
-		// guard against accidental re-introduction of a whitelist check.
+		// Soft whitelist — known regions resolve silently, unknown regions
+		// emit a LogWarn (not asserted here) and still compose the
+		// pattern-based endpoint. No validation error for unknowns: newly
+		// onboarded regions work without an SDK upgrade.
 		cases := []struct {
 			region   string
 			endpoint string
+			known    bool
 		}{
-			{"cn-hangzhou", "agentbay.cn-hangzhou.aliyuncs.com"},
-			{"ap-southeast-1", "agentbay.ap-southeast-1.aliyuncs.com"},
-			{"us-east-1", "agentbay.us-east-1.aliyuncs.com"},
-			{"us-west-1", "agentbay.us-west-1.aliyuncs.com"},
-			{"eu-central-1", "agentbay.eu-central-1.aliyuncs.com"},
+			{"cn-hangzhou", "agentbay.cn-hangzhou.aliyuncs.com", true},
+			{"ap-southeast-1", "agentbay.ap-southeast-1.aliyuncs.com", true},
+			{"us-east-1", "agentbay.us-east-1.aliyuncs.com", true},
+			{"us-west-1", "agentbay.us-west-1.aliyuncs.com", false},
+			{"eu-central-1", "agentbay.eu-central-1.aliyuncs.com", false},
 		}
 		for _, tc := range cases {
 			tc := tc
@@ -162,7 +174,10 @@ func TestRegionIDSupport(t *testing.T) {
 		}
 	})
 
-	t.Run("PrePrefixOnUnknownRegionAlsoComposesByPattern", func(t *testing.T) {
+	t.Run("UnknownPreRegionFallsBackToDefaultPatternWithWarning", func(t *testing.T) {
+		// Unknown pre regions emit a LogWarn line and fall back to the default
+		// agentbay-pre.{actual}.aliyuncs.com pattern. (We don't capture stderr
+		// here — just verify the fallback endpoint and that no error is raised.)
 		config := &agentbay.Config{RegionID: "pre-us-west-1"}
 		client, err := agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
 		if err != nil {
@@ -172,6 +187,25 @@ func TestRegionIDSupport(t *testing.T) {
 			t.Errorf("RegionID: want %q, got %q", "us-west-1", client.GetRegionID())
 		}
 		if got, want := *client.Client.Endpoint, "agentbay-pre.us-west-1.aliyuncs.com"; got != want {
+			t.Errorf("Endpoint: want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("DeprecatedEndpointFieldIsIgnoredAndEmitsDeprecationLog", func(t *testing.T) {
+		// Backwards compat: setting Config.Endpoint in a struct literal does
+		// not break — the value is ignored and the endpoint is derived from
+		// RegionID. A [DEPRECATION] log line is emitted by the Deprecated()
+		// helper (not asserted here; this test verifies non-breaking behavior).
+		config := &agentbay.Config{
+			Endpoint:  "should-be-ignored.example.com",
+			RegionID:  "ap-southeast-1",
+			TimeoutMs: 30000,
+		}
+		client, err := agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
+		if err != nil {
+			t.Fatalf("Failed to create AgentBay client: %v", err)
+		}
+		if got, want := *client.Client.Endpoint, "agentbay.ap-southeast-1.aliyuncs.com"; got != want {
 			t.Errorf("Endpoint: want %q, got %q", want, got)
 		}
 	})

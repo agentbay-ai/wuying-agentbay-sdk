@@ -15,23 +15,60 @@ interface Config {
 type ConfigOptions = {
   timeout_ms?: number;
   region_id?: string;
+  /**
+   * @deprecated Since 0.21.0. Endpoint is derived from `region_id` and any
+   * value passed here is ignored (a deprecation warning is logged to
+   * console.warn). Pass `region_id` instead. Will be removed in a future
+   * major version.
+   */
+  endpoint?: string;
 };
 
 /**
  * Endpoint is no longer user-configurable; it is derived from region_id by
- * direct pattern substitution. The "pre-" prefix selects the pre-release host
- * (e.g. "pre-cn-hangzhou" → agentbay-pre.cn-hangzhou.aliyuncs.com).
+ * direct pattern substitution for production regions, and by a hardcoded
+ * lookup table for pre-release regions (since pre-release hostnames don't
+ * follow a single pattern: e.g. cn-hangzhou uses "agentbay-pre.*" while
+ * ap-southeast-1 uses "wuyingai-pre.*").
  */
 const DEFAULT_REGION = "cn-hangzhou";
 const PRE_PREFIX = "pre-";
 
 /**
+ * Known production regions. Unknown entries are NOT rejected — they fall
+ * through to the default "agentbay.{region}.aliyuncs.com" pattern with a
+ * console.warn line, so newly onboarded regions work without an SDK
+ * upgrade while typos still surface a hint before the request actually fires.
+ */
+const KNOWN_REGIONS: readonly string[] = [
+  "cn-hangzhou",
+  "ap-southeast-1",
+  "us-east-1",
+];
+
+/**
+ * Hardcoded mapping for pre-release regions (after stripping the "pre-" prefix).
+ * Unknown entries fall back to "agentbay-pre.{actual}.aliyuncs.com" with a
+ * console.warn line, since we genuinely don't know which pre-release naming
+ * convention a new region will adopt.
+ */
+const PRE_REGION_ENDPOINT_MAP: { readonly [region: string]: string } = {
+  "cn-hangzhou": "agentbay-pre.cn-hangzhou.aliyuncs.com",
+  "ap-southeast-1": "wuyingai-pre.ap-southeast-1.aliyuncs.com",
+};
+
+/**
  * Resolve (actualRegion, endpoint) from a user-supplied region_id.
  *
  * Empty/undefined region falls back to the default. A "pre-" prefix selects
- * the pre-release endpoint and is stripped from the returned region. No
- * whitelist validation — any non-empty region_id is accepted so newly
- * onboarded regions work without an SDK upgrade.
+ * the pre-release endpoint and is stripped from the returned region:
+ *  - Known pre regions use the hardcoded entry in PRE_REGION_ENDPOINT_MAP.
+ *  - Unknown pre regions log a warning and fall back to the default
+ *    "agentbay-pre.{actual}.aliyuncs.com" pattern.
+ *
+ * Non-pre regions are composed by direct pattern substitution. No whitelist
+ * validation — any non-empty region_id is accepted so newly onboarded
+ * regions work without an SDK upgrade.
  */
 function resolveEndpoint(regionId?: string): {
   region: string;
@@ -41,9 +78,25 @@ function resolveEndpoint(regionId?: string): {
 
   if (id.startsWith(PRE_PREFIX)) {
     const actual = id.slice(PRE_PREFIX.length);
+    if (actual in PRE_REGION_ENDPOINT_MAP) {
+      return { region: actual, endpoint: PRE_REGION_ENDPOINT_MAP[actual] };
+    }
+    console.warn(
+      `Unknown pre-release region 'pre-${actual}'. Falling back to ` +
+        `'agentbay-pre.${actual}.aliyuncs.com'; the request may fail at DNS ` +
+        `resolution if the host does not exist. Known pre regions: ` +
+        `${Object.keys(PRE_REGION_ENDPOINT_MAP).join(", ")}.`
+    );
     return { region: actual, endpoint: `agentbay-pre.${actual}.aliyuncs.com` };
   }
 
+  if (!KNOWN_REGIONS.includes(id)) {
+    console.warn(
+      `Unknown region '${id}'. Falling back to 'agentbay.${id}.aliyuncs.com'; ` +
+        `the request may fail at DNS resolution if the host does not exist. ` +
+        `Known regions: ${KNOWN_REGIONS.join(", ")}.`
+    );
+  }
   return { region: id, endpoint: `agentbay.${id}.aliyuncs.com` };
 }
 
@@ -201,6 +254,19 @@ function loadConfig(
       customConfig.region_id.length > 0
     ) {
       config.region_id = customConfig.region_id;
+    }
+
+    // Backwards compat: warn when the deprecated `endpoint` option is set,
+    // then ignore the value — endpoint is always derived from region_id.
+    if (
+      typeof customConfig.endpoint === "string" &&
+      customConfig.endpoint.length > 0
+    ) {
+      console.warn(
+        `[DeprecationWarning] Config endpoint=${JSON.stringify(
+          customConfig.endpoint
+        )} is ignored; endpoint is derived from region_id. Pass region_id instead.`
+      );
     }
 
     const resolved = resolveEndpoint(config.region_id);

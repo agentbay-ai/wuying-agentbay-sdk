@@ -8,34 +8,60 @@ All notable changes to the Wuying AgentBay SDK will be documented in this file.
 
 - **Multi-region unit endpoint support** (All SDKs): Endpoint is now derived
   from `region_id` by direct pattern substitution
-  (`agentbay.{region_id}.aliyuncs.com`). `endpoint` removed from public
-  `Config` constructors / struct literals. Setting `AGENTBAY_ENDPOINT` env
+  (`agentbay.{region_id}.aliyuncs.com`). Setting `AGENTBAY_ENDPOINT` env
   var no longer has any effect — use `AGENTBAY_REGION_ID` instead.
 - **Default endpoint changed** from `wuyingai.cn-shanghai.aliyuncs.com`
   (legacy center service) to `agentbay.cn-hangzhou.aliyuncs.com` (unit
   service). Default `region_id` is now `cn-hangzhou` (was unset).
-- **No region whitelist**: any non-empty `region_id` is accepted and
-  composed into the endpoint pattern. Newly onboarded regions work without
-  an SDK upgrade — but a typo'd `region_id` produces a DNS-resolution
-  failure at first request time instead of an upfront exception. Validate
+- **Soft region whitelist**: any non-empty `region_id` is accepted and
+  composed into the endpoint pattern. Known production regions
+  (`cn-hangzhou`, `ap-southeast-1`, `us-east-1`) resolve silently; unknown
+  regions log a warning and still use the pattern (`agentbay.{region}.aliyuncs.com`).
+  Newly onboarded regions work without an SDK upgrade, but typos get an
+  early hint in the log before the request actually fires. Validate
   `region_id` at the caller if you need fail-fast behavior.
 - **Pre-release switch**: prefix the region with `pre-` (e.g.
-  `pre-cn-hangzhou`) to target `agentbay-pre.{region}.aliyuncs.com`. The
-  stored `region_id` has the prefix stripped.
-- **Java**: `Config(String, String, int)` constructor and `setEndpoint()`
-  setter removed. Use `Config(String regionId, int timeoutMs)` instead.
-- **Go**: `Config.Endpoint` field on user-supplied struct literals is now
-  silently overwritten (with a warning logged) — set `Config.RegionID`
-  instead.
+  `pre-cn-hangzhou`) to target the pre-release host. The stored `region_id`
+  has the prefix stripped. Pre-release hostnames are resolved via a
+  hardcoded table (different regions use different conventions):
+
+  | Region | Pre-release endpoint |
+  | --- | --- |
+  | `pre-cn-hangzhou` | `agentbay-pre.cn-hangzhou.aliyuncs.com` |
+  | `pre-ap-southeast-1` | `wuyingai-pre.ap-southeast-1.aliyuncs.com` |
+
+  Unknown pre regions (not in the table) log a warning and fall back to
+  `agentbay-pre.{region}.aliyuncs.com`; the request may fail at DNS
+  resolution if the host does not exist.
+
+#### Soft deprecation of user-supplied `endpoint` (All SDKs)
+
+Existing code that passes `endpoint` continues to compile and run. The value
+is **ignored** (endpoint is always derived from `region_id`) and a
+deprecation warning is emitted. The compatibility shim will be removed in a
+future major version.
+
+- **Python**: `Config(endpoint=...)` keyword argument accepted; emits
+  `DeprecationWarning` via `warnings.warn(..., stacklevel=2)` so the warning
+  points to the user's call site.
+- **TypeScript**: `ConfigOptions.endpoint?: string` field with JSDoc
+  `@deprecated`; emits `console.warn("[DeprecationWarning] ...")` when set.
+- **Java**: `Config(String regionId, String endpoint, int timeoutMs)`
+  constructor and `setEndpoint(String)` setter retained with `@Deprecated`
+  annotation; emit SLF4J `logger.warn` when called with a non-empty value.
+- **Go**: `Config.Endpoint` struct field carries a `// Deprecated:` doc
+  comment (gopls/IDE shows strikethrough); `loadConfig` invokes the shared
+  `Deprecated(reason, replacement, version)` helper so the log line includes
+  `[DEPRECATION]` prefix + caller file:line + version `0.21.0`.
 
 #### Migration
 
 | Previously | Now |
 |---|---|
-| `Config(endpoint="...", region_id="cn-hangzhou")` | `Config(region_id="cn-hangzhou")` |
+| `Config(endpoint="...", region_id="cn-hangzhou")` | `Config(region_id="cn-hangzhou")` (the `endpoint=` value is still accepted but ignored with a deprecation warning) |
 | `AGENTBAY_ENDPOINT=agentbay.us-east-1.aliyuncs.com` | `AGENTBAY_REGION_ID=us-east-1` |
 | `AGENTBAY_ENDPOINT=agentbay-pre.cn-hangzhou.aliyuncs.com` | `AGENTBAY_REGION_ID=pre-cn-hangzhou` |
-| Both endpoint and region_id set | Keep only region_id |
+| Both endpoint and region_id set | Keep only region_id (endpoint will be ignored + warned) |
 | Nothing set | No change required (default region is now `cn-hangzhou`) |
 
 ### Added
