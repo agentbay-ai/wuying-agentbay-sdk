@@ -18,7 +18,7 @@ describe("Browser replay integration (env-based)", () => {
       throw new Error("AGENTBAY_API_KEY is required for integration test");
     }
 
-    log(`AGENTBAY_ENDPOINT = ${process.env.AGENTBAY_ENDPOINT || "(default)"}`);
+    log(`AGENTBAY_REGION_ID = ${process.env.AGENTBAY_REGION_ID || "(default)"}`);
     agentBay = new AgentBay({ apiKey });
     await createSession();
   });

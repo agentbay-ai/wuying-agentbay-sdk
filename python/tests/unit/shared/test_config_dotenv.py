@@ -184,13 +184,13 @@ class TestDotEnvLoading:
             custom_env = tmpdir_path / "test.env"
             custom_env.write_text(
                 """
-AGENTBAY_ENDPOINT=wuyingai.ap-southeast-1.aliyuncs.com
+AGENTBAY_REGION_ID=ap-southeast-1
 AGENTBAY_TIMEOUT_MS=30000
 """.strip()
             )
 
             # Clear existing env vars
-            for var in ["AGENTBAY_ENDPOINT", "AGENTBAY_TIMEOUT_MS"]:
+            for var in ["AGENTBAY_REGION_ID", "AGENTBAY_TIMEOUT_MS"]:
                 if var in os.environ:
                     del os.environ[var]
 
@@ -198,13 +198,14 @@ AGENTBAY_TIMEOUT_MS=30000
                 # Load config with custom .env file
                 config = _load_config(None, str(custom_env))
 
-                # Check if config was loaded from custom .env file
-                assert config["endpoint"] == "wuyingai.ap-southeast-1.aliyuncs.com"
+                # Region drives endpoint via the mapping
+                assert config["region_id"] == "ap-southeast-1"
+                assert config["endpoint"] == "agentbay.ap-southeast-1.aliyuncs.com"
                 assert config["timeout_ms"] == 30000
 
             finally:
                 # Cleanup
-                for var in ["AGENTBAY_ENDPOINT", "AGENTBAY_TIMEOUT_MS"]:
+                for var in ["AGENTBAY_REGION_ID", "AGENTBAY_TIMEOUT_MS"]:
                     if var in os.environ:
                         del os.environ[var]
 
@@ -221,14 +222,12 @@ AGENTBAY_TIMEOUT_MS=30000
             subdir.mkdir(parents=True)
 
             # Clear existing env vars
-            if "AGENTBAY_ENDPOINT" in os.environ:
-                del os.environ["AGENTBAY_ENDPOINT"]
+            if "AGENTBAY_REGION_ID" in os.environ:
+                del os.environ["AGENTBAY_REGION_ID"]
 
             try:
                 def _fake_load_dotenv(_path) -> bool:
-                    os.environ.setdefault(
-                        "AGENTBAY_ENDPOINT", "wuyingai.cn-shanghai.aliyuncs.com"
-                    )
+                    os.environ.setdefault("AGENTBAY_REGION_ID", "us-east-1")
                     return True
 
                 # Simulate running from subdirectory
@@ -237,13 +236,14 @@ AGENTBAY_TIMEOUT_MS=30000
                         with patch("agentbay._common.config.dotenv.load_dotenv", side_effect=_fake_load_dotenv):
                             config = _load_config(None)
 
-                # Should find .env from parent directory
-                assert config["endpoint"] == "wuyingai.cn-shanghai.aliyuncs.com"
+                # Region picked up from .env, endpoint derived from mapping
+                assert config["region_id"] == "us-east-1"
+                assert config["endpoint"] == "agentbay.us-east-1.aliyuncs.com"
 
             finally:
                 # Cleanup
-                if "AGENTBAY_ENDPOINT" in os.environ:
-                    del os.environ["AGENTBAY_ENDPOINT"]
+                if "AGENTBAY_REGION_ID" in os.environ:
+                    del os.environ["AGENTBAY_REGION_ID"]
 
     def test_invalid_timeout_handling(self):
         """Test handling of invalid AGENTBAY_TIMEOUT_MS values."""

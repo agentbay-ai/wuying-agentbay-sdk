@@ -40,7 +40,8 @@ const mockSessionBData = {
 
 // Mock config data
 const mockConfigData = {
-  endpoint: "mock-endpoint",
+  region_id: "cn-hangzhou",
+  endpoint: "agentbay.cn-hangzhou.aliyuncs.com",
   timeout_ms: 30000,
 };
 
@@ -96,7 +97,7 @@ describe("AgentBay", () => {
     });
 
     // Set environment variables for config instead of stubbing loadConfig
-    process.env.AGENTBAY_ENDPOINT = mockConfigData.endpoint;
+    process.env.AGENTBAY_REGION_ID = mockConfigData.region_id;
     process.env.AGENTBAY_TIMEOUT_MS = String(mockConfigData.timeout_ms);
 
     // Mock Client constructor
@@ -142,6 +143,8 @@ describe("AgentBay", () => {
       // Verify that Client was constructed with correct config
       expect(clientConstructorStub.calledOnce).toBe(true);
       const clientConfig = clientConstructorStub.getCall(0).args[0];
+      // Note: OpenAPI client's regionId is hardcoded to "" by design — region info
+      // is passed per-request via LoginRegionId, not via the client constructor.
       expect(clientConfig.regionId).toBe("");
       expect(clientConfig.endpoint).toBe(mockConfigData.endpoint);
       expect(clientConfig.readTimeout).toBe(mockConfigData.timeout_ms);

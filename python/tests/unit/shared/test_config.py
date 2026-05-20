@@ -11,7 +11,8 @@ class TestConfig(unittest.TestCase):
         """Test the default configuration values"""
         config = _default_config()
         self.assertIsInstance(config, dict)
-        self.assertEqual(config["endpoint"], "wuyingai.cn-shanghai.aliyuncs.com")
+        self.assertEqual(config["endpoint"], "agentbay.cn-hangzhou.aliyuncs.com")
+        self.assertEqual(config["region_id"], "cn-hangzhou")
         self.assertEqual(config["timeout_ms"], 60000)
 
     @patch("os.getenv", return_value=None)

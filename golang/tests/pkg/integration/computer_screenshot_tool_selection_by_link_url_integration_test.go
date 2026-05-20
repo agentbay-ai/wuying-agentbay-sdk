@@ -9,20 +9,25 @@ import (
 	"github.com/aliyun/wuying-agentbay-sdk/golang/tests/pkg/agentbay/testutil"
 )
 
+// After the multi-region refactor, endpoints are derived from region_id.
+// Both pre-release/legacy endpoints used by this test now map to "pre-cn-hangzhou"
+// and "cn-hangzhou" respectively.
 const (
-	computerLinkUrlEndpoint = "agentbay-pre.cn-hangzhou.aliyuncs.com"
-	computerLinkUrlImageID  = "computer-use-ubuntu-2204-regionGW"
+	computerLinkUrlRegion  = "pre-cn-hangzhou"
+	computerLinkUrlImageID = "computer-use-ubuntu-2204-regionGW"
 
-	computerNoLinkUrlEndpoint = "wuyingai.cn-shanghai.aliyuncs.com"
-	computerNoLinkUrlImageID  = "moltbot-linux-ubuntu-2204"
+	computerNoLinkUrlRegion  = "cn-hangzhou"
+	computerNoLinkUrlImageID = "moltbot-linux-ubuntu-2204"
 )
 
-func newAgentBayWithEndpoint(t *testing.T, apiKey string, endpoint string) *agentbay.AgentBay {
+func newAgentBayWithRegion(t *testing.T, apiKey string, region string) *agentbay.AgentBay {
 	t.Helper()
+	if envRegion := os.Getenv("AGENTBAY_REGION_ID"); envRegion != "" {
+		region = envRegion
+	}
 	cfg := &agentbay.Config{
-		Endpoint:  endpoint,
 		TimeoutMs: 60000,
-		RegionID:  os.Getenv("AGENTBAY_REGION_ID"),
+		RegionID:  region,
 	}
 	client, err := agentbay.NewAgentBay(apiKey, agentbay.WithConfig(cfg))
 	if err != nil {
@@ -33,7 +38,7 @@ func newAgentBayWithEndpoint(t *testing.T, apiKey string, endpoint string) *agen
 
 func TestComputerLinkUrlPresentRequiresBetaTakeScreenshot(t *testing.T) {
 	apiKey := testutil.GetTestAPIKey(t)
-	client := newAgentBayWithEndpoint(t, apiKey, computerLinkUrlEndpoint)
+	client := newAgentBayWithRegion(t, apiKey, computerLinkUrlRegion)
 
 	params := agentbay.NewCreateSessionParams().WithImageId(computerLinkUrlImageID)
 	createResult, err := client.Create(params)
@@ -97,7 +102,7 @@ func TestComputerLinkUrlPresentRequiresBetaTakeScreenshot(t *testing.T) {
 
 func TestComputerLinkUrlAbsentRequiresScreenshot(t *testing.T) {
 	apiKey := testutil.GetTestAPIKey(t)
-	client := newAgentBayWithEndpoint(t, apiKey, computerNoLinkUrlEndpoint)
+	client := newAgentBayWithRegion(t, apiKey, computerNoLinkUrlRegion)
 
 	params := agentbay.NewCreateSessionParams().WithImageId(computerNoLinkUrlImageID)
 	createResult, err := client.Create(params)

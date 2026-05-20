@@ -16,12 +16,6 @@ func getTestAPIKey() string {
 	return apiKey
 }
 
-// Helper function to get test endpoint from environment
-func getTestEndpoint() string {
-	endpoint := os.Getenv("AGENTBAY_ENDPOINT")
-	return endpoint
-}
-
 func TestContextClearAsync(t *testing.T) {
 	apiKey := getTestAPIKey()
 	agentBay, err := agentbay.NewAgentBay(apiKey)

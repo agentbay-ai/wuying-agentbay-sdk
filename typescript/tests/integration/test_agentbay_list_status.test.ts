@@ -13,19 +13,19 @@ describe("AgentBay List Status Integration Tests", () => {
       throw new Error("AGENTBAY_API_KEY environment variable is not set");
     }
 
-    const endpoint = process.env.AGENTBAY_ENDPOINT;
-    if (endpoint) {
+    const regionId = process.env.AGENTBAY_REGION_ID;
+    if (regionId) {
       agentBay = new AgentBay({
         apiKey,
         config: {
-          endpoint,
+          region_id: regionId,
           timeout_ms: 60000,
         },
       });
-      log(`Using endpoint: ${endpoint}`);
+      log(`Using region_id: ${regionId}`);
     } else {
       agentBay = new AgentBay({ apiKey });
-      log("Using default endpoint");
+      log("Using default region");
     }
   });
 

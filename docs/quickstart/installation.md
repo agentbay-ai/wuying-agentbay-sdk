@@ -318,27 +318,27 @@ public class VerifyInstallation {
 
 ## 🔧 Advanced Configuration (Optional)
 
-> **Note:** The SDK uses the Shanghai API gateway by default. You only need to configure a different gateway if you want to connect through other regions, such as Singapore, for better network performance.
+> **Note:** The SDK uses the Hangzhou unit region by default. Set `AGENTBAY_REGION_ID` to switch to a different region. The endpoint is derived from the region — it is not a separate configuration.
 
-### Supported API Gateway Regions
+### Supported Regions
 
-The SDK configuration specifies which **API Gateway** to connect to. Choose the gateway closest to your users for optimal network performance:
+| Region ID | Derived Endpoint | Notes |
+|-----------|------------------|-------|
+| `cn-hangzhou` | `agentbay.cn-hangzhou.aliyuncs.com` | Default |
+| `ap-southeast-1` | `agentbay.ap-southeast-1.aliyuncs.com` |  |
+| `us-east-1` | `agentbay.us-east-1.aliyuncs.com` |  |
+| `pre-<region>` | `agentbay-pre.<region>.aliyuncs.com` | Pre-release |
 
-| Gateway Location | Endpoint |
-|-----------------|----------|
-| Shanghai (Default) | `wuyingai.cn-shanghai.aliyuncs.com` |
-| Singapore | `wuyingai.ap-southeast-1.aliyuncs.com` |
-
-### Switching to Singapore Gateway
+### Switching to a Different Region
 
 **Linux/macOS:**
 ```bash
-export AGENTBAY_ENDPOINT=wuyingai.ap-southeast-1.aliyuncs.com
+export AGENTBAY_REGION_ID=ap-southeast-1
 ```
 
 **Windows:**
 ```cmd
-set AGENTBAY_ENDPOINT=wuyingai.ap-southeast-1.aliyuncs.com
+set AGENTBAY_REGION_ID=ap-southeast-1
 ```
 
 For more configuration options, see the [SDK Configuration Guide](../guides/common-features/configuration/sdk-configuration.md).

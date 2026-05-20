@@ -30,7 +30,8 @@ public class NetworkExample {
             }
 
             System.out.println("Creating AgentBay client...");
-            AgentBay agentBay = new AgentBay(apiKey, new Config("cn-hangzhou", "agentbay.us-east-1.aliyuncs.com", 60000));
+            // Endpoint is derived from regionId via the multi-region mapping.
+            AgentBay agentBay = new AgentBay(apiKey, new Config("cn-hangzhou", 60000));
 
             System.out.println("\n" + repeat("=", 60));
             System.out.println("Example 1: Create a network");

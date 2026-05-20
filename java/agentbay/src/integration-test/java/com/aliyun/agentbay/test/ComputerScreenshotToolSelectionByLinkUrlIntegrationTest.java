@@ -18,11 +18,18 @@ import static org.junit.Assert.*;
  */
 public class ComputerScreenshotToolSelectionByLinkUrlIntegrationTest {
 
-    private static final String LINK_URL_ENDPOINT = "agentbay-pre.cn-hangzhou.aliyuncs.com";
+    // After the multi-region refactor, endpoints are derived from region_id.
+    // The pre- prefix selects the pre-release endpoint (agentbay-pre.<region>.aliyuncs.com).
+    private static final String LINK_URL_REGION = "pre-cn-hangzhou";
     private static final String LINK_URL_IMAGE_ID = "linux_latest";
 
-    private static final String NO_LINK_URL_ENDPOINT = "wuyingai-pre.cn-hangzhou.aliyuncs.com";
+    private static final String NO_LINK_URL_REGION = "pre-cn-hangzhou";
     private static final String NO_LINK_URL_IMAGE_ID = "imgc-0ab5ta4lxt8rw05a2";
+
+    private static String region(String fallback) {
+        String env = System.getenv("AGENTBAY_REGION_ID");
+        return (env != null && !env.isEmpty()) ? env : fallback;
+    }
     @Test
     public void testComputerLinkUrlPresentRequiresBetaTakeScreenshot() throws Exception {
         String apiKey = System.getenv("AGENTBAY_API_KEY");
@@ -30,7 +37,7 @@ public class ComputerScreenshotToolSelectionByLinkUrlIntegrationTest {
             return;
         }
 
-        Config cfg = new Config(System.getenv("AGENTBAY_REGION_ID"), LINK_URL_ENDPOINT, 60000);
+        Config cfg = new Config(region(LINK_URL_REGION), 60000);
         AgentBay agentBay = new AgentBay(apiKey, cfg);
 
         CreateSessionParams params = new CreateSessionParams();
@@ -74,7 +81,7 @@ public class ComputerScreenshotToolSelectionByLinkUrlIntegrationTest {
             return;
         }
 
-        Config cfg = new Config(System.getenv("AGENTBAY_REGION_ID"), NO_LINK_URL_ENDPOINT, 60000);
+        Config cfg = new Config(region(NO_LINK_URL_REGION), 60000);
         AgentBay agentBay = new AgentBay(apiKey, cfg);
 
         CreateSessionParams params = new CreateSessionParams();

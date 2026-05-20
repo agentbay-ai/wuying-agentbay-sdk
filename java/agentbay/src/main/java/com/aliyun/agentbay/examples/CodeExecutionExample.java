@@ -24,23 +24,25 @@ public class CodeExecutionExample {
                 return;
             }
 
-            // Get configuration from environment variables or use defaults
-            String region = getEnvOrDefault("AGENTBAY_REGION", "us-east-1");
-            String endpoint = getEnvOrDefault("AGENTBAY_ENDPOINT", "agentbay.us-east-1.aliyuncs.com");
-            int timeout = Integer.parseInt(getEnvOrDefault("AGENTBAY_TIMEOUT", "60000"));
+            // Get configuration from environment variables or use defaults.
+            // Endpoint is derived from region; not configurable directly.
+            String region = getEnvOrDefault("AGENTBAY_REGION_ID", "us-east-1");
+            int timeout = Integer.parseInt(getEnvOrDefault("AGENTBAY_TIMEOUT_MS", "60000"));
             String imageId = System.getenv("AGENTBAY_IMAGE_ID");
+
+            Config cfg = new Config(region, timeout);
 
             // Print configuration
             System.out.println("========== Configuration ==========");
-            System.out.println("Region: " + region);
-            System.out.println("Endpoint: " + endpoint);
-            System.out.println("Timeout: " + timeout + "ms");
+            System.out.println("Region: " + cfg.getRegionId());
+            System.out.println("Endpoint: " + cfg.getEndpoint() + " (derived)");
+            System.out.println("Timeout: " + cfg.getTimeoutMs() + "ms");
             System.out.println("Image ID: " + imageId);
             System.out.println("===================================\n");
 
             // Create AgentBay client
             System.out.println("Creating AgentBay client...");
-            AgentBay agentBay = new AgentBay(apiKey, new Config(region, endpoint, timeout));
+            AgentBay agentBay = new AgentBay(apiKey, cfg);
 
 
             // Create a session

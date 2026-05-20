@@ -8,7 +8,62 @@ interface Config {
   region_id?: string;
 }
 
-type ConfigOptions = Partial<Config>;
+/**
+ * User-supplied configuration. `endpoint` is no longer a user input — it is
+ * derived from `region_id` via the mapping below.
+ */
+type ConfigOptions = {
+  timeout_ms?: number;
+  region_id?: string;
+};
+
+/**
+ * Region → unit-service endpoint mapping. Pre-release endpoints are obtained
+ * by prefixing the region with "pre-" (e.g. "pre-cn-hangzhou" →
+ * agentbay-pre.cn-hangzhou.aliyuncs.com).
+ */
+const REGION_ENDPOINT_MAP: { readonly [region: string]: string } = {
+  "cn-hangzhou": "agentbay.cn-hangzhou.aliyuncs.com",
+  "ap-southeast-1": "agentbay.ap-southeast-1.aliyuncs.com",
+  "us-east-1": "agentbay.us-east-1.aliyuncs.com",
+};
+const DEFAULT_REGION = "cn-hangzhou";
+const PRE_PREFIX = "pre-";
+
+function invalidRegionMessage(regionId: string): string {
+  const supported = Object.keys(REGION_ENDPOINT_MAP).join(", ");
+  return (
+    `Invalid region_id '${regionId}'. Supported regions: ${supported}. ` +
+    `For pre-release, use 'pre-' prefix (e.g., 'pre-cn-hangzhou').`
+  );
+}
+
+/**
+ * Resolve (actualRegion, endpoint) from a user-supplied region_id.
+ *
+ * Empty/undefined region falls back to the default. A "pre-" prefix selects
+ * the pre-release endpoint and is stripped from the returned region. Any
+ * region not in the supported mapping throws.
+ */
+function resolveEndpoint(regionId?: string): {
+  region: string;
+  endpoint: string;
+} {
+  const id = regionId && regionId.length > 0 ? regionId : DEFAULT_REGION;
+
+  if (id.startsWith(PRE_PREFIX)) {
+    const actual = id.slice(PRE_PREFIX.length);
+    if (!(actual in REGION_ENDPOINT_MAP)) {
+      throw new Error(invalidRegionMessage(id));
+    }
+    return { region: actual, endpoint: `agentbay-pre.${actual}.aliyuncs.com` };
+  }
+
+  if (!(id in REGION_ENDPOINT_MAP)) {
+    throw new Error(invalidRegionMessage(id));
+  }
+  return { region: id, endpoint: REGION_ENDPOINT_MAP[id] };
+}
 
 /**
  * Browser data path constant
@@ -30,9 +85,9 @@ export const BROWSER_RECORD_PATH = "/home/wuying/record";
  */
 function defaultConfig(): Config {
   return {
-    endpoint: "wuyingai.cn-shanghai.aliyuncs.com",
+    endpoint: REGION_ENDPOINT_MAP[DEFAULT_REGION],
     timeout_ms: 60000,
-    region_id: undefined,
+    region_id: DEFAULT_REGION,
   };
 }
 
@@ -132,18 +187,13 @@ if (!dotEnvLoaded) {
 }
 
 /**
- * The SDK uses the following precedence order for configuration (highest to lowest):
+ * The SDK uses the following precedence order for region_id (highest to lowest):
  * 1. Explicitly passed configuration in code.
- * 2. Environment variables.
+ * 2. Environment variable AGENTBAY_REGION_ID.
  * 3. .env file.
- * 4. Default configuration.
- */
-/**
- * Load configuration with improved .env file search.
+ * 4. Default region (cn-hangzhou).
  *
- * @param customConfig Configuration object (if provided, skips env loading)
- * @param customEnvPath Custom path to .env file (optional)
- * @returns Configuration object
+ * Endpoint is always derived from the resolved region — it is not a user input.
  */
 function loadConfig(
   customConfig?: ConfigOptions,
@@ -154,11 +204,6 @@ function loadConfig(
   if (customConfig) {
     const config = defaultConfig();
 
-    // Treat empty string as "not provided" for endpoint
-    if (typeof customConfig.endpoint === "string" && customConfig.endpoint) {
-      config.endpoint = customConfig.endpoint;
-    }
-
     // Treat non-positive numbers as "not provided" for timeout
     if (
       typeof customConfig.timeout_ms === "number" &&
@@ -168,11 +213,17 @@ function loadConfig(
       config.timeout_ms = customConfig.timeout_ms;
     }
 
-    // Preserve empty string if explicitly provided
-    if (Object.prototype.hasOwnProperty.call(customConfig, "region_id")) {
+    // Empty string region_id is treated as "not provided" → default
+    if (
+      typeof customConfig.region_id === "string" &&
+      customConfig.region_id.length > 0
+    ) {
       config.region_id = customConfig.region_id;
     }
 
+    const resolved = resolveEndpoint(config.region_id);
+    config.region_id = resolved.region;
+    config.endpoint = resolved.endpoint;
     return config;
   }
 
@@ -187,10 +238,6 @@ function loadConfig(
   }
 
   // Override with environment variables if they exist (highest priority)
-  if (process.env.AGENTBAY_ENDPOINT) {
-    config.endpoint = process.env.AGENTBAY_ENDPOINT;
-  }
-
   if (process.env.AGENTBAY_TIMEOUT_MS) {
     const timeout = parseInt(process.env.AGENTBAY_TIMEOUT_MS, 10);
     if (!isNaN(timeout) && timeout > 0) {
@@ -202,8 +249,12 @@ function loadConfig(
     config.region_id = process.env.AGENTBAY_REGION_ID;
   }
 
+  // Always derive endpoint from region_id; normalize region by stripping pre- prefix.
+  const resolved = resolveEndpoint(config.region_id);
+  config.region_id = resolved.region;
+  config.endpoint = resolved.endpoint;
   return config;
 }
 
-export { Config, loadConfig, loadDotEnvWithFallback };
+export { Config, loadConfig, loadDotEnvWithFallback, resolveEndpoint };
 export type { ConfigOptions };

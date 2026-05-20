@@ -15,7 +15,6 @@ from agentbay import ContextSync
 def _build_region_client() -> AgentBay:
     """Build an AgentBay client configured with region_id=cn-hangzhou."""
     config = Config(
-        endpoint="wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms=60000,
         region_id="cn-hangzhou",
     )
@@ -44,7 +43,6 @@ def test_session_creation_with_region_id():
 def test_context_creation_with_region_id():
     """Test creating a context with region_id=cn-hangzhou."""
     config = Config(
-        endpoint="wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms=60000,
         region_id="cn-hangzhou",
     )
@@ -68,7 +66,6 @@ def test_context_creation_with_region_id():
 def test_context_get_existing_without_region_id():
     """Test getting an existing context doesn't pass region_id."""
     config = Config(
-        endpoint="wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms=60000,
         region_id="cn-hangzhou",
     )
@@ -94,7 +91,6 @@ def test_context_get_existing_without_region_id():
 def test_session_and_context_workflow():
     """Test complete workflow: create session with context sync using region_id."""
     config = Config(
-        endpoint="wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms=60000,
         region_id="cn-hangzhou",
     )

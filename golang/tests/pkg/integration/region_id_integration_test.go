@@ -19,7 +19,6 @@ func TestRegionIDIntegration(t *testing.T) {
 	t.Run("CreateAgentBayWithRegionID", func(t *testing.T) {
 		// Test creating AgentBay client with region_id in config
 		config := &agentbay.Config{
-			Endpoint:  "wuyingai.cn-shanghai.aliyuncs.com",
 			TimeoutMs: 60000,
 			RegionID:  "cn-hangzhou",
 		}
@@ -37,7 +36,6 @@ func TestRegionIDIntegration(t *testing.T) {
 	t.Run("CreateSessionWithRegionID", func(t *testing.T) {
 		// Test session creation with region_id in config
 		config := &agentbay.Config{
-			Endpoint:  "wuyingai.cn-shanghai.aliyuncs.com",
 			TimeoutMs: 60000,
 			RegionID:  "cn-hangzhou",
 		}
@@ -75,7 +73,6 @@ func TestRegionIDIntegration(t *testing.T) {
 	t.Run("CreateContextWithRegionID", func(t *testing.T) {
 		// Test context creation with region_id in config
 		config := &agentbay.Config{
-			Endpoint:  "wuyingai.cn-shanghai.aliyuncs.com",
 			TimeoutMs: 60000,
 			RegionID:  "cn-hangzhou",
 		}
@@ -113,7 +110,6 @@ func TestRegionIDIntegration(t *testing.T) {
 	t.Run("GetContextWithoutCreate", func(t *testing.T) {
 		// Test context get without create (should not pass LoginRegionId)
 		config := &agentbay.Config{
-			Endpoint:  "wuyingai.cn-shanghai.aliyuncs.com",
 			TimeoutMs: 60000,
 			RegionID:  "cn-hangzhou",
 		}
