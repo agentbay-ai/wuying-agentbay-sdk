@@ -49,7 +49,7 @@ public class ConfigRegionEndpointMappingTest {
     }
 
     @Test
-    public void testPrePrefixStripsRegionAndUsesPreEndpoint() {
+    public void testPreCnHangzhouUsesHardcodedMapping() {
         Config cfg = new Config("pre-cn-hangzhou");
         // pre- prefix is stripped from the stored region.
         assertEquals("cn-hangzhou", cfg.getRegionId());
@@ -57,15 +57,28 @@ public class ConfigRegionEndpointMappingTest {
     }
 
     @Test
-    public void testUnknownRegionIsAcceptedAsPattern() {
-        // No whitelist — any non-empty region composes a pattern-based endpoint.
+    public void testPreApSoutheast1UsesWuyingaiPreHost() {
+        // ap-southeast-1 uses the "wuyingai-pre.*" convention (different from
+        // cn-hangzhou's "agentbay-pre.*"), so it must come from the hardcoded map.
+        Config cfg = new Config("pre-ap-southeast-1");
+        assertEquals("ap-southeast-1", cfg.getRegionId());
+        assertEquals("wuyingai-pre.ap-southeast-1.aliyuncs.com", cfg.getEndpoint());
+    }
+
+    @Test
+    public void testUnknownRegionIsAcceptedWithWarning() {
+        // Soft whitelist — unknown regions emit a logger.warn (not asserted
+        // here) and still compose the pattern-based endpoint. No validation
+        // error: newly onboarded regions work without an SDK upgrade.
         Config cfg = new Config("us-west-1");
         assertEquals("us-west-1", cfg.getRegionId());
         assertEquals("agentbay.us-west-1.aliyuncs.com", cfg.getEndpoint());
     }
 
     @Test
-    public void testPrePrefixOnUnknownRegionAlsoComposes() {
+    public void testUnknownPreRegionFallsBackToDefaultPattern() {
+        // Unknown pre regions log a warning and fall back to the default
+        // agentbay-pre.{actual}.aliyuncs.com pattern.
         Config cfg = new Config("pre-us-west-1");
         assertEquals("us-west-1", cfg.getRegionId());
         assertEquals("agentbay-pre.us-west-1.aliyuncs.com", cfg.getEndpoint());
@@ -94,5 +107,25 @@ public class ConfigRegionEndpointMappingTest {
         cfg.setRegionId("us-east-1");
         assertEquals("us-east-1", cfg.getRegionId());
         assertEquals("agentbay.us-east-1.aliyuncs.com", cfg.getEndpoint());
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void testDeprecatedConstructorWithEndpointIsIgnored() {
+        // Backwards compat: the 3-arg constructor accepts an endpoint argument
+        // but ignores it; endpoint is still derived from regionId.
+        Config cfg = new Config("ap-southeast-1", "should-be-ignored.example.com", 30000);
+        assertEquals("ap-southeast-1", cfg.getRegionId());
+        assertEquals("agentbay.ap-southeast-1.aliyuncs.com", cfg.getEndpoint());
+        assertEquals(30000, cfg.getTimeoutMs());
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void testDeprecatedSetEndpointIsIgnored() {
+        Config cfg = new Config("cn-hangzhou");
+        cfg.setEndpoint("should-be-ignored.example.com");
+        // Endpoint still reflects regionId, not the value passed to setEndpoint.
+        assertEquals("agentbay.cn-hangzhou.aliyuncs.com", cfg.getEndpoint());
     }
 }

@@ -15,6 +15,11 @@ import (
 // OpenAPI client), but any value the caller sets in a struct literal is
 // overwritten by loadConfig.
 type Config struct {
+	// Deprecated: Endpoint is derived from RegionID by direct pattern
+	// substitution (agentbay.{RegionID}.aliyuncs.com). Any value set here
+	// by callers is ignored and overwritten by loadConfig (a deprecation
+	// warning is logged). Set RegionID instead. Will be removed in a
+	// future major version.
 	Endpoint  string `json:"endpoint"`
 	TimeoutMs int    `json:"timeout_ms"`
 	RegionID  string `json:"region_id"`
@@ -25,9 +30,64 @@ const (
 	prePrefix     = "pre-"
 )
 
+// knownRegions lists production regions that resolve silently. Unknown
+// entries are NOT rejected — they fall through to the default
+// "agentbay.{region}.aliyuncs.com" pattern with a warning logged.
+var knownRegions = []string{"cn-hangzhou", "ap-southeast-1", "us-east-1"}
+
+// isKnownRegion reports whether region is in the production whitelist.
+func isKnownRegion(region string) bool {
+	for _, k := range knownRegions {
+		if k == region {
+			return true
+		}
+	}
+	return false
+}
+
+// preRegionEndpointMap is the hardcoded mapping for pre-release regions
+// (after stripping the "pre-" prefix). Pre-release hostnames don't follow a
+// single pattern: cn-hangzhou uses "agentbay-pre.*" while ap-southeast-1
+// uses "wuyingai-pre.*". Unknown entries fall back to
+// "agentbay-pre.{actual}.aliyuncs.com" with a warning logged.
+var preRegionEndpointMap = map[string]string{
+	"cn-hangzhou":    "agentbay-pre.cn-hangzhou.aliyuncs.com",
+	"ap-southeast-1": "wuyingai-pre.ap-southeast-1.aliyuncs.com",
+}
+
+// preRegionKeys returns the supported pre-region keys in a stable order, used
+// for the unknown-region warning message.
+func preRegionKeys() string {
+	canonical := []string{"cn-hangzhou", "ap-southeast-1"}
+	out := make([]string, 0, len(canonical))
+	for _, k := range canonical {
+		if _, ok := preRegionEndpointMap[k]; ok {
+			out = append(out, k)
+		}
+	}
+	for k := range preRegionEndpointMap {
+		found := false
+		for _, c := range canonical {
+			if c == k {
+				found = true
+				break
+			}
+		}
+		if !found {
+			out = append(out, k)
+		}
+	}
+	return strings.Join(out, ", ")
+}
+
 // resolveEndpoint derives (actualRegion, endpoint) from a user-supplied
 // region_id. Empty region falls back to the default. A "pre-" prefix selects
-// the pre-release host and is stripped from the returned region. No whitelist
+// the pre-release host and is stripped from the returned region:
+//   - Known pre regions use the hardcoded entry in preRegionEndpointMap.
+//   - Unknown pre regions log a warning and fall back to the default
+//     "agentbay-pre.{actual}.aliyuncs.com" pattern.
+//
+// Non-pre regions are composed by direct pattern substitution. No whitelist
 // validation — any non-empty region_id is accepted so newly onboarded regions
 // work without an SDK upgrade.
 func resolveEndpoint(regionID string) (string, string) {
@@ -38,9 +98,24 @@ func resolveEndpoint(regionID string) (string, string) {
 
 	if strings.HasPrefix(id, prePrefix) {
 		actual := strings.TrimPrefix(id, prePrefix)
+		if endpoint, ok := preRegionEndpointMap[actual]; ok {
+			return actual, endpoint
+		}
+		LogWarn(fmt.Sprintf(
+			"Unknown pre-release region 'pre-%s'. Falling back to "+
+				"'agentbay-pre.%s.aliyuncs.com'; the request may fail at DNS "+
+				"resolution if the host does not exist. Known pre regions: %s.",
+			actual, actual, preRegionKeys()))
 		return actual, fmt.Sprintf("agentbay-pre.%s.aliyuncs.com", actual)
 	}
 
+	if !isKnownRegion(id) {
+		LogWarn(fmt.Sprintf(
+			"Unknown region '%s'. Falling back to 'agentbay.%s.aliyuncs.com'; "+
+				"the request may fail at DNS resolution if the host does not exist. "+
+				"Known regions: %s.",
+			id, id, strings.Join(knownRegions, ", ")))
+	}
 	return id, fmt.Sprintf("agentbay.%s.aliyuncs.com", id)
 }
 
@@ -171,9 +246,13 @@ func loadConfig(cfg *Config, customEnvPath string) Config {
 			config.RegionID = cfg.RegionID
 		}
 		if cfg.Endpoint != "" {
-			LogWarn(fmt.Sprintf(
-				"Config.Endpoint=%q is ignored; endpoint is derived from RegionID. "+
-					"Set RegionID instead.", cfg.Endpoint))
+			Deprecated(
+				fmt.Sprintf(
+					"Config.Endpoint=%q is ignored; endpoint is derived from RegionID.",
+					cfg.Endpoint),
+				"Config.RegionID",
+				"0.21.0",
+			)
 		}
 	} else {
 		// Load .env file with improved search

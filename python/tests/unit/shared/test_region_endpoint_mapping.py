@@ -19,28 +19,50 @@ class ResolveEndpointTest(unittest.TestCase):
                 self.assertEqual(actual_region, _DEFAULT_REGION)
                 self.assertEqual(endpoint, "agentbay.cn-hangzhou.aliyuncs.com")
 
-    def test_region_maps_by_direct_substitution(self):
+    def test_known_region_maps_silently(self):
+        """Known production regions resolve via the pattern with no warning."""
         cases = {
             "cn-hangzhou": "agentbay.cn-hangzhou.aliyuncs.com",
             "ap-southeast-1": "agentbay.ap-southeast-1.aliyuncs.com",
             "us-east-1": "agentbay.us-east-1.aliyuncs.com",
-            # Unknown regions are accepted as-is — the pattern composes the
-            # endpoint without a whitelist check.
+        }
+        for region, want_endpoint in cases.items():
+            with self.subTest(region=region):
+                with patch("agentbay._common.config._logger") as mock_logger:
+                    actual_region, endpoint = _resolve_endpoint(region)
+                mock_logger.warning.assert_not_called()
+                self.assertEqual(actual_region, region)
+                self.assertEqual(endpoint, want_endpoint)
+
+    def test_unknown_region_warns_and_falls_back_to_pattern(self):
+        """Unknown production regions log a warning and still use the pattern
+        (no validation error — newly onboarded regions work without an SDK
+        upgrade; the warning helps catch typos)."""
+        cases = {
             "us-west-1": "agentbay.us-west-1.aliyuncs.com",
             "eu-central-1": "agentbay.eu-central-1.aliyuncs.com",
         }
         for region, want_endpoint in cases.items():
             with self.subTest(region=region):
-                actual_region, endpoint = _resolve_endpoint(region)
+                with patch("agentbay._common.config._logger") as mock_logger:
+                    actual_region, endpoint = _resolve_endpoint(region)
                 self.assertEqual(actual_region, region)
                 self.assertEqual(endpoint, want_endpoint)
+                mock_logger.warning.assert_called_once()
+                # Format: warning(template, *args) — render with %.
+                template, *args = mock_logger.warning.call_args.args
+                rendered = template % tuple(args)
+                self.assertIn(region, rendered)
+                self.assertIn("cn-hangzhou", rendered)
+                self.assertIn("ap-southeast-1", rendered)
+                self.assertIn("us-east-1", rendered)
 
     def test_pre_prefix_strips_and_uses_pre_endpoint(self):
         cases = {
             "pre-cn-hangzhou": ("cn-hangzhou", "agentbay-pre.cn-hangzhou.aliyuncs.com"),
             "pre-ap-southeast-1": (
                 "ap-southeast-1",
-                "agentbay-pre.ap-southeast-1.aliyuncs.com",
+                "wuyingai-pre.ap-southeast-1.aliyuncs.com",
             ),
             # Pre- prefix on an unknown region also composes by pattern.
             "pre-us-west-1": ("us-west-1", "agentbay-pre.us-west-1.aliyuncs.com"),
@@ -113,11 +135,16 @@ class LoadConfigDerivesEndpointTest(unittest.TestCase):
         finally:
             os.environ.pop("AGENTBAY_ENDPOINT", None)
 
-    def test_unknown_region_id_is_accepted_as_pattern(self):
-        """No whitelist: any non-empty region composes a pattern-based endpoint."""
-        result = _load_config(Config(region_id="us-west-1"))
+    def test_unknown_region_id_is_accepted_with_warning(self):
+        """Soft whitelist: unknown regions emit a warning but still compose the
+        pattern-based endpoint (no validation error)."""
+        with patch("agentbay._common.config._logger") as mock_logger:
+            result = _load_config(Config(region_id="us-west-1"))
         self.assertEqual(result["region_id"], "us-west-1")
         self.assertEqual(result["endpoint"], "agentbay.us-west-1.aliyuncs.com")
+        mock_logger.warning.assert_called_once()
+        template, *args = mock_logger.warning.call_args.args
+        self.assertIn("us-west-1", template % tuple(args))
 
     def test_explicit_config_takes_priority_over_env(self):
         os.environ["AGENTBAY_REGION_ID"] = "us-east-1"
@@ -129,6 +156,36 @@ class LoadConfigDerivesEndpointTest(unittest.TestCase):
             )
         finally:
             os.environ.pop("AGENTBAY_REGION_ID", None)
+
+    def test_config_endpoint_kwarg_emits_deprecation_and_is_ignored(self):
+        """Backwards compat: Config(endpoint=...) is accepted but warns and is ignored."""
+        import warnings
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            cfg = Config(
+                endpoint="should-be-ignored.example.com",
+                region_id="ap-southeast-1",
+            )
+        self.assertTrue(
+            any(issubclass(w.category, DeprecationWarning) for w in caught),
+            f"Expected DeprecationWarning, got: {[w.category.__name__ for w in caught]}",
+        )
+        # Endpoint was not stored on the config object
+        self.assertIsNone(cfg.endpoint)
+        # And when loaded, endpoint comes from region_id
+        result = _load_config(cfg)
+        self.assertEqual(result["endpoint"], "agentbay.ap-southeast-1.aliyuncs.com")
+
+    def test_config_without_endpoint_kwarg_emits_no_warning(self):
+        """Sanity: not passing endpoint must not emit any deprecation warning."""
+        import warnings
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            Config(region_id="cn-hangzhou")
+        deprecation_warnings = [
+            w for w in caught if issubclass(w.category, DeprecationWarning)
+        ]
+        self.assertEqual(deprecation_warnings, [])
 
 
 if __name__ == "__main__":

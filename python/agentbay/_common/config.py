@@ -12,27 +12,65 @@ _logger = get_logger("config")
 
 
 # Endpoint is no longer user-configurable; it is derived from region_id by
-# direct pattern substitution. The "pre-" prefix selects the pre-release host
-# (e.g. "pre-cn-hangzhou" → agentbay-pre.cn-hangzhou.aliyuncs.com).
+# direct pattern substitution for production regions, and by a hardcoded
+# lookup table for pre-release regions (since pre-release hostnames don't
+# follow a single pattern: e.g. cn-hangzhou uses "agentbay-pre.*" while
+# ap-southeast-1 uses "wuyingai-pre.*").
 _DEFAULT_REGION = "cn-hangzhou"
 _PRE_PREFIX = "pre-"
+
+# Known production regions. Unknown entries are NOT rejected — they fall
+# through to the default "agentbay.{region}.aliyuncs.com" pattern with a
+# warning logged, since newly onboarded regions should work without an SDK
+# upgrade. The warning helps catch typos before the request actually fires.
+_KNOWN_REGIONS: Tuple[str, ...] = ("cn-hangzhou", "ap-southeast-1", "us-east-1")
+
+# Hardcoded mapping for pre-release regions (after stripping the "pre-" prefix).
+# Unknown entries fall back to "agentbay-pre.{actual}.aliyuncs.com" with a
+# warning logged, since we genuinely don't know which pre-release naming
+# convention a new region will adopt.
+_PRE_REGION_ENDPOINT_MAP: Dict[str, str] = {
+    "cn-hangzhou": "agentbay-pre.cn-hangzhou.aliyuncs.com",
+    "ap-southeast-1": "wuyingai-pre.ap-southeast-1.aliyuncs.com",
+}
 
 
 def _resolve_endpoint(region_id: Optional[str]) -> Tuple[str, str]:
     """Resolve (actual_region, endpoint) from a user-supplied region_id.
 
     Empty/None region falls back to the default. A "pre-" prefix selects the
-    pre-release endpoint and is stripped from the returned region. No
-    whitelist validation — any non-empty region_id is accepted so that newly
-    onboarded regions work without an SDK upgrade.
+    pre-release endpoint and is stripped from the returned region:
+    - Known pre regions use the hardcoded entry in `_PRE_REGION_ENDPOINT_MAP`.
+    - Unknown pre regions log a warning and fall back to the default
+      "agentbay-pre.{actual}.aliyuncs.com" pattern.
+
+    Non-pre regions are composed by direct pattern substitution:
+    - Known production regions in `_KNOWN_REGIONS` resolve silently.
+    - Unknown regions log a warning and still use the pattern (no validation
+      error — newly onboarded regions should work without an SDK upgrade).
     """
     if not region_id:
         region_id = _DEFAULT_REGION
 
     if region_id.startswith(_PRE_PREFIX):
         actual = region_id[len(_PRE_PREFIX):]
+        if actual in _PRE_REGION_ENDPOINT_MAP:
+            return actual, _PRE_REGION_ENDPOINT_MAP[actual]
+        _logger.warning(
+            "Unknown pre-release region 'pre-%s'. Falling back to "
+            "'agentbay-pre.%s.aliyuncs.com'; the request may fail at DNS "
+            "resolution if the host does not exist. Known pre regions: %s.",
+            actual, actual, list(_PRE_REGION_ENDPOINT_MAP.keys()),
+        )
         return actual, f"agentbay-pre.{actual}.aliyuncs.com"
 
+    if region_id not in _KNOWN_REGIONS:
+        _logger.warning(
+            "Unknown region '%s'. Falling back to 'agentbay.%s.aliyuncs.com'; "
+            "the request may fail at DNS resolution if the host does not exist. "
+            "Known regions: %s.",
+            region_id, region_id, list(_KNOWN_REGIONS),
+        )
     return region_id, f"agentbay.{region_id}.aliyuncs.com"
 
 
@@ -40,17 +78,31 @@ class Config:
     """
     Configuration object for AgentBay client.
 
-    `endpoint` is no longer a user input — it is derived from `region_id`.
+    `endpoint` is derived from `region_id` and is no longer a user input.
+    The ``endpoint=`` keyword argument is kept for backwards compatibility
+    and is silently ignored (with a ``DeprecationWarning``).
+
+    .. deprecated:: 0.21.0
+        ``endpoint`` parameter. Use ``region_id`` instead.
     """
 
     def __init__(
         self,
         timeout_ms: Optional[int] = None,
         region_id: Optional[str] = None,
+        endpoint: Optional[str] = None,
     ):
         self.timeout_ms = timeout_ms
         self.region_id = region_id
         self.endpoint: Optional[str] = None
+        if endpoint is not None:
+            import warnings
+            warnings.warn(
+                f"Config(endpoint={endpoint!r}) is deprecated and ignored; "
+                "endpoint is derived from region_id. Pass region_id instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
 
 def _default_config() -> Dict[str, Any]:
