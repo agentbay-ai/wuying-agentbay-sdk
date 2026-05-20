@@ -5,7 +5,6 @@ from unittest.mock import patch
 from agentbay import Config, _default_config, _load_config
 from agentbay._common.config import (
     _DEFAULT_REGION,
-    _REGION_ENDPOINT_MAP,
     _resolve_endpoint,
 )
 
@@ -18,42 +17,39 @@ class ResolveEndpointTest(unittest.TestCase):
             with self.subTest(value=empty):
                 actual_region, endpoint = _resolve_endpoint(empty)
                 self.assertEqual(actual_region, _DEFAULT_REGION)
-                self.assertEqual(endpoint, _REGION_ENDPOINT_MAP[_DEFAULT_REGION])
+                self.assertEqual(endpoint, "agentbay.cn-hangzhou.aliyuncs.com")
 
-    def test_each_supported_region_maps_correctly(self):
-        expected = {
+    def test_region_maps_by_direct_substitution(self):
+        cases = {
             "cn-hangzhou": "agentbay.cn-hangzhou.aliyuncs.com",
             "ap-southeast-1": "agentbay.ap-southeast-1.aliyuncs.com",
             "us-east-1": "agentbay.us-east-1.aliyuncs.com",
+            # Unknown regions are accepted as-is — the pattern composes the
+            # endpoint without a whitelist check.
+            "us-west-1": "agentbay.us-west-1.aliyuncs.com",
+            "eu-central-1": "agentbay.eu-central-1.aliyuncs.com",
         }
-        for region, want_endpoint in expected.items():
+        for region, want_endpoint in cases.items():
             with self.subTest(region=region):
                 actual_region, endpoint = _resolve_endpoint(region)
                 self.assertEqual(actual_region, region)
                 self.assertEqual(endpoint, want_endpoint)
 
     def test_pre_prefix_strips_and_uses_pre_endpoint(self):
-        actual_region, endpoint = _resolve_endpoint("pre-cn-hangzhou")
-        self.assertEqual(actual_region, "cn-hangzhou")
-        self.assertEqual(endpoint, "agentbay-pre.cn-hangzhou.aliyuncs.com")
-
-        actual_region, endpoint = _resolve_endpoint("pre-ap-southeast-1")
-        self.assertEqual(actual_region, "ap-southeast-1")
-        self.assertEqual(endpoint, "agentbay-pre.ap-southeast-1.aliyuncs.com")
-
-    def test_invalid_region_raises_with_supported_list(self):
-        with self.assertRaises(ValueError) as ctx:
-            _resolve_endpoint("us-west-1")
-        msg = str(ctx.exception)
-        self.assertIn("us-west-1", msg)
-        for region in _REGION_ENDPOINT_MAP:
-            self.assertIn(region, msg)
-        self.assertIn("pre-", msg)
-
-    def test_invalid_pre_region_raises(self):
-        with self.assertRaises(ValueError) as ctx:
-            _resolve_endpoint("pre-us-west-1")
-        self.assertIn("pre-us-west-1", str(ctx.exception))
+        cases = {
+            "pre-cn-hangzhou": ("cn-hangzhou", "agentbay-pre.cn-hangzhou.aliyuncs.com"),
+            "pre-ap-southeast-1": (
+                "ap-southeast-1",
+                "agentbay-pre.ap-southeast-1.aliyuncs.com",
+            ),
+            # Pre- prefix on an unknown region also composes by pattern.
+            "pre-us-west-1": ("us-west-1", "agentbay-pre.us-west-1.aliyuncs.com"),
+        }
+        for region, (want_region, want_endpoint) in cases.items():
+            with self.subTest(region=region):
+                actual_region, endpoint = _resolve_endpoint(region)
+                self.assertEqual(actual_region, want_region)
+                self.assertEqual(endpoint, want_endpoint)
 
 
 class DefaultConfigTest(unittest.TestCase):
@@ -117,9 +113,11 @@ class LoadConfigDerivesEndpointTest(unittest.TestCase):
         finally:
             os.environ.pop("AGENTBAY_ENDPOINT", None)
 
-    def test_invalid_region_id_raises_during_load(self):
-        with self.assertRaises(ValueError):
-            _load_config(Config(region_id="us-west-1"))
+    def test_unknown_region_id_is_accepted_as_pattern(self):
+        """No whitelist: any non-empty region composes a pattern-based endpoint."""
+        result = _load_config(Config(region_id="us-west-1"))
+        self.assertEqual(result["region_id"], "us-west-1")
+        self.assertEqual(result["endpoint"], "agentbay.us-west-1.aliyuncs.com")
 
     def test_explicit_config_takes_priority_over_env(self):
         os.environ["AGENTBAY_REGION_ID"] = "us-east-1"

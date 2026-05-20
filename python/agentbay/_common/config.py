@@ -11,14 +11,9 @@ from .logger import get_logger
 _logger = get_logger("config")
 
 
-# Region → unit-service endpoint mapping. The endpoint is no longer user-configurable;
-# it is derived from region_id via this table. Pre-release endpoints are obtained by
-# prefixing the region with "pre-" (e.g. "pre-cn-hangzhou" → agentbay-pre.cn-hangzhou…).
-_REGION_ENDPOINT_MAP: Dict[str, str] = {
-    "cn-hangzhou": "agentbay.cn-hangzhou.aliyuncs.com",
-    "ap-southeast-1": "agentbay.ap-southeast-1.aliyuncs.com",
-    "us-east-1": "agentbay.us-east-1.aliyuncs.com",
-}
+# Endpoint is no longer user-configurable; it is derived from region_id by
+# direct pattern substitution. The "pre-" prefix selects the pre-release host
+# (e.g. "pre-cn-hangzhou" → agentbay-pre.cn-hangzhou.aliyuncs.com).
 _DEFAULT_REGION = "cn-hangzhou"
 _PRE_PREFIX = "pre-"
 
@@ -27,29 +22,18 @@ def _resolve_endpoint(region_id: Optional[str]) -> Tuple[str, str]:
     """Resolve (actual_region, endpoint) from a user-supplied region_id.
 
     Empty/None region falls back to the default. A "pre-" prefix selects the
-    pre-release endpoint and is stripped from the returned region. Any region
-    not in the supported mapping raises ValueError.
+    pre-release endpoint and is stripped from the returned region. No
+    whitelist validation — any non-empty region_id is accepted so that newly
+    onboarded regions work without an SDK upgrade.
     """
     if not region_id:
         region_id = _DEFAULT_REGION
 
     if region_id.startswith(_PRE_PREFIX):
         actual = region_id[len(_PRE_PREFIX):]
-        if actual not in _REGION_ENDPOINT_MAP:
-            raise ValueError(_invalid_region_message(region_id))
         return actual, f"agentbay-pre.{actual}.aliyuncs.com"
 
-    if region_id not in _REGION_ENDPOINT_MAP:
-        raise ValueError(_invalid_region_message(region_id))
-    return region_id, _REGION_ENDPOINT_MAP[region_id]
-
-
-def _invalid_region_message(region_id: str) -> str:
-    supported = ", ".join(_REGION_ENDPOINT_MAP.keys())
-    return (
-        f"Invalid region_id '{region_id}'. Supported regions: {supported}. "
-        f"For pre-release, use 'pre-' prefix (e.g., 'pre-cn-hangzhou')."
-    )
+    return region_id, f"agentbay.{region_id}.aliyuncs.com"
 
 
 class Config:
@@ -71,8 +55,9 @@ class Config:
 
 def _default_config() -> Dict[str, Any]:
     """Return the default configuration"""
+    _, default_endpoint = _resolve_endpoint(_DEFAULT_REGION)
     return {
-        "endpoint": _REGION_ENDPOINT_MAP[_DEFAULT_REGION],
+        "endpoint": default_endpoint,
         "timeout_ms": 60000,
         "region_id": _DEFAULT_REGION,
     }

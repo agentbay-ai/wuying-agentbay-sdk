@@ -4,11 +4,12 @@ import com.aliyun.agentbay.Config;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Unit tests for the region → endpoint mapping introduced by the multi-region refactor.
+ *
+ * <p>Endpoint is derived from {@code regionId} by direct pattern substitution; there
+ * is no whitelist, so any non-empty regionId is accepted as-is.
  */
 public class ConfigRegionEndpointMappingTest {
 
@@ -56,26 +57,18 @@ public class ConfigRegionEndpointMappingTest {
     }
 
     @Test
-    public void testInvalidRegionThrows() {
-        try {
-            new Config("us-west-1");
-            fail("Expected IllegalArgumentException for invalid region");
-        } catch (IllegalArgumentException e) {
-            String msg = e.getMessage();
-            assertTrue("Message should include the invalid region: " + msg, msg.contains("us-west-1"));
-            assertTrue("Message should list supported regions: " + msg, msg.contains("cn-hangzhou"));
-            assertTrue("Message should mention pre- prefix: " + msg, msg.contains("pre-"));
-        }
+    public void testUnknownRegionIsAcceptedAsPattern() {
+        // No whitelist — any non-empty region composes a pattern-based endpoint.
+        Config cfg = new Config("us-west-1");
+        assertEquals("us-west-1", cfg.getRegionId());
+        assertEquals("agentbay.us-west-1.aliyuncs.com", cfg.getEndpoint());
     }
 
     @Test
-    public void testInvalidPreRegionThrows() {
-        try {
-            new Config("pre-us-west-1");
-            fail("Expected IllegalArgumentException for invalid pre- region");
-        } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("pre-us-west-1"));
-        }
+    public void testPrePrefixOnUnknownRegionAlsoComposes() {
+        Config cfg = new Config("pre-us-west-1");
+        assertEquals("us-west-1", cfg.getRegionId());
+        assertEquals("agentbay-pre.us-west-1.aliyuncs.com", cfg.getEndpoint());
     }
 
     @Test
@@ -101,17 +94,5 @@ public class ConfigRegionEndpointMappingTest {
         cfg.setRegionId("us-east-1");
         assertEquals("us-east-1", cfg.getRegionId());
         assertEquals("agentbay.us-east-1.aliyuncs.com", cfg.getEndpoint());
-    }
-
-    @Test
-    public void testSetRegionIdRejectsInvalid() {
-        Config cfg = new Config("cn-hangzhou");
-        try {
-            cfg.setRegionId("us-west-1");
-            fail("Expected IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            // region should remain unchanged on failure
-            assertEquals("cn-hangzhou", cfg.getRegionId());
-        }
     }
 }

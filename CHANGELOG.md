@@ -7,21 +7,21 @@ All notable changes to the Wuying AgentBay SDK will be documented in this file.
 ### ⚠️ Breaking Changes
 
 - **Multi-region unit endpoint support** (All SDKs): Endpoint is now derived
-  from `region_id` via a fixed mapping. `endpoint` removed from public
+  from `region_id` by direct pattern substitution
+  (`agentbay.{region_id}.aliyuncs.com`). `endpoint` removed from public
   `Config` constructors / struct literals. Setting `AGENTBAY_ENDPOINT` env
   var no longer has any effect — use `AGENTBAY_REGION_ID` instead.
 - **Default endpoint changed** from `wuyingai.cn-shanghai.aliyuncs.com`
   (legacy center service) to `agentbay.cn-hangzhou.aliyuncs.com` (unit
   service). Default `region_id` is now `cn-hangzhou` (was unset).
-- **Invalid `region_id` now raises** instead of silently using a default.
-  Supported: `cn-hangzhou`, `ap-southeast-1`, `us-east-1`. Use `pre-`
-  prefix for pre-release endpoints (e.g. `pre-cn-hangzhou`).
-  - Python: `ValueError`; TypeScript: `Error`; Java: `IllegalArgumentException`.
-  - **⚠️ Go: `panic`** (not a returned `error`). `loadConfig`'s signature was
-    preserved for API compatibility, so an invalid `RegionID` will crash the
-    process at construction time. Validate `RegionID` before passing it to
-    `agentbay.NewAgentBay`, or wrap construction with `defer/recover` if you
-    need to handle it gracefully.
+- **No region whitelist**: any non-empty `region_id` is accepted and
+  composed into the endpoint pattern. Newly onboarded regions work without
+  an SDK upgrade — but a typo'd `region_id` produces a DNS-resolution
+  failure at first request time instead of an upfront exception. Validate
+  `region_id` at the caller if you need fail-fast behavior.
+- **Pre-release switch**: prefix the region with `pre-` (e.g.
+  `pre-cn-hangzhou`) to target `agentbay-pre.{region}.aliyuncs.com`. The
+  stored `region_id` has the prefix stripped.
 - **Java**: `Config(String, String, int)` constructor and `setEndpoint()`
   setter removed. Use `Config(String regionId, int timeoutMs)` instead.
 - **Go**: `Config.Endpoint` field on user-supplied struct literals is now

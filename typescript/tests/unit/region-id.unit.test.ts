@@ -73,11 +73,15 @@ describe("Region ID Unit Tests", () => {
       );
     });
 
-    test("should map each supported region to its unit endpoint", () => {
+    test("should map any region by direct pattern substitution", () => {
+      // No whitelist — both well-known and arbitrary regions are accepted as-is
+      // so newly onboarded regions work without an SDK upgrade.
       const cases: Array<[string, string]> = [
         ["cn-hangzhou", "agentbay.cn-hangzhou.aliyuncs.com"],
         ["ap-southeast-1", "agentbay.ap-southeast-1.aliyuncs.com"],
         ["us-east-1", "agentbay.us-east-1.aliyuncs.com"],
+        ["us-west-1", "agentbay.us-west-1.aliyuncs.com"],
+        ["eu-central-1", "agentbay.eu-central-1.aliyuncs.com"],
       ];
       for (const [region, expected] of cases) {
         const client = new AgentBay({
@@ -89,14 +93,15 @@ describe("Region ID Unit Tests", () => {
       }
     });
 
-    test("should throw on invalid region_id", () => {
-      expect(
-        () =>
-          new AgentBay({
-            apiKey: mockApiKey,
-            config: { region_id: "us-west-1" },
-          })
-      ).toThrow(/Invalid region_id 'us-west-1'/);
+    test("should compose pre- prefix endpoint even for unknown regions", () => {
+      const client = new AgentBay({
+        apiKey: mockApiKey,
+        config: { region_id: "pre-us-west-1" },
+      });
+      expect(client.getRegionId()).toBe("us-west-1");
+      expect((client as any).endpoint).toBe(
+        "agentbay-pre.us-west-1.aliyuncs.com"
+      );
     });
   });
 });

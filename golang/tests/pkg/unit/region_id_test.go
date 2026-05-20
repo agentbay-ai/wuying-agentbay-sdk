@@ -1,7 +1,6 @@
 package agentbay_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay"
@@ -131,7 +130,10 @@ func TestRegionIDSupport(t *testing.T) {
 		}
 	})
 
-	t.Run("EachSupportedRegionMapsCorrectly", func(t *testing.T) {
+	t.Run("RegionMapsByDirectSubstitution", func(t *testing.T) {
+		// No whitelist — any non-empty region composes the pattern-based
+		// endpoint. Includes known regions and arbitrary unknown ones to
+		// guard against accidental re-introduction of a whitelist check.
 		cases := []struct {
 			region   string
 			endpoint string
@@ -139,6 +141,8 @@ func TestRegionIDSupport(t *testing.T) {
 			{"cn-hangzhou", "agentbay.cn-hangzhou.aliyuncs.com"},
 			{"ap-southeast-1", "agentbay.ap-southeast-1.aliyuncs.com"},
 			{"us-east-1", "agentbay.us-east-1.aliyuncs.com"},
+			{"us-west-1", "agentbay.us-west-1.aliyuncs.com"},
+			{"eu-central-1", "agentbay.eu-central-1.aliyuncs.com"},
 		}
 		for _, tc := range cases {
 			tc := tc
@@ -158,22 +162,17 @@ func TestRegionIDSupport(t *testing.T) {
 		}
 	})
 
-	t.Run("InvalidRegionPanics", func(t *testing.T) {
-		defer func() {
-			r := recover()
-			if r == nil {
-				t.Fatalf("Expected panic for invalid region, got nil")
-			}
-			err, ok := r.(error)
-			if !ok {
-				t.Fatalf("Expected panic value to be error, got %T: %v", r, r)
-			}
-			msg := err.Error()
-			if !strings.Contains(msg, "us-west-1") || !strings.Contains(msg, "cn-hangzhou") || !strings.Contains(msg, "pre-") {
-				t.Errorf("Error message missing expected content: %s", msg)
-			}
-		}()
-		config := &agentbay.Config{RegionID: "us-west-1"}
-		_, _ = agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
+	t.Run("PrePrefixOnUnknownRegionAlsoComposesByPattern", func(t *testing.T) {
+		config := &agentbay.Config{RegionID: "pre-us-west-1"}
+		client, err := agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
+		if err != nil {
+			t.Fatalf("Failed to create AgentBay client: %v", err)
+		}
+		if client.GetRegionID() != "us-west-1" {
+			t.Errorf("RegionID: want %q, got %q", "us-west-1", client.GetRegionID())
+		}
+		if got, want := *client.Client.Endpoint, "agentbay-pre.us-west-1.aliyuncs.com"; got != want {
+			t.Errorf("Endpoint: want %q, got %q", want, got)
+		}
 	})
 }

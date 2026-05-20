@@ -10,21 +10,14 @@ import (
 )
 
 // Config stores SDK configuration. Endpoint is no longer a user-supplied input —
-// it is derived from RegionID via regionEndpointMap. The field is kept on the
-// struct as the resolved output (used by AgentBay to initialize the OpenAPI client),
-// but any value the caller sets in a struct literal is overwritten by loadConfig.
+// it is derived from RegionID by direct pattern substitution. The field is kept
+// on the struct as the resolved output (used by AgentBay to initialize the
+// OpenAPI client), but any value the caller sets in a struct literal is
+// overwritten by loadConfig.
 type Config struct {
 	Endpoint  string `json:"endpoint"`
 	TimeoutMs int    `json:"timeout_ms"`
 	RegionID  string `json:"region_id"`
-}
-
-// regionEndpointMap maps a supported region to its unit-service endpoint.
-// Pre-release endpoints are obtained by prefixing the region with "pre-".
-var regionEndpointMap = map[string]string{
-	"cn-hangzhou":    "agentbay.cn-hangzhou.aliyuncs.com",
-	"ap-southeast-1": "agentbay.ap-southeast-1.aliyuncs.com",
-	"us-east-1":      "agentbay.us-east-1.aliyuncs.com",
 }
 
 const (
@@ -32,51 +25,12 @@ const (
 	prePrefix     = "pre-"
 )
 
-// supportedRegions returns the list of supported regions, used in error messages.
-func supportedRegions() string {
-	keys := make([]string, 0, len(regionEndpointMap))
-	for k := range regionEndpointMap {
-		keys = append(keys, k)
-	}
-	// Stable order for deterministic error messages.
-	// (No need for sort: we want a fixed canonical order.)
-	canonical := []string{"cn-hangzhou", "ap-southeast-1", "us-east-1"}
-	out := make([]string, 0, len(canonical))
-	for _, k := range canonical {
-		if _, ok := regionEndpointMap[k]; ok {
-			out = append(out, k)
-		}
-	}
-	// Append any region not in the canonical order (forward-compat).
-	for _, k := range keys {
-		found := false
-		for _, c := range canonical {
-			if c == k {
-				found = true
-				break
-			}
-		}
-		if !found {
-			out = append(out, k)
-		}
-	}
-	return strings.Join(out, ", ")
-}
-
-// invalidRegionError builds a user-facing error message for an unknown region.
-func invalidRegionError(regionID string) error {
-	return fmt.Errorf(
-		"Invalid region_id '%s'. Supported regions: %s. "+
-			"For pre-release, use 'pre-' prefix (e.g., 'pre-cn-hangzhou').",
-		regionID, supportedRegions(),
-	)
-}
-
-// resolveEndpoint resolves (actualRegion, endpoint) from a user-supplied region_id.
-// Empty region falls back to the default. A "pre-" prefix selects the pre-release
-// endpoint and is stripped from the returned region. Any region not in the
-// supported mapping returns an error.
-func resolveEndpoint(regionID string) (string, string, error) {
+// resolveEndpoint derives (actualRegion, endpoint) from a user-supplied
+// region_id. Empty region falls back to the default. A "pre-" prefix selects
+// the pre-release host and is stripped from the returned region. No whitelist
+// validation — any non-empty region_id is accepted so newly onboarded regions
+// work without an SDK upgrade.
+func resolveEndpoint(regionID string) (string, string) {
 	id := regionID
 	if id == "" {
 		id = defaultRegion
@@ -84,23 +38,17 @@ func resolveEndpoint(regionID string) (string, string, error) {
 
 	if strings.HasPrefix(id, prePrefix) {
 		actual := strings.TrimPrefix(id, prePrefix)
-		if _, ok := regionEndpointMap[actual]; !ok {
-			return "", "", invalidRegionError(id)
-		}
-		return actual, fmt.Sprintf("agentbay-pre.%s.aliyuncs.com", actual), nil
+		return actual, fmt.Sprintf("agentbay-pre.%s.aliyuncs.com", actual)
 	}
 
-	endpoint, ok := regionEndpointMap[id]
-	if !ok {
-		return "", "", invalidRegionError(id)
-	}
-	return id, endpoint, nil
+	return id, fmt.Sprintf("agentbay.%s.aliyuncs.com", id)
 }
 
 // defaultConfig returns the default configuration
 func defaultConfig() Config {
+	_, endpoint := resolveEndpoint(defaultRegion)
 	return Config{
-		Endpoint:  regionEndpointMap[defaultRegion],
+		Endpoint:  endpoint,
 		TimeoutMs: 60000,
 		RegionID:  defaultRegion,
 	}
@@ -243,13 +191,7 @@ func loadConfig(cfg *Config, customEnvPath string) Config {
 	}
 
 	// Always derive endpoint from region_id; normalize region by stripping pre- prefix.
-	actualRegion, endpoint, err := resolveEndpoint(config.RegionID)
-	if err != nil {
-		// Surface the validation error by panicking; loadConfig has no error
-		// return to preserve API compatibility, and an invalid region is a
-		// programmer error that should fail loud at construction time.
-		panic(err)
-	}
+	actualRegion, endpoint := resolveEndpoint(config.RegionID)
 	config.RegionID = actualRegion
 	config.Endpoint = endpoint
 	return config

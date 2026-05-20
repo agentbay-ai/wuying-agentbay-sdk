@@ -18,32 +18,20 @@ type ConfigOptions = {
 };
 
 /**
- * Region → unit-service endpoint mapping. Pre-release endpoints are obtained
- * by prefixing the region with "pre-" (e.g. "pre-cn-hangzhou" →
- * agentbay-pre.cn-hangzhou.aliyuncs.com).
+ * Endpoint is no longer user-configurable; it is derived from region_id by
+ * direct pattern substitution. The "pre-" prefix selects the pre-release host
+ * (e.g. "pre-cn-hangzhou" → agentbay-pre.cn-hangzhou.aliyuncs.com).
  */
-const REGION_ENDPOINT_MAP: { readonly [region: string]: string } = {
-  "cn-hangzhou": "agentbay.cn-hangzhou.aliyuncs.com",
-  "ap-southeast-1": "agentbay.ap-southeast-1.aliyuncs.com",
-  "us-east-1": "agentbay.us-east-1.aliyuncs.com",
-};
 const DEFAULT_REGION = "cn-hangzhou";
 const PRE_PREFIX = "pre-";
-
-function invalidRegionMessage(regionId: string): string {
-  const supported = Object.keys(REGION_ENDPOINT_MAP).join(", ");
-  return (
-    `Invalid region_id '${regionId}'. Supported regions: ${supported}. ` +
-    `For pre-release, use 'pre-' prefix (e.g., 'pre-cn-hangzhou').`
-  );
-}
 
 /**
  * Resolve (actualRegion, endpoint) from a user-supplied region_id.
  *
  * Empty/undefined region falls back to the default. A "pre-" prefix selects
- * the pre-release endpoint and is stripped from the returned region. Any
- * region not in the supported mapping throws.
+ * the pre-release endpoint and is stripped from the returned region. No
+ * whitelist validation — any non-empty region_id is accepted so newly
+ * onboarded regions work without an SDK upgrade.
  */
 function resolveEndpoint(regionId?: string): {
   region: string;
@@ -53,16 +41,10 @@ function resolveEndpoint(regionId?: string): {
 
   if (id.startsWith(PRE_PREFIX)) {
     const actual = id.slice(PRE_PREFIX.length);
-    if (!(actual in REGION_ENDPOINT_MAP)) {
-      throw new Error(invalidRegionMessage(id));
-    }
     return { region: actual, endpoint: `agentbay-pre.${actual}.aliyuncs.com` };
   }
 
-  if (!(id in REGION_ENDPOINT_MAP)) {
-    throw new Error(invalidRegionMessage(id));
-  }
-  return { region: id, endpoint: REGION_ENDPOINT_MAP[id] };
+  return { region: id, endpoint: `agentbay.${id}.aliyuncs.com` };
 }
 
 /**
@@ -85,7 +67,7 @@ export const BROWSER_RECORD_PATH = "/home/wuying/record";
  */
 function defaultConfig(): Config {
   return {
-    endpoint: REGION_ENDPOINT_MAP[DEFAULT_REGION],
+    endpoint: resolveEndpoint(DEFAULT_REGION).endpoint,
     timeout_ms: 60000,
     region_id: DEFAULT_REGION,
   };
