@@ -16,6 +16,12 @@ All notable changes to the Wuying AgentBay SDK will be documented in this file.
 - **Invalid `region_id` now raises** instead of silently using a default.
   Supported: `cn-hangzhou`, `ap-southeast-1`, `us-east-1`. Use `pre-`
   prefix for pre-release endpoints (e.g. `pre-cn-hangzhou`).
+  - Python: `ValueError`; TypeScript: `Error`; Java: `IllegalArgumentException`.
+  - **⚠️ Go: `panic`** (not a returned `error`). `loadConfig`'s signature was
+    preserved for API compatibility, so an invalid `RegionID` will crash the
+    process at construction time. Validate `RegionID` before passing it to
+    `agentbay.NewAgentBay`, or wrap construction with `defer/recover` if you
+    need to handle it gracefully.
 - **Java**: `Config(String, String, int)` constructor and `setEndpoint()`
   setter removed. Use `Config(String regionId, int timeoutMs)` instead.
 - **Go**: `Config.Endpoint` field on user-supplied struct literals is now
