@@ -8,7 +8,7 @@ import (
 func TestEnhancedDotEnvLoading(t *testing.T) {
 	// Save original environment
 	originalEnv := make(map[string]string)
-	envVars := []string{"AGENTBAY_ENDPOINT", "AGENTBAY_TIMEOUT_MS"}
+	envVars := []string{"AGENTBAY_REGION_ID", "AGENTBAY_TIMEOUT_MS"}
 	for _, key := range envVars {
 		if val, exists := os.LookupEnv(key); exists {
 			originalEnv[key] = val

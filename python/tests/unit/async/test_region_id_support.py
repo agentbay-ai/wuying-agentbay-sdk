@@ -27,7 +27,7 @@ class TestRegionIdSupport(unittest.IsolatedAsyncioTestCase):
         mock_mcp_client.return_value = mock_client
 
         # Create AsyncAgentBay instance with region_id in config
-        config = Config(endpoint="wuyingai.cn-shanghai.aliyuncs.com", timeout_ms=60000, region_id="cn-hangzhou")
+        config = Config(timeout_ms=60000, region_id="cn-hangzhou")
         agent_bay = AsyncAgentBay(cfg=config)
 
         # Verify region_id is stored
@@ -44,13 +44,13 @@ class TestRegionIdSupport(unittest.IsolatedAsyncioTestCase):
         mock_client = MagicMock()
         mock_mcp_client.return_value = mock_client
 
-        config = Config(endpoint="", timeout_ms=0, region_id="cn-hangzhou")
+        config = Config(timeout_ms=0, region_id="cn-hangzhou")
         agent_bay = AsyncAgentBay(cfg=config)
 
         self.assertEqual(agent_bay.region_id, "cn-hangzhou")
 
         called_openapi_cfg = mock_mcp_client.call_args[0][0]
-        self.assertEqual(called_openapi_cfg.endpoint, "wuyingai.cn-shanghai.aliyuncs.com")
+        self.assertEqual(called_openapi_cfg.endpoint, "agentbay.cn-hangzhou.aliyuncs.com")
         self.assertEqual(called_openapi_cfg.read_timeout, 60000)
         self.assertEqual(called_openapi_cfg.connect_timeout, 60000)
 
@@ -118,7 +118,7 @@ class TestRegionIdSupport(unittest.IsolatedAsyncioTestCase):
                 mock_wait.return_value = None
 
                 # Create AsyncAgentBay instance with region_id in config
-                config = Config(endpoint="wuyingai.cn-shanghai.aliyuncs.com", timeout_ms=60000, region_id="cn-hangzhou")
+                config = Config(timeout_ms=60000, region_id="cn-hangzhou")
                 agent_bay = AsyncAgentBay(cfg=config)
 
                 # Create session
@@ -211,7 +211,7 @@ class TestRegionIdSupport(unittest.IsolatedAsyncioTestCase):
         mock_mcp_client.return_value = mock_client
 
         # Create AsyncAgentBay instance with region_id in config
-        config = Config(endpoint="wuyingai.cn-shanghai.aliyuncs.com", timeout_ms=60000, region_id="cn-hangzhou")
+        config = Config(timeout_ms=60000, region_id="cn-hangzhou")
         agent_bay = AsyncAgentBay(cfg=config)
 
         # Create context (get with create=True)
@@ -245,7 +245,7 @@ class TestRegionIdSupport(unittest.IsolatedAsyncioTestCase):
         mock_mcp_client.return_value = mock_client
 
         # Create AsyncAgentBay instance with region_id in config
-        config = Config(endpoint="wuyingai.cn-shanghai.aliyuncs.com", timeout_ms=60000, region_id="cn-hangzhou")
+        config = Config(timeout_ms=60000, region_id="cn-hangzhou")
         agent_bay = AsyncAgentBay(cfg=config)
 
         # Get existing context (create=False, which is default)
@@ -279,7 +279,6 @@ class TestRegionIdSupport(unittest.IsolatedAsyncioTestCase):
         mock_mcp_client.return_value = mock_client
 
         config = Config(
-            endpoint="wuyingai.cn-shanghai.aliyuncs.com",
             timeout_ms=60000,
             region_id="cn-hangzhou",
         )

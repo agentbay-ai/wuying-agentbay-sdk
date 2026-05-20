@@ -4,6 +4,34 @@ All notable changes to the Wuying AgentBay SDK will be documented in this file.
 
 ## [0.21.0] - 2026-05-19
 
+### ⚠️ Breaking Changes
+
+- **Multi-region unit endpoint support** (All SDKs): Endpoint is now derived
+  from `region_id` via a fixed mapping. `endpoint` removed from public
+  `Config` constructors / struct literals. Setting `AGENTBAY_ENDPOINT` env
+  var no longer has any effect — use `AGENTBAY_REGION_ID` instead.
+- **Default endpoint changed** from `wuyingai.cn-shanghai.aliyuncs.com`
+  (legacy center service) to `agentbay.cn-hangzhou.aliyuncs.com` (unit
+  service). Default `region_id` is now `cn-hangzhou` (was unset).
+- **Invalid `region_id` now raises** instead of silently using a default.
+  Supported: `cn-hangzhou`, `ap-southeast-1`, `us-east-1`. Use `pre-`
+  prefix for pre-release endpoints (e.g. `pre-cn-hangzhou`).
+- **Java**: `Config(String, String, int)` constructor and `setEndpoint()`
+  setter removed. Use `Config(String regionId, int timeoutMs)` instead.
+- **Go**: `Config.Endpoint` field on user-supplied struct literals is now
+  silently overwritten (with a warning logged) — set `Config.RegionID`
+  instead.
+
+#### Migration
+
+| Previously | Now |
+|---|---|
+| `Config(endpoint="...", region_id="cn-hangzhou")` | `Config(region_id="cn-hangzhou")` |
+| `AGENTBAY_ENDPOINT=agentbay.us-east-1.aliyuncs.com` | `AGENTBAY_REGION_ID=us-east-1` |
+| `AGENTBAY_ENDPOINT=agentbay-pre.cn-hangzhou.aliyuncs.com` | `AGENTBAY_REGION_ID=pre-cn-hangzhou` |
+| Both endpoint and region_id set | Keep only region_id |
+| Nothing set | No change required (default region is now `cn-hangzhou`) |
+
 ### Added
 
 - **BetaContextMount (Beta)** (All SDKs): New direct-mount persistence model that exposes a context as a filesystem mount point inside the session, complementing the existing Context Sync workflow.

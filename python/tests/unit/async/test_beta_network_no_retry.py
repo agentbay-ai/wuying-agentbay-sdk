@@ -20,7 +20,6 @@ class TestAsyncBetaNetworkNoRetry(unittest.IsolatedAsyncioTestCase):
         mock_mcp_client.return_value = mock_client
 
         config = Config(
-            endpoint="wuyingai.cn-shanghai.aliyuncs.com",
             timeout_ms=60000,
             region_id="cn-hangzhou",
         )

@@ -1,9 +1,12 @@
 import { AgentBay } from "../../src";
 
-const LINK_URL_ENDPOINT = "agentbay-pre.cn-hangzhou.aliyuncs.com";
+// Regions used to be passed as raw endpoints; after the multi-region refactor
+// endpoints are derived from region_id. The pre- prefix selects the pre-release
+// endpoint (agentbay-pre.<region>.aliyuncs.com).
+const LINK_URL_REGION = "pre-cn-hangzhou";
 const LINK_URL_IMAGE_ID = "computer-use-ubuntu-2204-regionGW";
 
-const NO_LINK_URL_ENDPOINT = "wuyingai.cn-shanghai.aliyuncs.com";
+const NO_LINK_URL_REGION = "cn-hangzhou";
 const NO_LINK_URL_IMAGE_ID = "moltbot-linux-ubuntu-2204";
 
 describe("Computer screenshot tool selection by linkUrl", () => {
@@ -16,9 +19,8 @@ describe("Computer screenshot tool selection by linkUrl", () => {
     const client = new AgentBay({
       apiKey,
       config: {
-        endpoint: LINK_URL_ENDPOINT,
         timeout_ms: 60000,
-        region_id: process.env.AGENTBAY_REGION_ID,
+        region_id: process.env.AGENTBAY_REGION_ID || LINK_URL_REGION,
       },
     });
 
@@ -65,9 +67,8 @@ describe("Computer screenshot tool selection by linkUrl", () => {
     const client = new AgentBay({
       apiKey,
       config: {
-        endpoint: NO_LINK_URL_ENDPOINT,
         timeout_ms: 60000,
-        region_id: process.env.AGENTBAY_REGION_ID,
+        region_id: process.env.AGENTBAY_REGION_ID || NO_LINK_URL_REGION,
       },
     });
 

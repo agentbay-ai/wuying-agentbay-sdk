@@ -4,25 +4,31 @@ This guide explains how to configure the AgentBay SDK for different environments
 
 > **Multi-language support:** Configuration concepts (API key, endpoint, region) apply to all SDKs. Code examples use Python. See: [Python](../../../../python/README.md) | [TypeScript](../../../../typescript/README.md) | [Golang](../../../../golang/README.md) | [Java](../../../../java/README.md)
 
-> **Important:** The `endpoint` configuration specifies the **API Gateway location** used for SDK-backend communication. This determines which regional gateway your SDK connects to. You can use the `region_id` configuration to specify where your cloud sessions will be created.
+> **Important:** Configure the SDK by **region**. The endpoint is no longer a user input — it is derived from `region_id` via a fixed mapping table (Hangzhou / Singapore / Virginia / pre-release).
 
 ## Configuration Parameters
 
 | Parameter | Environment Variable | Description | Default Value |
 |-----------|---------------------|-------------|---------------|
 | API Key | `AGENTBAY_API_KEY` | Authentication key for API access | Required |
-| Endpoint | `AGENTBAY_ENDPOINT` | API Gateway endpoint URL (determines gateway location for SDK communication) | `wuyingai.cn-shanghai.aliyuncs.com` |
-| Region ID | `AGENTBAY_REGION_ID` | Cloud resource region for sessions and contexts (e.g., `cn-hangzhou`, `ap-southeast-1`) | `None` |
+| Region ID | `AGENTBAY_REGION_ID` | Region for sessions and endpoint derivation (see Supported Regions below) | `cn-hangzhou` |
+| Timeout | `AGENTBAY_TIMEOUT_MS` | Request timeout in milliseconds | `60000` |
 | Log Format | `AGENTBAY_LOG_FORMAT` | Log output format (`pretty`, `sls`) | `pretty` |
 
-## Supported API Gateway Regions
+> **Note:** `AGENTBAY_ENDPOINT` is no longer read by the SDK. Setting it has no effect — use `AGENTBAY_REGION_ID` instead.
 
-The following API gateway locations are available. Choose the gateway closest to your users for optimal network performance:
+## Supported Regions
 
-| Gateway Location | Endpoint |
-|-----------------|----------|
-| Shanghai | `wuyingai.cn-shanghai.aliyuncs.com` |
-| Singapore | `wuyingai.ap-southeast-1.aliyuncs.com` |
+`region_id` drives the endpoint via a fixed mapping. Choose the region closest to your users for optimal network performance:
+
+| Region ID | Derived Endpoint | Notes |
+|-----------|------------------|-------|
+| `cn-hangzhou` | `agentbay.cn-hangzhou.aliyuncs.com` | Default |
+| `ap-southeast-1` | `agentbay.ap-southeast-1.aliyuncs.com` |  |
+| `us-east-1` | `agentbay.us-east-1.aliyuncs.com` |  |
+| `pre-<region>` (e.g. `pre-cn-hangzhou`) | `agentbay-pre.<region>.aliyuncs.com` | Pre-release; `<region>` must be one of the above |
+
+Invalid `region_id` values raise an error at SDK initialization with the list of supported regions.
 
 ## Log Configuration
 
@@ -55,9 +61,13 @@ If no configuration is provided, the SDK uses the following default values:
 
 ```json
 {
-    "endpoint": "wuyingai.cn-shanghai.aliyuncs.com"
+    "region_id": "cn-hangzhou",
+    "endpoint": "agentbay.cn-hangzhou.aliyuncs.com",
+    "timeout_ms": 60000
 }
 ```
+
+`endpoint` is shown for reference — it is derived internally from `region_id` and cannot be set directly.
 
 ## Configuration Priority
 
@@ -77,14 +87,12 @@ Set configuration using shell commands:
 **Linux/macOS:**
 ```bash
 export AGENTBAY_API_KEY=your-api-key-here
-export AGENTBAY_ENDPOINT=wuyingai.ap-southeast-1.aliyuncs.com
 export AGENTBAY_REGION_ID=ap-southeast-1
 ```
 
 **Windows:**
 ```cmd
 set AGENTBAY_API_KEY=your-api-key-here
-set AGENTBAY_ENDPOINT=wuyingai.ap-southeast-1.aliyuncs.com
 set AGENTBAY_REGION_ID=ap-southeast-1
 ```
 
@@ -100,7 +108,6 @@ The SDK automatically searches for `.env` files using the following strategy:
 ```env
 # .env file (can be placed in project root or any parent directory)
 AGENTBAY_API_KEY=your-api-key-here
-AGENTBAY_ENDPOINT=wuyingai.ap-southeast-1.aliyuncs.com
 AGENTBAY_REGION_ID=ap-southeast-1
 AGENTBAY_LOG_FORMAT=sls
 ```
@@ -144,10 +151,7 @@ For debugging purposes, you can pass configuration directly in code.
 from agentbay import AgentBay, Config
 
 # Hard-coded configuration (not recommended for production)
-config = Config(
-    endpoint="wuyingai.ap-southeast-1.aliyuncs.com",
-    region_id="ap-southeast-1"
-)
+config = Config(region_id="ap-southeast-1")
 agent_bay = AgentBay(api_key="your-api-key-here", cfg=config)
 ```
 
@@ -159,10 +163,7 @@ from agentbay import AsyncAgentBay, Config
 
 async def main():
     # Hard-coded configuration (not recommended for production)
-    config = Config(
-        endpoint="wuyingai.ap-southeast-1.aliyuncs.com",
-        region_id="ap-southeast-1"
-    )
+    config = Config(region_id="ap-southeast-1")
     agent_bay = AsyncAgentBay(api_key="your-api-key-here", cfg=config)
     # Use agent_bay...
 
@@ -182,30 +183,32 @@ agent_bay = AgentBay()  # Automatically searches for .env files
 
 ## Common Scenarios
 
-### Switch to Singapore Gateway
+### Switching Region
 
-To use the Singapore API gateway for better network performance in Asia-Pacific regions:
-
-```bash
-export AGENTBAY_ENDPOINT=wuyingai.ap-southeast-1.aliyuncs.com
-```
-
-### Configure Cloud Resource Region
-
-To specify the region where your AgentBay sessions and contexts will be created:
+Setting `AGENTBAY_REGION_ID` selects both the cloud resource region **and** the SDK endpoint (the SDK derives the endpoint from the region):
 
 ```bash
-export AGENTBAY_REGION_ID=ap-southeast-1  # For Singapore region
+export AGENTBAY_REGION_ID=ap-southeast-1   # Singapore unit
 # or
-export AGENTBAY_REGION_ID=cn-hangzhou  # For Hangzhou region
+export AGENTBAY_REGION_ID=us-east-1        # Virginia unit
+# or
+export AGENTBAY_REGION_ID=cn-hangzhou      # Hangzhou unit (default)
 ```
 
-**Important Notes:**
-- `region_id` is optional - if not specified, AgentBay will use the default region
-- This setting determines where your actual cloud sessions run, which can affect performance and data locality
-- Choose a region close to your users or data sources for optimal performance
-- Available region IDs can be found in the [AgentBay Console](https://agentbay.console.aliyun.com/)
-- The `region_id` is automatically passed to session and context creation APIs when configured
+### Using a Pre-release Endpoint
+
+Prefix the region with `pre-` to route to the pre-release unit:
+
+```bash
+export AGENTBAY_REGION_ID=pre-cn-hangzhou
+# → endpoint becomes agentbay-pre.cn-hangzhou.aliyuncs.com
+# → the SDK's stored region_id is normalized back to "cn-hangzhou"
+```
+
+**Notes:**
+- If `region_id` is not set, the SDK defaults to `cn-hangzhou` (Hangzhou unit).
+- The `region_id` is automatically passed to session and context creation APIs as `LoginRegionId`.
+- An unsupported `region_id` raises an error at SDK initialization.
 
 
 ### Development vs Production
@@ -250,17 +253,16 @@ find . -name ".env" -o -name ".git" -type d 2>/dev/null | head -10
 - Check if your API key has proper permissions
 - Contact support if the key should be valid
 
-#### 3. API Key and Gateway Mismatch
+#### 3. API Key and Region Mismatch
 **Error:** `NOT_LOGIN code: 400` with unexpected `HostId` in error response
 
-**Example:** Error shows `'HostId': 'wuyingai.ap-southeast-1.aliyuncs.com'` but you expected to connect to Shanghai gateway.
+**Example:** Error shows `'HostId': 'agentbay.ap-southeast-1.aliyuncs.com'` but you expected the Hangzhou unit.
 
 **Solution:**
-- Check if your API key matches the gateway region you're trying to use
-- Ensure `AGENTBAY_ENDPOINT` matches your API key's region
-- Domestic (China) API keys typically work with China mainland gateway endpoints (e.g., `wuyingai.cn-shanghai.aliyuncs.com`)
-- International API keys typically work with international gateway endpoints (e.g., `wuyingai.ap-southeast-1.aliyuncs.com`)
-- API keys are region-specific and cannot be used across different gateway regions
+- Check that your API key is authorized in the region selected by `AGENTBAY_REGION_ID`.
+- Domestic (China) API keys typically work with `cn-hangzhou`.
+- International API keys typically work with `ap-southeast-1` or `us-east-1`.
+- API keys are region-specific and cannot be used across different unit regions.
 
 #### 4. Wrong Endpoint/Network Issues
 **Error:** `Failed to resolve 'invalid-endpoint.com'` or `NameResolutionError`
@@ -298,10 +300,9 @@ except Exception as e:
 
 ## Best Practices
 
-- **Gateway Selection:** Choose the API gateway closest to your users for optimal network performance
+- **Region Selection:** Pick the region closest to your users (`cn-hangzhou`, `ap-southeast-1`, `us-east-1`) for optimal network performance
 - **Security:** Use environment variables in production (not hardcoded values)
-- **Validation:** Test configuration during application startup
-- **Future Planning:** Be aware that future versions may support specifying cloud environment regions separately during session creation
+- **Validation:** Test configuration during application startup — an unsupported `region_id` raises immediately
 
 ## 📚 Related Guides
 

@@ -63,9 +63,8 @@ The SDK automatically reads configuration from environment variables:
 
 ```bash
 export AGENTBAY_API_KEY=your_api_key
-export AGENTBAY_ENDPOINT=wuyingai.cn-shanghai.aliyuncs.com  # Optional
-export AGENTBAY_REGION_ID=cn-shanghai                       # Optional
-export AGENTBAY_TIMEOUT_MS=60000                            # Optional
+export AGENTBAY_REGION_ID=cn-hangzhou   # Optional, default: cn-hangzhou. Endpoint is derived from region.
+export AGENTBAY_TIMEOUT_MS=60000        # Optional, default: 60000
 ```
 
 ```java
@@ -78,7 +77,8 @@ You can also provide configuration explicitly:
 
 ```java
 String apiKey = "your_api_key";
-Config config = new Config("cn-shanghai", "wuyingai.cn-shanghai.aliyuncs.com", 60000);
+// Endpoint is derived from regionId via the multi-region mapping.
+Config config = new Config("cn-hangzhou", 60000);
 AgentBay agentBay = new AgentBay(apiKey, config);
 ```
 

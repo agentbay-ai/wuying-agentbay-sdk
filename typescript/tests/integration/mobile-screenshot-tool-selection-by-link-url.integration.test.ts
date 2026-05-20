@@ -1,9 +1,11 @@
 import { AgentBay } from "../../src";
 
-const LINK_URL_ENDPOINT = "agentbay-pre.cn-hangzhou.aliyuncs.com";
+// After the multi-region refactor, endpoints are derived from region_id.
+// Both pre-release endpoints map to the "pre-cn-hangzhou" region.
+const LINK_URL_REGION = "pre-cn-hangzhou";
 const LINK_URL_IMAGE_ID = "mobile-use-android-12-gw";
 
-const NO_LINK_URL_ENDPOINT = "wuyingai-pre.cn-hangzhou.aliyuncs.com";
+const NO_LINK_URL_REGION = "pre-cn-hangzhou";
 const NO_LINK_URL_IMAGE_ID = "mobile_latest";
 
 describe("Mobile screenshot tool selection by linkUrl", () => {
@@ -16,9 +18,8 @@ describe("Mobile screenshot tool selection by linkUrl", () => {
     const client = new AgentBay({
       apiKey,
       config: {
-        endpoint: LINK_URL_ENDPOINT,
         timeout_ms: 60000,
-        region_id: process.env.AGENTBAY_REGION_ID,
+        region_id: process.env.AGENTBAY_REGION_ID || LINK_URL_REGION,
       },
     });
 
@@ -65,9 +66,8 @@ describe("Mobile screenshot tool selection by linkUrl", () => {
     const client = new AgentBay({
       apiKey,
       config: {
-        endpoint: NO_LINK_URL_ENDPOINT,
         timeout_ms: 60000,
-        region_id: process.env.AGENTBAY_REGION_ID,
+        region_id: process.env.AGENTBAY_REGION_ID || NO_LINK_URL_REGION,
       },
     });
 

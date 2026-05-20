@@ -12,7 +12,6 @@ describe("Region ID Integration Tests", () => {
   describe("AgentBay initialization", () => {
     test("should create AgentBay client with region_id", () => {
       const config = {
-        endpoint: "wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms: 60000,
         region_id: "cn-hangzhou",
       };
@@ -23,9 +22,8 @@ describe("Region ID Integration Tests", () => {
 
       expect(client.getRegionId()).toBe("cn-hangzhou");
     });
-    test("should handle empty region_id", () => {
+    test("should fall back to default when region_id is empty", () => {
       const config = {
-        endpoint: "wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms: 60000,
         region_id: "",
       };
@@ -34,14 +32,14 @@ describe("Region ID Integration Tests", () => {
         config: config,
       });
 
-      expect(client.getRegionId()).toBe("");
+      // Empty string is treated as "not provided" → default cn-hangzhou
+      expect(client.getRegionId()).toBe("cn-hangzhou");
     });
   });
 
   describe("Session creation with region_id", () => {
     test("should create session successfully with region_id", async () => {
       const config = {
-        endpoint: "wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms: 60000,
         region_id: "cn-hangzhou",
       };
@@ -81,7 +79,6 @@ describe("Region ID Integration Tests", () => {
   describe("Context operations with region_id", () => {
     test("should create context successfully with region_id", async () => {
       const config = {
-        endpoint: "wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms: 60000,
         region_id: "cn-hangzhou",
       };
@@ -106,7 +103,6 @@ describe("Region ID Integration Tests", () => {
 
     test("should get existing context without create (no LoginRegionId)", async () => {
       const config = {
-        endpoint: "wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms: 60000,
         region_id: "cn-hangzhou",
       };
@@ -144,7 +140,6 @@ describe("Region ID Integration Tests", () => {
   describe("End-to-end workflow with region_id", () => {
     test("should complete full workflow with region_id", async () => {
       const config = {
-        endpoint: "wuyingai.cn-shanghai.aliyuncs.com",
         timeout_ms: 60000,
         region_id: "cn-hangzhou",
       };

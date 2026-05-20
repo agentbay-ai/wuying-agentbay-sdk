@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import dotenv
 
@@ -11,29 +11,70 @@ from .logger import get_logger
 _logger = get_logger("config")
 
 
+# Region → unit-service endpoint mapping. The endpoint is no longer user-configurable;
+# it is derived from region_id via this table. Pre-release endpoints are obtained by
+# prefixing the region with "pre-" (e.g. "pre-cn-hangzhou" → agentbay-pre.cn-hangzhou…).
+_REGION_ENDPOINT_MAP: Dict[str, str] = {
+    "cn-hangzhou": "agentbay.cn-hangzhou.aliyuncs.com",
+    "ap-southeast-1": "agentbay.ap-southeast-1.aliyuncs.com",
+    "us-east-1": "agentbay.us-east-1.aliyuncs.com",
+}
+_DEFAULT_REGION = "cn-hangzhou"
+_PRE_PREFIX = "pre-"
+
+
+def _resolve_endpoint(region_id: Optional[str]) -> Tuple[str, str]:
+    """Resolve (actual_region, endpoint) from a user-supplied region_id.
+
+    Empty/None region falls back to the default. A "pre-" prefix selects the
+    pre-release endpoint and is stripped from the returned region. Any region
+    not in the supported mapping raises ValueError.
+    """
+    if not region_id:
+        region_id = _DEFAULT_REGION
+
+    if region_id.startswith(_PRE_PREFIX):
+        actual = region_id[len(_PRE_PREFIX):]
+        if actual not in _REGION_ENDPOINT_MAP:
+            raise ValueError(_invalid_region_message(region_id))
+        return actual, f"agentbay-pre.{actual}.aliyuncs.com"
+
+    if region_id not in _REGION_ENDPOINT_MAP:
+        raise ValueError(_invalid_region_message(region_id))
+    return region_id, _REGION_ENDPOINT_MAP[region_id]
+
+
+def _invalid_region_message(region_id: str) -> str:
+    supported = ", ".join(_REGION_ENDPOINT_MAP.keys())
+    return (
+        f"Invalid region_id '{region_id}'. Supported regions: {supported}. "
+        f"For pre-release, use 'pre-' prefix (e.g., 'pre-cn-hangzhou')."
+    )
+
+
 class Config:
     """
     Configuration object for AgentBay client.
+
+    `endpoint` is no longer a user input — it is derived from `region_id`.
     """
 
     def __init__(
         self,
-        endpoint: Optional[str] = None,
         timeout_ms: Optional[int] = None,
         region_id: Optional[str] = None,
     ):
-        defaults = _default_config()
-        self.endpoint = defaults["endpoint"] if endpoint is None else endpoint
-        self.timeout_ms = defaults["timeout_ms"] if timeout_ms is None else timeout_ms
+        self.timeout_ms = timeout_ms
         self.region_id = region_id
+        self.endpoint: Optional[str] = None
 
 
 def _default_config() -> Dict[str, Any]:
     """Return the default configuration"""
     return {
-        "endpoint": "wuyingai.cn-shanghai.aliyuncs.com",
+        "endpoint": _REGION_ENDPOINT_MAP[_DEFAULT_REGION],
         "timeout_ms": 60000,
-        "region_id": None,
+        "region_id": _DEFAULT_REGION,
     }
 
 
@@ -125,11 +166,13 @@ def _load_dotenv_with_fallback(custom_env_path: Optional[str] = None) -> None:
 
 
 """
-The SDK uses the following precedence order for configuration (highest to lowest):
+The SDK uses the following precedence order for region_id (highest to lowest):
 1. Explicitly passed configuration in code.
-2. Environment variables.
+2. Environment variable AGENTBAY_REGION_ID.
 3. .env file (searched upward from current directory).
-4. Default configuration.
+4. Default region (cn-hangzhou).
+
+Endpoint is always derived from the resolved region — it is not a user input.
 """
 
 
@@ -142,21 +185,18 @@ def _load_config(cfg, custom_env_path: Optional[str] = None) -> Dict[str, Any]:
         custom_env_path: Custom path to .env file (optional)
 
     Returns:
-        Configuration dictionary
+        Configuration dictionary with endpoint derived from region_id.
     """
     if cfg is not None:
         config = _default_config()
 
         # When explicit config is provided, do NOT load env/.env.
         # Fill missing/empty fields with defaults, but preserve explicit values.
-        if getattr(cfg, "endpoint", None):
-            config["endpoint"] = cfg.endpoint
         if getattr(cfg, "timeout_ms", None):
-            # Treat 0 as "not provided"
             if isinstance(cfg.timeout_ms, int) and cfg.timeout_ms > 0:
                 config["timeout_ms"] = cfg.timeout_ms
-        if getattr(cfg, "region_id", None) is not None:
-            # Preserve empty string if explicitly provided
+        if getattr(cfg, "region_id", None):
+            # Empty string falls back to default (treated as "not provided")
             config["region_id"] = cfg.region_id
     else:
         config = _default_config()
@@ -167,9 +207,6 @@ def _load_config(cfg, custom_env_path: Optional[str] = None) -> Dict[str, Any]:
         except Exception as e:
             _logger.warning(f"Failed to load .env file: {e}")
 
-        # Apply environment variables (highest priority)
-        if endpoint := os.getenv("AGENTBAY_ENDPOINT"):
-            config["endpoint"] = endpoint
         if timeout_ms := os.getenv("AGENTBAY_TIMEOUT_MS"):
             try:
                 config["timeout_ms"] = int(timeout_ms)
@@ -180,4 +217,8 @@ def _load_config(cfg, custom_env_path: Optional[str] = None) -> Dict[str, Any]:
         if region_id := os.getenv("AGENTBAY_REGION_ID"):
             config["region_id"] = region_id
 
+    # Always derive endpoint from region_id; normalize region by stripping pre- prefix.
+    actual_region, endpoint = _resolve_endpoint(config["region_id"])
+    config["region_id"] = actual_region
+    config["endpoint"] = endpoint
     return config

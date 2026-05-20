@@ -45,14 +45,13 @@ public class SessionPauseResumeIntegrationTest {
         }
         System.out.println("API Key: ✓ Set");
         
-        String endpoint = System.getenv("AGENTBAY_ENDPOINT");
-        if (endpoint != null && !endpoint.isEmpty()) {
-            System.out.println("Endpoint: " + endpoint);
-            com.aliyun.agentbay.Config config = new com.aliyun.agentbay.Config();
-            config.setEndpoint(endpoint);
+        String regionId = System.getenv("AGENTBAY_REGION_ID");
+        if (regionId != null && !regionId.isEmpty()) {
+            System.out.println("Region: " + regionId);
+            com.aliyun.agentbay.Config config = new com.aliyun.agentbay.Config(regionId);
             agentBay = new AgentBay(apiKey, config);
         } else {
-            System.out.println("Endpoint: Using default");
+            System.out.println("Region: Using default");
             agentBay = new AgentBay(apiKey);
         }
         System.out.println(separator + "\n");

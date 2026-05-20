@@ -26,14 +26,14 @@ def agent_bay_client():
     if not api_key:
         pytest.skip("AGENTBAY_API_KEY environment variable is not set")
 
-    endpoint = os.environ.get("AGENTBAY_ENDPOINT")
-    if endpoint:
-        config = Config(endpoint=endpoint, timeout_ms=60000)
+    region_id = os.environ.get("AGENTBAY_REGION_ID")
+    if region_id:
+        config = Config(region_id=region_id, timeout_ms=60000)
         client = AgentBay(api_key=api_key, cfg=config)
-        print(f"Using endpoint: {endpoint}")
+        print(f"Using region_id: {region_id}")
     else:
         client = AgentBay(api_key=api_key)
-        print("Using default endpoint")
+        print("Using default region")
 
     return client
 

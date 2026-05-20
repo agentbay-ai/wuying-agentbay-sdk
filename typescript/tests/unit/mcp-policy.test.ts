@@ -8,7 +8,8 @@ describe("CreateMcpSession policyId", () => {
   let contextServiceConstructorStub: sinon.SinonStub;
 
   const mockConfigData = {
-    endpoint: "mock-endpoint",
+    region_id: "cn-hangzhou",
+    endpoint: "agentbay.cn-hangzhou.aliyuncs.com",
     timeout_ms: 30000,
   };
 
@@ -19,7 +20,7 @@ describe("CreateMcpSession policyId", () => {
     createMcpSessionStub = mockClient.createMcpSession;
 
     // Set environment variables for config instead of stubbing loadConfig
-    process.env.AGENTBAY_ENDPOINT = mockConfigData.endpoint;
+    process.env.AGENTBAY_REGION_ID = mockConfigData.region_id;
     process.env.AGENTBAY_TIMEOUT_MS = String(mockConfigData.timeout_ms);
 
     clientConstructorStub = sinon.stub().returns(mockClient);

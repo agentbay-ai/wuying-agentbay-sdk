@@ -8,11 +8,6 @@ function getTestAPIKey(): string {
   return process.env.AGENTBAY_API_KEY || "";
 }
 
-// Helper function to get test endpoint from environment
-function getTestEndpoint(): string {
-  return process.env.AGENTBAY_ENDPOINT || "";
-}
-
 describe("Context Clear Integration Tests", () => {
   let agentBay: AgentBay;
 
