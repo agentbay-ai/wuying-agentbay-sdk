@@ -446,6 +446,7 @@ public class ContextManager {
                     .map(ContextSync::getContextId)
                     .collect(Collectors.toList());
                 pollForBindCompletion(contextIds, 60, 2000);
+                waitForContextSync(new HashSet<>(contextIds));
             }
 
             return new ContextBindResult(requestId, true);
@@ -527,6 +528,14 @@ public class ContextManager {
                 }
             }
 
+            if (waitForCompletion) {
+                List<String> contextIds = new ArrayList<>();
+                contextIds.add(context.getContextId());
+                pollForBindCompletion(contextIds, 60, 2000);
+                Set<String> contextIdSet = new HashSet<>(contextIds);
+                waitForContextSync(contextIdSet);
+            }
+
             return new ContextBindResult(requestId, true);
         } catch (Exception e) {
             return new ContextBindResult("", false, "Failed to bind context mount: " + e.getMessage());
@@ -605,6 +614,79 @@ public class ContextManager {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
+            }
+        }
+    }
+
+    /**
+     * Wait for context synchronization to complete by polling context info status.
+     * Uses exponential backoff identical to AgentBay.waitForContextSynchronization.
+     *
+     * @param waitContextIds Set of context IDs to wait for
+     */
+    private void waitForContextSync(Set<String> waitContextIds) {
+        if (waitContextIds == null || waitContextIds.isEmpty()) {
+            return;
+        }
+
+        long initialInterval = 500;
+        long maxInterval = 5000;
+        double backoffFactor = 1.1;
+        int maxRetries = 50;
+
+        double currentInterval = initialInterval;
+
+        for (int retry = 0; retry < maxRetries; retry++) {
+            boolean shouldContinue = false;
+
+            try {
+                ContextInfoResult infoResult = info();
+
+                boolean hasFailure = false;
+                boolean allCompleted = true;
+                Set<String> seenContextIds = new HashSet<>();
+
+                for (ContextStatusData item : infoResult.getContextStatusData()) {
+                    if (!waitContextIds.contains(item.getContextId())) {
+                        continue;
+                    }
+                    seenContextIds.add(item.getContextId());
+
+                    if (!"Success".equals(item.getStatus()) && !"Failed".equals(item.getStatus())) {
+                        allCompleted = false;
+                    }
+
+                    if ("Failed".equals(item.getStatus())) {
+                        hasFailure = true;
+                    }
+                }
+
+                if (allCompleted) {
+                    for (String ctxId : waitContextIds) {
+                        if (!seenContextIds.contains(ctxId)) {
+                            allCompleted = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (allCompleted) {
+                    break;
+                }
+
+                shouldContinue = true;
+            } catch (Exception e) {
+                shouldContinue = true;
+            }
+
+            if (shouldContinue && retry < maxRetries - 1) {
+                try {
+                    Thread.sleep((long) currentInterval);
+                    currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
     }
