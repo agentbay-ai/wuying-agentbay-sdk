@@ -20,20 +20,6 @@ All notable changes to the Wuying AgentBay SDK will be documented in this file.
   Newly onboarded regions work without an SDK upgrade, but typos get an
   early hint in the log before the request actually fires. Validate
   `region_id` at the caller if you need fail-fast behavior.
-- **Pre-release switch**: prefix the region with `pre-` (e.g.
-  `pre-cn-hangzhou`) to target the pre-release host. The stored `region_id`
-  has the prefix stripped. Pre-release hostnames are resolved via a
-  hardcoded table (different regions use different conventions):
-
-  | Region | Pre-release endpoint |
-  | --- | --- |
-  | `pre-cn-hangzhou` | `agentbay-pre.cn-hangzhou.aliyuncs.com` |
-  | `pre-ap-southeast-1` | `wuyingai-pre.ap-southeast-1.aliyuncs.com` |
-
-  Unknown pre regions (not in the table) log a warning and fall back to
-  `agentbay-pre.{region}.aliyuncs.com`; the request may fail at DNS
-  resolution if the host does not exist.
-
 #### Soft deprecation of user-supplied `endpoint` (All SDKs)
 
 Existing code that passes `endpoint` continues to compile and run. The value
@@ -60,7 +46,6 @@ future major version.
 |---|---|
 | `Config(endpoint="...", region_id="cn-hangzhou")` | `Config(region_id="cn-hangzhou")` (the `endpoint=` value is still accepted but ignored with a deprecation warning) |
 | `AGENTBAY_ENDPOINT=agentbay.us-east-1.aliyuncs.com` | `AGENTBAY_REGION_ID=us-east-1` |
-| `AGENTBAY_ENDPOINT=agentbay-pre.cn-hangzhou.aliyuncs.com` | `AGENTBAY_REGION_ID=pre-cn-hangzhou` |
 | Both endpoint and region_id set | Keep only region_id (endpoint will be ignored + warned) |
 | Nothing set | No change required (default region is now `cn-hangzhou`) |
 

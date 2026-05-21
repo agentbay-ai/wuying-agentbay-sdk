@@ -57,19 +57,19 @@ def _resolve_endpoint(region_id: Optional[str]) -> Tuple[str, str]:
         if actual in _PRE_REGION_ENDPOINT_MAP:
             return actual, _PRE_REGION_ENDPOINT_MAP[actual]
         _logger.warning(
-            "Unknown pre-release region 'pre-%s'. Falling back to "
-            "'agentbay-pre.%s.aliyuncs.com'; the request may fail at DNS "
-            "resolution if the host does not exist. Known pre regions: %s.",
-            actual, actual, list(_PRE_REGION_ENDPOINT_MAP.keys()),
+            f"Unknown pre-release region 'pre-{actual}'. Falling back to "
+            f"'agentbay-pre.{actual}.aliyuncs.com'; the request may fail at "
+            f"DNS resolution if the host does not exist. Known pre regions: "
+            f"{list(_PRE_REGION_ENDPOINT_MAP.keys())}."
         )
         return actual, f"agentbay-pre.{actual}.aliyuncs.com"
 
     if region_id not in _KNOWN_REGIONS:
         _logger.warning(
-            "Unknown region '%s'. Falling back to 'agentbay.%s.aliyuncs.com'; "
-            "the request may fail at DNS resolution if the host does not exist. "
-            "Known regions: %s.",
-            region_id, region_id, list(_KNOWN_REGIONS),
+            f"Unknown region '{region_id}'. Falling back to "
+            f"'agentbay.{region_id}.aliyuncs.com'; the request may fail at "
+            f"DNS resolution if the host does not exist. Known regions: "
+            f"{list(_KNOWN_REGIONS)}."
         )
     return region_id, f"agentbay.{region_id}.aliyuncs.com"
 
