@@ -12,7 +12,6 @@ This guide explains how to configure the AgentBay SDK for different environments
 |-----------|---------------------|-------------|---------------|
 | API Key | `AGENTBAY_API_KEY` | Authentication key for API access | Required |
 | Region ID | `AGENTBAY_REGION_ID` | Region for sessions and endpoint derivation (see Supported Regions below) | `cn-hangzhou` |
-| Timeout | `AGENTBAY_TIMEOUT_MS` | Request timeout in milliseconds | `60000` |
 | Log Format | `AGENTBAY_LOG_FORMAT` | Log output format (`pretty`, `sls`) | `pretty` |
 
 > **Note:** `AGENTBAY_ENDPOINT` is no longer read by the SDK. Setting it has no effect — use `AGENTBAY_REGION_ID` instead.
@@ -72,7 +71,6 @@ If no configuration is provided, the SDK uses the following default values:
 }
 ```
 
-`endpoint` is shown for reference — it is derived internally from `region_id` and cannot be set directly.
 
 ## Configuration Priority
 
