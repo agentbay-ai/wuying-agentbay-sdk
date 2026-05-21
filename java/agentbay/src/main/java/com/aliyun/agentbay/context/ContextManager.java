@@ -402,7 +402,7 @@ public class ContextManager {
      * }</pre>
      *
      * @param contexts List of ContextSync objects to bind
-     * @param waitForCompletion Whether to poll until all bindings are confirmed
+     * @param waitForCompletion Whether to wait for bind registration and data download to complete
      * @return ContextBindResult with the result of the operation
      */
     public ContextBindResult bind(List<ContextSync> contexts, boolean waitForCompletion) {
@@ -446,7 +446,9 @@ public class ContextManager {
                     .map(ContextSync::getContextId)
                     .collect(Collectors.toList());
                 pollForBindCompletion(contextIds, 60, 2000);
-                waitForContextSync(new HashSet<>(contextIds));
+                for (ContextSync ctx : contexts) {
+                    pollForDownloadAfterBind(ctx.getContextId(), ctx.getPath());
+                }
             }
 
             return new ContextBindResult(requestId, true);
@@ -487,7 +489,7 @@ public class ContextManager {
      * Binds a single context mount to the current session with write-through persistence.
      *
      * @param context The BetaContextMount object to bind
-     * @param waitForCompletion Whether to poll until the binding is confirmed
+     * @param waitForCompletion Whether to wait for bind registration to complete
      * @return ContextBindResult with the result of the operation
      */
     public ContextBindResult bind(BetaContextMount context, boolean waitForCompletion) {
@@ -532,8 +534,6 @@ public class ContextManager {
                 List<String> contextIds = new ArrayList<>();
                 contextIds.add(context.getContextId());
                 pollForBindCompletion(contextIds, 60, 2000);
-                Set<String> contextIdSet = new HashSet<>(contextIds);
-                waitForContextSync(contextIdSet);
             }
 
             return new ContextBindResult(requestId, true);
@@ -619,74 +619,52 @@ public class ContextManager {
     }
 
     /**
-     * Wait for context synchronization to complete by polling context info status.
-     * Uses exponential backoff identical to AgentBay.waitForContextSynchronization.
-     *
-     * @param waitContextIds Set of context IDs to wait for
+     * Poll info() until download task reaches terminal status after bind.
      */
-    private void waitForContextSync(Set<String> waitContextIds) {
-        if (waitContextIds == null || waitContextIds.isEmpty()) {
-            return;
-        }
-
-        long initialInterval = 500;
+    private void pollForDownloadAfterBind(String contextId, String path) {
         long maxInterval = 5000;
         double backoffFactor = 1.1;
-        int maxRetries = 50;
-
-        double currentInterval = initialInterval;
+        int maxRetries = 150;
+        double currentInterval = 500;
 
         for (int retry = 0; retry < maxRetries; retry++) {
-            boolean shouldContinue = false;
-
             try {
-                ContextInfoResult infoResult = info();
+                ContextInfoResult infoResult = info(contextId, path, null);
 
-                boolean hasFailure = false;
-                boolean allCompleted = true;
-                Set<String> seenContextIds = new HashSet<>();
+                boolean hasDownload = false;
+                boolean allDone = true;
 
                 for (ContextStatusData item : infoResult.getContextStatusData()) {
-                    if (!waitContextIds.contains(item.getContextId())) {
+                    if (!"download".equals(item.getTaskType())) {
                         continue;
                     }
-                    seenContextIds.add(item.getContextId());
-
-                    if (!"Success".equals(item.getStatus()) && !"Failed".equals(item.getStatus())) {
-                        allCompleted = false;
-                    }
-
+                    hasDownload = true;
                     if ("Failed".equals(item.getStatus())) {
-                        hasFailure = true;
+                        return;
+                    }
+                    if (!"Success".equals(item.getStatus())) {
+                        allDone = false;
+                        break;
                     }
                 }
 
-                if (allCompleted) {
-                    for (String ctxId : waitContextIds) {
-                        if (!seenContextIds.contains(ctxId)) {
-                            allCompleted = false;
-                            break;
-                        }
-                    }
+                if (hasDownload && allDone) {
+                    return;
                 }
 
-                if (allCompleted) {
-                    break;
+                if (!hasDownload && retry >= 2) {
+                    return;
                 }
-
-                shouldContinue = true;
             } catch (Exception e) {
-                shouldContinue = true;
+                // continue polling
             }
 
-            if (shouldContinue && retry < maxRetries - 1) {
-                try {
-                    Thread.sleep((long) currentInterval);
-                    currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+            try {
+                Thread.sleep((long) currentInterval);
+                currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
     }

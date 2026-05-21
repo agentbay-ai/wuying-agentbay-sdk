@@ -598,7 +598,7 @@ export class ContextManager {
    * write-through persistence) objects. They can be mixed in a single call.
    *
    * @param contexts - One or more ContextSync or BetaContextMount objects
-   * @param waitForCompletion - Whether to poll until all bindings are confirmed (default: true)
+   * @param waitForCompletion - Whether to wait for bind registration and data download to complete (default: true). For ContextSync, waits until data is fully downloaded. For BetaContextMount, only waits for bind registration.
    * @returns Promise resolving to ContextBindResult
    *
    * @example
@@ -694,11 +694,15 @@ export class ContextManager {
       );
 
       if (waitForCompletion) {
-        const syncIds = ctxArray
-          .filter((c) => c instanceof ContextSync)
-          .map((c) => c.contextId);
-        if (syncIds.length > 0) {
+        const syncContexts = ctxArray.filter(
+          (c) => c instanceof ContextSync
+        ) as ContextSync[];
+        if (syncContexts.length > 0) {
+          const syncIds = syncContexts.map((c) => c.contextId);
           await this.pollForBindCompletion(syncIds);
+          for (const ctx of syncContexts) {
+            await this.pollForDownloadAfterBind(ctx.contextId, ctx.path);
+          }
         }
       }
 
@@ -790,6 +794,58 @@ export class ContextManager {
       logError("Error calling DescribeSessionContexts:", error);
       throw new Error(`Failed to list bindings: ${error}`);
     }
+  }
+
+  private async pollForDownloadAfterBind(
+    contextId: string,
+    path: string,
+    maxRetries = 150,
+    retryInterval = 500
+  ): Promise<boolean> {
+    const maxInterval = 5000;
+    const backoffFactor = 1.1;
+    let currentInterval = retryInterval;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const infoResult = await this.infoWithParams(contextId, path);
+
+        let hasDownload = false;
+        let allDone = true;
+
+        for (const item of infoResult.contextStatusData) {
+          if (item.taskType !== "download") continue;
+          hasDownload = true;
+          if (item.status === "Failed") {
+            logError(
+              `Download failed for context ${item.contextId}: ${item.errorMessage}`
+            );
+            return false;
+          }
+          if (item.status !== "Success") {
+            allDone = false;
+            break;
+          }
+        }
+
+        if (hasDownload && allDone) {
+          logInfo(`Download completed for context ${contextId}`);
+          return true;
+        }
+
+        if (!hasDownload && i >= 2) {
+          return true;
+        }
+      } catch {
+        logDebug(`Download polling attempt ${i + 1} failed, retrying...`);
+      }
+
+      await this.sleep(currentInterval);
+      currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+    }
+
+    logError(`Download polling timed out for context ${contextId}`);
+    return false;
   }
 
   private async pollForBindCompletion(

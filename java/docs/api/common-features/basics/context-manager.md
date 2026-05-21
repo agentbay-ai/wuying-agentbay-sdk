@@ -130,7 +130,7 @@ System.out.println("Bind success: " + result.isSuccess());
 
 **Parameters:**
 - `contexts` (List<ContextSync>): List of ContextSync objects to bind
-- `waitForCompletion` (boolean): Whether to poll until all bindings are confirmed
+- `waitForCompletion` (boolean): Whether to wait for bind registration and data download to complete
 
 **Returns:**
 - `ContextBindResult`: ContextBindResult with the result of the operation

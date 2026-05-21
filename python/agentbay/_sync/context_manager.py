@@ -55,7 +55,8 @@ class ContextManager:
 
         Args:
             *contexts: One or more ContextSync or BetaContextMount objects.
-            wait_for_completion: If True, polls list_bindings() until all bound contexts appear.
+            wait_for_completion: If True, waits for bind registration and data download
+              to complete (ContextSync only). BetaContextMount only waits for bind registration.
 
         Returns:
             ContextBindResult with success status, error_message, and request_id.
@@ -130,9 +131,12 @@ class ContextManager:
         )
 
         if wait_for_completion:
-            sync_ids = {c.context_id for c in contexts if isinstance(c, ContextSync)}
-            if sync_ids:
+            sync_contexts = [c for c in contexts if isinstance(c, ContextSync)]
+            if sync_contexts:
+                sync_ids = {c.context_id for c in sync_contexts}
                 self._poll_for_bind_completion(sync_ids)
+                for ctx in sync_contexts:
+                    self._poll_for_download_after_bind(ctx.context_id, ctx.path)
 
         return ContextBindResult(request_id=request_id, success=True)
 
@@ -156,6 +160,54 @@ class ContextManager:
             time.sleep(retry_interval)
 
         _logger.error(f"Bind completion polling timed out after {max_retries} attempts")
+        return False
+
+    def _poll_for_download_after_bind(
+        self,
+        context_id: str,
+        path: str,
+        max_retries: int = 150,
+        retry_interval: float = 0.5,
+    ) -> bool:
+        """Poll info() until download task reaches terminal status after bind."""
+        max_interval = 5.0
+        backoff_factor = 1.1
+        current_interval = retry_interval
+
+        for retry in range(max_retries):
+            try:
+                info_result = self.info(context_id=context_id, path=path)
+
+                has_download = False
+                all_done = True
+
+                for item in info_result.context_status_data:
+                    if item.task_type != "download":
+                        continue
+                    has_download = True
+                    if item.status == "Failed":
+                        _logger.warning(
+                            f"Download failed for context {item.context_id}: {item.error_message}"
+                        )
+                        return False
+                    if item.status != "Success":
+                        all_done = False
+                        break
+
+                if has_download and all_done:
+                    _logger.info(f"Download completed for context {context_id}")
+                    return True
+
+                if not has_download and retry >= 2:
+                    return True
+
+            except Exception as e:
+                _logger.error(f"Error polling download status on attempt {retry+1}: {e}")
+
+            time.sleep(current_interval)
+            current_interval = min(current_interval * backoff_factor, max_interval)
+
+        _logger.error(f"Download polling timed out for context {context_id}")
         return False
 
     def list_bindings(self) -> ContextBindingsResult:

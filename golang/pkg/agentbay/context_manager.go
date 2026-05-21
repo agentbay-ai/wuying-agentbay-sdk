@@ -558,6 +558,8 @@ func (cm *ContextManager) pollForCompletion(callback SyncCallback, contextId, pa
 }
 
 // Bind dynamically binds one or more contexts to the current session.
+// When waitForCompletion is true, waits for bind registration and data download
+// to complete before returning.
 //
 // Example:
 //
@@ -633,6 +635,9 @@ func (cm *ContextManager) Bind(contexts []*ContextSync, waitForCompletion bool) 
 
 	if waitForCompletion {
 		cm.pollForBindCompletion(contextIDs, 60, 2000)
+		for _, ctx := range contexts {
+			cm.pollForDownloadAfterBind(ctx.ContextID, ctx.Path, 150, 500)
+		}
 	}
 
 	return &ContextBindResult{
@@ -793,6 +798,57 @@ func (cm *ContextManager) ListBindings() (*ContextBindingsResult, error) {
 }
 
 // pollForBindCompletion polls ListBindings until all expected contexts are bound.
+func (cm *ContextManager) pollForDownloadAfterBind(contextID, path string, maxRetries, retryIntervalMs int) bool {
+	maxInterval := 5000
+	backoffFactor := 1.1
+	currentInterval := retryIntervalMs
+
+	for i := 0; i < maxRetries; i++ {
+		infoResult, err := cm.InfoWithParams(contextID, path, "")
+		if err != nil {
+			LogError(fmt.Sprintf("Error polling download status on attempt %d: %v", i+1, err))
+		} else {
+			hasDownload := false
+			allDone := true
+
+			for _, item := range infoResult.ContextStatusData {
+				if item.TaskType != "download" {
+					continue
+				}
+				hasDownload = true
+				if item.Status == "Failed" {
+					LogError(fmt.Sprintf("Download failed for context %s: %s", item.ContextId, item.ErrorMessage))
+					return false
+				}
+				if item.Status != "Success" {
+					allDone = false
+					break
+				}
+			}
+
+			if hasDownload && allDone {
+				LogInfo(fmt.Sprintf("Download completed for context %s", contextID))
+				return true
+			}
+
+			if !hasDownload && i >= 2 {
+				return true
+			}
+		}
+
+		time.Sleep(time.Duration(currentInterval) * time.Millisecond)
+		newInterval := int(float64(currentInterval) * backoffFactor)
+		if newInterval > maxInterval {
+			currentInterval = maxInterval
+		} else {
+			currentInterval = newInterval
+		}
+	}
+
+	LogError(fmt.Sprintf("Download polling timed out for context %s", contextID))
+	return false
+}
+
 func (cm *ContextManager) pollForBindCompletion(expectedContextIDs []string, maxRetries, retryIntervalMs int) bool {
 	for i := 0; i < maxRetries; i++ {
 		result, err := cm.ListBindings()

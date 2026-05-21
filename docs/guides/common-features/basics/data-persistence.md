@@ -206,7 +206,7 @@ if bindings_result.success:
 |--------|----------------------|-----------------|
 | **When** | At `create()` call | Any time during session |
 | **How** | `CreateSessionParams(context_syncs=[...])` | `session.context.bind(...)` |
-| **Wait for download** | SDK waits by default | SDK polls until binding confirmed |
+| **Wait for download** | SDK waits by default | SDK waits for download by default |
 | **Use case** | Known data requirements | Discovered at runtime |
 
 > **Note:** Each path can only be bound once per session. Attempting to bind a different context to an already-bound path will result in a `PathAlreadyBound` error. Paths under `/tmp/` are recommended for dynamic binding.

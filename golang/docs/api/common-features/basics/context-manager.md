@@ -98,7 +98,8 @@ mountResult, _ := session.Context.BetaMount([]*BetaContextMount{mount}, true)
 func (cm *ContextManager) Bind(contexts []*ContextSync, waitForCompletion bool) (*ContextBindResult, error)
 ```
 
-Bind dynamically binds one or more contexts to the current session.
+Bind dynamically binds one or more contexts to the current session. When waitForCompletion is true,
+waits for bind registration and data download to complete before returning.
 
 **Example:**
 
