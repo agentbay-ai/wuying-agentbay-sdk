@@ -60,7 +60,8 @@ public class Config {
 
     /**
      * Construct from regionId and timeoutMs. Endpoint is derived from regionId.
-     * Throws {@link IllegalArgumentException} if regionId is not in the supported map.
+     * Unknown regions are accepted with a warning logged (no exception is thrown),
+     * so newly onboarded regions work without an SDK upgrade.
      */
     public Config(String regionId, int timeoutMs) {
         applyRegion(regionId);
