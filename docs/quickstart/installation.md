@@ -318,30 +318,11 @@ public class VerifyInstallation {
 
 ## 🔧 Advanced Configuration (Optional)
 
-> **Note:** The SDK uses the Hangzhou unit region by default. Set `AGENTBAY_REGION_ID` to switch to a different region. The endpoint is derived from the region — it is not a separate configuration.
-
-### Supported Regions
-
-| Region ID | Derived Endpoint | Notes |
-|-----------|------------------|-------|
-| `cn-hangzhou` | `agentbay.cn-hangzhou.aliyuncs.com` | Default |
-| `ap-southeast-1` | `agentbay.ap-southeast-1.aliyuncs.com` |  |
-| `us-east-1` | `agentbay.us-east-1.aliyuncs.com` |  |
-| `pre-<region>` | `agentbay-pre.<region>.aliyuncs.com` | Pre-release |
-
-### Switching to a Different Region
-
-**Linux/macOS:**
-```bash
-export AGENTBAY_REGION_ID=ap-southeast-1
-```
-
-**Windows:**
-```cmd
-set AGENTBAY_REGION_ID=ap-southeast-1
-```
-
-For more configuration options, see the [SDK Configuration Guide](../guides/common-features/configuration/sdk-configuration.md).
+The SDK defaults to the Hangzhou unit (`cn-hangzhou`). To switch region,
+adjust timeouts, or tune log behavior, see the **[SDK Configuration
+Guide](../guides/common-features/configuration/sdk-configuration.md)** —
+it covers supported regions, the endpoint derivation rule, environment
+variables, and `.env` discovery in one place.
 
 ## 🆘 Troubleshooting
 

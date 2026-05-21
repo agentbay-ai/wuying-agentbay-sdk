@@ -4,7 +4,7 @@ This guide explains how to configure the AgentBay SDK for different environments
 
 > **Multi-language support:** Configuration concepts (API key, endpoint, region) apply to all SDKs. Code examples use Python. See: [Python](../../../../python/README.md) | [TypeScript](../../../../typescript/README.md) | [Golang](../../../../golang/README.md) | [Java](../../../../java/README.md)
 
-> **Important:** Configure the SDK by **region**. The endpoint is no longer a user input — it is derived from `region_id` via a fixed mapping table (Hangzhou / Singapore / Virginia / pre-release).
+> **Important:** Configure the SDK by **region**. The endpoint is no longer a user input — it is derived from `region_id` via direct pattern substitution (Hangzhou / Singapore / Virginia).
 
 ## Configuration Parameters
 
@@ -19,16 +19,21 @@ This guide explains how to configure the AgentBay SDK for different environments
 
 ## Supported Regions
 
-`region_id` drives the endpoint via a fixed mapping. Choose the region closest to your users for optimal network performance:
+`region_id` drives the endpoint via direct pattern substitution
+(`agentbay.{region_id}.aliyuncs.com`). Choose the region closest to your
+users for optimal network performance:
 
 | Region ID | Derived Endpoint | Notes |
 |-----------|------------------|-------|
 | `cn-hangzhou` | `agentbay.cn-hangzhou.aliyuncs.com` | Default |
 | `ap-southeast-1` | `agentbay.ap-southeast-1.aliyuncs.com` |  |
 | `us-east-1` | `agentbay.us-east-1.aliyuncs.com` |  |
-| `pre-<region>` (e.g. `pre-cn-hangzhou`) | `agentbay-pre.<region>.aliyuncs.com` | Pre-release; `<region>` must be one of the above |
 
-Invalid `region_id` values raise an error at SDK initialization with the list of supported regions.
+Unknown `region_id` values are not rejected — they are composed into the
+pattern and a warning is logged at SDK initialization. This lets newly
+onboarded regions work without an SDK upgrade, while still flagging typos
+(the request will fail at DNS resolution if the host does not exist).
+Validate `region_id` at the caller if you need fail-fast behavior.
 
 ## Log Configuration
 
@@ -195,20 +200,10 @@ export AGENTBAY_REGION_ID=us-east-1        # Virginia unit
 export AGENTBAY_REGION_ID=cn-hangzhou      # Hangzhou unit (default)
 ```
 
-### Using a Pre-release Endpoint
-
-Prefix the region with `pre-` to route to the pre-release unit:
-
-```bash
-export AGENTBAY_REGION_ID=pre-cn-hangzhou
-# → endpoint becomes agentbay-pre.cn-hangzhou.aliyuncs.com
-# → the SDK's stored region_id is normalized back to "cn-hangzhou"
-```
-
 **Notes:**
 - If `region_id` is not set, the SDK defaults to `cn-hangzhou` (Hangzhou unit).
 - The `region_id` is automatically passed to session and context creation APIs as `LoginRegionId`.
-- An unsupported `region_id` raises an error at SDK initialization.
+- An unknown `region_id` logs a warning at SDK initialization and falls back to the pattern; if the resulting hostname does not exist, the request fails at DNS resolution.
 
 
 ### Development vs Production
