@@ -167,7 +167,8 @@ public class Config {
     }
 
     /**
-     * Set a new regionId. Endpoint is re-derived from it. Throws if invalid.
+     * Set a new regionId. Endpoint is re-derived from it. Unknown regions
+     * are accepted with a warning logged.
      */
     public void setRegionId(String regionId) {
         applyRegion(regionId);
