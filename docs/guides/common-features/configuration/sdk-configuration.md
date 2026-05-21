@@ -65,9 +65,7 @@ If no configuration is provided, the SDK uses the following default values:
 
 ```json
 {
-    "region_id": "cn-hangzhou",
-    "endpoint": "agentbay.cn-hangzhou.aliyuncs.com",
-    "timeout_ms": 60000
+    "region_id": "cn-hangzhou"
 }
 ```
 
