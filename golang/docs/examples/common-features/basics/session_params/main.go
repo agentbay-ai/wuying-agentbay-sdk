@@ -52,7 +52,7 @@ func main() {
 	listParams.MaxResults = 5
 
 	limit := int32(5)
-	sessionsByLabelResult, err := agentBay.List("", listParams.Labels, nil, &limit)
+	sessionsByLabelResult, err := agentBay.List("", listParams.Labels, nil, &limit, "")
 	if err != nil {
 		fmt.Printf("\nError listing sessions by labels: %v\n", err)
 		os.Exit(1)
@@ -84,7 +84,7 @@ func main() {
 		nextPageParams.NextToken = sessionsByLabelResult.NextToken
 
 		page := 2
-		nextPageResult, err := agentBay.List("", nextPageParams.Labels, &page, &limit)
+		nextPageResult, err := agentBay.List("", nextPageParams.Labels, &page, &limit, "")
 		if err != nil {
 			fmt.Printf("\nError listing next page of sessions: %v\n", err)
 		} else {

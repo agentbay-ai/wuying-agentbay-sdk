@@ -306,7 +306,7 @@ func TestListByUIDLabel(t *testing.T) {
 	params.MaxResults = 4 // Set page size to 4
 	limit := int32(4)
 
-	firstPageResult, err := agentBayClient.List("", params.Labels, nil, &limit)
+	firstPageResult, err := agentBayClient.List("", params.Labels, nil, &limit, "")
 	if err != nil {
 		t.Fatalf("Error listing first page of sessions: %v", err)
 	}
@@ -343,7 +343,7 @@ func TestListByUIDLabel(t *testing.T) {
 	t.Log("Fetching second page...")
 	page := 2
 	secondPageLimit := int32(3)
-	secondPageResult, err := agentBayClient.List("", uidFilter, &page, &secondPageLimit)
+	secondPageResult, err := agentBayClient.List("", uidFilter, &page, &secondPageLimit, "")
 	if err != nil {
 		t.Fatalf("Error listing second page of sessions: %v", err)
 	}
@@ -478,7 +478,7 @@ func TestListByLabels_OnlyUnreleasedSessions(t *testing.T) {
 
 	// Use List to get sessions with the test label
 	t.Log("Listing sessions by label to verify only unreleased sessions are returned...")
-	sessionsResult, err := agentBayClient.List("", testLabel, nil, nil)
+	sessionsResult, err := agentBayClient.List("", testLabel, nil, nil, "")
 	if err != nil {
 		t.Fatalf("Error listing sessions by label: %v", err)
 	}

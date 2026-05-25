@@ -691,10 +691,10 @@ func NewListSessionParams() *ListSessionParams {
 // Example:
 //
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
-//	result, _ := client.List("", nil, nil, nil)
+//	result, _ := client.List("", nil, nil, nil, "")
 //	// Or using enum:
-//	result, _ := client.List(SessionStatusRunning.String(), nil, nil, nil)
-func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32) (*SessionListResult, error) {
+//	result, _ := client.List(SessionStatusRunning.String(), nil, nil, nil, "")
+func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32, imageId string) (*SessionListResult, error) {
 	// Validate status parameter if provided
 	if status != "" {
 		sessionStatus := SessionStatus(status)
@@ -759,6 +759,9 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 			}
 			if nextToken != "" {
 				listSessionRequest.NextToken = tea.String(nextToken)
+			}
+			if imageId != "" {
+				listSessionRequest.ImageId = tea.String(imageId)
 			}
 
 			response, err := a.Client.ListSession(listSessionRequest)
@@ -826,6 +829,11 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 	// Add status filter if provided
 	if status != "" {
 		listSessionRequest.Status = tea.String(status)
+	}
+
+	// Add image ID filter if provided
+	if imageId != "" {
+		listSessionRequest.ImageId = tea.String(imageId)
 	}
 
 	// Log API request
@@ -903,6 +911,12 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 						"sessionId":     *sessionData.SessionId,
 						"sessionStatus": sessionStatus,
 					}
+					if sessionData.AppInstanceId != nil {
+						sessionInfo["appInstanceId"] = *sessionData.AppInstanceId
+					}
+					if sessionData.ImageId != nil {
+						sessionInfo["imageId"] = *sessionData.ImageId
+					}
 					sessionIds = append(sessionIds, sessionInfo)
 				}
 			}
@@ -952,7 +966,7 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 //	result, _ := client.ListByStatus(SessionStatusRunning, nil, nil, nil)
 //	result, _ := client.ListByStatus("", nil, nil, nil) // No status filter
 func (a *AgentBay) ListByStatus(status SessionStatus, labels map[string]string, page *int, limit *int32) (*SessionListResult, error) {
-	return a.List(status.String(), labels, page, limit)
+	return a.List(status.String(), labels, page, limit, "")
 }
 
 // Delete deletes a session from the AgentBay cloud environment.

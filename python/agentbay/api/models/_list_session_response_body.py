@@ -112,9 +112,13 @@ class ListSessionResponseBody(DaraModel):
 class ListSessionResponseBodyData(DaraModel):
     def __init__(
         self,
+        app_instance_id: str = None,
+        image_id: str = None,
         session_id: str = None,
         session_status: str = None,
     ):
+        self.app_instance_id = app_instance_id
+        self.image_id = image_id
         self.session_id = session_id
         self.session_status = session_status
 
@@ -126,6 +130,10 @@ class ListSessionResponseBodyData(DaraModel):
         _map = super().to_map()
         if _map is not None:
             result = _map
+        if self.app_instance_id is not None:
+            result["AppInstanceId"] = self.app_instance_id
+        if self.image_id is not None:
+            result["ImageId"] = self.image_id
         if self.session_id is not None:
             result["SessionId"] = self.session_id
         if self.session_status is not None:
@@ -135,6 +143,10 @@ class ListSessionResponseBodyData(DaraModel):
 
     def from_map(self, m: dict = None):
         m = m or dict()
+        if m.get("AppInstanceId") is not None:
+            self.app_instance_id = m.get("AppInstanceId")
+        if m.get("ImageId") is not None:
+            self.image_id = m.get("ImageId")
         if m.get("SessionId") is not None:
             self.session_id = m.get("SessionId")
         if m.get("SessionStatus") is not None:

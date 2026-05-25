@@ -1349,6 +1349,10 @@ export class Client extends OpenApi {
       body["Status"] = request.status;
     }
 
+    if (!$dara.isNull(request.imageId)) {
+      body["ImageId"] = request.imageId;
+    }
+
     const req = new $OpenApiUtil.OpenApiRequest({
       body: OpenApiUtil.parseToMap(body),
     });

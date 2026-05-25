@@ -891,6 +891,7 @@ class AgentBay:
         page: Optional[int] = None,
         limit: Optional[int] = None,
         status: Optional[str] = None,
+        image_id: Optional[str] = None,
     ) -> SessionListResult:
         """
         Returns paginated list of session IDs filtered by labels synchronously.
@@ -905,6 +906,8 @@ class AgentBay:
             status (Optional[str], optional): Status to filter sessions. Must be one of:
                 RUNNING, PAUSING, PAUSED, RESUMING, DELETING, DELETED.
                 Defaults to None (returns sessions with any status).
+            image_id (Optional[str], optional): Image ID to filter sessions.
+                Defaults to None (returns sessions with any image).
 
         Returns:
             SessionListResult: Paginated list of session IDs that match the filters.
@@ -955,6 +958,7 @@ class AgentBay:
                         labels=labels_json,
                         max_results=limit,
                         status=status,
+                        image_id=image_id,
                     )
                     if next_token:
                         request.next_token = next_token
@@ -1000,6 +1004,7 @@ class AgentBay:
                 labels=labels_json,
                 max_results=limit,
                 status=status,
+                image_id=image_id,
             )
             if next_token:
                 request.next_token = next_token
@@ -1062,11 +1067,15 @@ class AgentBay:
                     if isinstance(session_data, dict):
                         session_id = session_data.get("SessionId")
                         session_status = session_data.get("SessionStatus")
+                        app_instance_id = session_data.get("AppInstanceId")
+                        image_id_value = session_data.get("ImageId")
                         if session_id:
                             # Create a structured session object with both ID and status
                             session_info = {
                                 "sessionId": session_id,
-                                "sessionStatus": session_status if session_status else "UNKNOWN"
+                                "sessionStatus": session_status if session_status else "UNKNOWN",
+                                "appInstanceId": app_instance_id,
+                                "imageId": image_id_value,
                             }
                             session_ids.append(session_info)
 

@@ -78,10 +78,10 @@ func TestAgentBay_List_NoLabels_WithMockClient(t *testing.T) {
 		MaxResults: 10,
 		TotalCount: 3,
 	}
-	mockAgentBay.EXPECT().List("", nil, nil, nil).Return(expectedResult, nil)
+	mockAgentBay.EXPECT().List("", nil, nil, nil, "").Return(expectedResult, nil)
 
 	// Test List method call without labels
-	result, err := mockAgentBay.List("", nil, nil, nil)
+	result, err := mockAgentBay.List("", nil, nil, nil, "")
 
 	// Verify call success
 	assert.NoError(t, err)
@@ -112,10 +112,10 @@ func TestAgentBay_List_WithLabels_WithMockClient(t *testing.T) {
 		MaxResults: 10,
 		TotalCount: 1,
 	}
-	mockAgentBay.EXPECT().List("", labels, nil, nil).Return(expectedResult, nil)
+	mockAgentBay.EXPECT().List("", labels, nil, nil, "").Return(expectedResult, nil)
 
 	// Test List method call with labels
-	result, err := mockAgentBay.List("", labels, nil, nil)
+	result, err := mockAgentBay.List("", labels, nil, nil, "")
 
 	// Verify call success
 	assert.NoError(t, err)
@@ -147,10 +147,10 @@ func TestAgentBay_List_WithPagination_WithMockClient(t *testing.T) {
 		MaxResults: 5,
 		TotalCount: 10,
 	}
-	mockAgentBay.EXPECT().List("", labels, &page, &limit).Return(expectedResult, nil)
+	mockAgentBay.EXPECT().List("", labels, &page, &limit, "").Return(expectedResult, nil)
 
 	// Test List method call with pagination
-	result, err := mockAgentBay.List("", labels, &page, &limit)
+	result, err := mockAgentBay.List("", labels, &page, &limit, "")
 
 	// Verify call success
 	assert.NoError(t, err)
@@ -173,10 +173,10 @@ func TestAgentBay_Error_WithMockClient(t *testing.T) {
 	mockAgentBay := mock.NewMockAgentBayInterface(ctrl)
 
 	// Set expected behavior - return error
-	mockAgentBay.EXPECT().List("", nil, nil, nil).Return(nil, assert.AnError)
+	mockAgentBay.EXPECT().List("", nil, nil, nil, "").Return(nil, assert.AnError)
 
 	// Test error case
-	result, err := mockAgentBay.List("", nil, nil, nil)
+	result, err := mockAgentBay.List("", nil, nil, nil, "")
 
 	// Verify error handling
 	assert.Error(t, err)

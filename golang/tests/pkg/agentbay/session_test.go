@@ -215,7 +215,7 @@ func TestSession_DeleteMethod(t *testing.T) {
 	}
 
 	// Verify the session was deleted by trying to list sessions
-	listResult, err := agentBay.List("", nil, nil, nil)
+	listResult, err := agentBay.List("", nil, nil, nil, "")
 	if err != nil {
 		t.Fatalf("Error listing sessions: %v", err)
 	}

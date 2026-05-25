@@ -109,6 +109,12 @@ public class ListSessionResponseBody extends TeaModel {
     }
 
     public static class ListSessionResponseBodyData extends TeaModel {
+        @NameInMap("AppInstanceId")
+        public String appInstanceId;
+
+        @NameInMap("ImageId")
+        public String imageId;
+
         @NameInMap("SessionId")
         public String sessionId;
 
@@ -118,6 +124,22 @@ public class ListSessionResponseBody extends TeaModel {
         public static ListSessionResponseBodyData build(java.util.Map<String, ?> map) throws Exception {
             ListSessionResponseBodyData self = new ListSessionResponseBodyData();
             return TeaModel.build(map, self);
+        }
+
+        public ListSessionResponseBodyData setAppInstanceId(String appInstanceId) {
+            this.appInstanceId = appInstanceId;
+            return this;
+        }
+        public String getAppInstanceId() {
+            return this.appInstanceId;
+        }
+
+        public ListSessionResponseBodyData setImageId(String imageId) {
+            this.imageId = imageId;
+            return this;
+        }
+        public String getImageId() {
+            return this.imageId;
         }
 
         public ListSessionResponseBodyData setSessionId(String sessionId) {

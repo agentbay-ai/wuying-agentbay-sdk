@@ -1569,6 +1569,10 @@ func (client *Client) ListSessionWithOptions(request *ListSessionRequest, runtim
 		body["Status"] = request.Status
 	}
 
+	if !dara.IsNil(request.ImageId) {
+		body["ImageId"] = request.ImageId
+	}
+
 	req := &openapiutil.OpenApiRequest{
 		Body: openapiutil.ParseToMap(body),
 	}

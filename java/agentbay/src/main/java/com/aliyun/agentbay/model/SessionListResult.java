@@ -93,6 +93,8 @@ public class SessionListResult {
     public static class SessionInfo {
         private String sessionId;
         private String sessionStatus;
+        private String appInstanceId;
+        private String imageId;
 
         public SessionInfo() {
         }
@@ -100,6 +102,19 @@ public class SessionListResult {
         public SessionInfo(String sessionId, String sessionStatus) {
             this.sessionId = sessionId;
             this.sessionStatus = sessionStatus;
+        }
+
+        public SessionInfo(String sessionId, String sessionStatus, String appInstanceId) {
+            this.sessionId = sessionId;
+            this.sessionStatus = sessionStatus;
+            this.appInstanceId = appInstanceId;
+        }
+
+        public SessionInfo(String sessionId, String sessionStatus, String appInstanceId, String imageId) {
+            this.sessionId = sessionId;
+            this.sessionStatus = sessionStatus;
+            this.appInstanceId = appInstanceId;
+            this.imageId = imageId;
         }
 
         public String getSessionId() {
@@ -116,6 +131,22 @@ public class SessionListResult {
 
         public void setSessionStatus(String sessionStatus) {
             this.sessionStatus = sessionStatus;
+        }
+
+        public String getAppInstanceId() {
+            return appInstanceId;
+        }
+
+        public void setAppInstanceId(String appInstanceId) {
+            this.appInstanceId = appInstanceId;
+        }
+
+        public String getImageId() {
+            return imageId;
+        }
+
+        public void setImageId(String imageId) {
+            this.imageId = imageId;
         }
     }
 }

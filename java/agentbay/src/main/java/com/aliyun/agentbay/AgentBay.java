@@ -874,13 +874,15 @@ public class AgentBay {
      * @param page Page number for pagination starting from 1 (optional)
      * @param limit Maximum number of items per page (default: 10)
      * @param status Status to filter sessions: RUNNING, PAUSING, PAUSED, RESUMING, DELETING, DELETED (optional)
+     * @param imageId Image ID to filter sessions (optional)
      * @return SessionListResult containing paginated list of session information
      */
     public SessionListResult list(
             java.util.Map<String, String> labels,
             Integer page,
             Integer limit,
-            String status) {
+            String status,
+            String imageId) {
         try {
             // Set default values
             if (limit == null) {
@@ -926,6 +928,9 @@ public class AgentBay {
                     request.setLabels(labelsJson);
                     request.setMaxResults(limit);
                     request.setStatus(status);
+                    if (imageId != null && !imageId.isEmpty()) {
+                        request.setImageId(imageId);
+                    }
                     if (nextToken != null && !nextToken.isEmpty()) {
                         request.setNextToken(nextToken);
                     }
@@ -971,6 +976,9 @@ public class AgentBay {
             request.setLabels(labelsJson);
             request.setMaxResults(limit);
             request.setStatus(status);
+            if (imageId != null && !imageId.isEmpty()) {
+                request.setImageId(imageId);
+            }
             if (nextToken != null && !nextToken.isEmpty()) {
                 request.setNextToken(nextToken);
             }
@@ -1001,10 +1009,14 @@ public class AgentBay {
                 for (ListSessionResponseBody.ListSessionResponseBodyData sessionData : body.getData()) {
                     String sessionId = sessionData.getSessionId();
                     String sessionStatus = sessionData.getSessionStatus();
+                    String appInstanceId = sessionData.getAppInstanceId();
+                    String imageIdValue = sessionData.getImageId();
                     if (sessionId != null) {
                         sessionInfos.add(new SessionListResult.SessionInfo(
                             sessionId,
-                            sessionStatus != null ? sessionStatus : "UNKNOWN"
+                            sessionStatus != null ? sessionStatus : "UNKNOWN",
+                            appInstanceId,
+                            imageIdValue
                         ));
                     }
                 }
@@ -1040,11 +1052,11 @@ public class AgentBay {
      * @return SessionListResult containing paginated list of session information
      */
     public SessionListResult list() {
-        return list(null, null, null, null);
+        return list((java.util.Map<String, String>) null, null, null, null, null);
     }
 
     public SessionListResult list(String status){
-        return list(null, null, null, status);
+        return list((java.util.Map<String, String>) null, null, null, status, null);
     }
     /**
      * Delete a session without context synchronization.

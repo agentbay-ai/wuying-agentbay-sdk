@@ -75,7 +75,7 @@ func TestContextPersistence(t *testing.T) {
 	params.ImageId = "linux_latest"
 
 	// List active sessions before creation
-	listSessionResult, err := agentBay.List("", nil, nil, nil)
+	listSessionResult, err := agentBay.List("", nil, nil, nil, "")
 	if err != nil {
 		t.Logf("Warning: Failed to list active sessions: %v", err)
 	} else {
@@ -170,7 +170,7 @@ func TestContextPersistence(t *testing.T) {
 	params.ImageId = "linux_latest"
 
 	// List active sessions before creating second session
-	listSessionResult, err = agentBay.List("", nil, nil, nil)
+	listSessionResult, err = agentBay.List("", nil, nil, nil, "")
 	if err != nil {
 		t.Logf("Warning: Failed to list active sessions before second session creation: %v", err)
 	} else {
@@ -240,7 +240,7 @@ func TestContextPersistence(t *testing.T) {
 	t.Log("Creating third session without context sync...")
 
 	// List active sessions before creating third session
-	listSessionResult, err = agentBay.List("", nil, nil, nil)
+	listSessionResult, err = agentBay.List("", nil, nil, nil, "")
 	if err != nil {
 		t.Logf("Warning: Failed to list active sessions before third session creation: %v", err)
 	} else {

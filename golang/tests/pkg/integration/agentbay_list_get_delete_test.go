@@ -26,7 +26,7 @@ func TestListGetDeleteWorkflow(t *testing.T) {
 	t.Log("\n[STEP 1] Listing all sessions using agentbay.List()...")
 	t.Log(strings.Repeat("─", 80))
 
-	listResult, err := client.List("", nil, nil, nil)
+	listResult, err := client.List("", nil, nil, nil, "")
 	if err != nil {
 		t.Fatalf("Failed to list sessions: %v", err)
 	}

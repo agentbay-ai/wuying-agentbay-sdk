@@ -825,7 +825,8 @@ export class AgentBay {
     labels: Record<string, string> = {},
     page?: number,
     limit = 10,
-    status?: string
+    status?: string,
+    imageId?: string
   ): Promise<SessionListResult> {
     try {
       // Validate status parameter
@@ -886,6 +887,9 @@ export class AgentBay {
           if (status) {
             request.status = status;
           }
+          if (imageId) {
+            request.imageId = imageId;
+          }
 
           const response = await this.client.listSession(request);
           const requestId = extractRequestId(response) || "";
@@ -933,6 +937,9 @@ export class AgentBay {
       if (status) {
         request.status = status;
       }
+      if (imageId) {
+        request.imageId = imageId;
+      }
 
       // Log API request
       logAPICall("ListSession", {
@@ -974,7 +981,7 @@ export class AgentBay {
         };
       }
 
-      const sessionIds: Array<{ sessionId: string; sessionStatus: string }> =
+      const sessionIds: Array<{ sessionId: string; sessionStatus: string; appInstanceId?: string; imageId?: string }> =
         [];
 
       // Extract session data
@@ -982,10 +989,16 @@ export class AgentBay {
         for (const sessionData of response.body.data) {
           if (sessionData.sessionId) {
             // Create a structured session object with both ID and status
-            const sessionInfo = {
+            const sessionInfo: { sessionId: string; sessionStatus: string; appInstanceId?: string; imageId?: string } = {
               sessionId: sessionData.sessionId,
               sessionStatus: sessionData.sessionStatus || "UNKNOWN",
             };
+            if (sessionData.appInstanceId) {
+              sessionInfo.appInstanceId = sessionData.appInstanceId;
+            }
+            if (sessionData.imageId) {
+              sessionInfo.imageId = sessionData.imageId;
+            }
             sessionIds.push(sessionInfo);
           }
         }
