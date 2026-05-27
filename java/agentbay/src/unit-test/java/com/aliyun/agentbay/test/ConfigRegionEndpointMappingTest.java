@@ -111,9 +111,9 @@ public class ConfigRegionEndpointMappingTest {
 
     @Test
     @SuppressWarnings("deprecation")
-    public void testDeprecatedConstructorWithEndpointIsIgnored() {
-        // Backwards compat: the 3-arg constructor accepts an endpoint argument
-        // but ignores it; endpoint is still derived from regionId.
+    public void testDeprecatedConstructorRegionIdWinsOverEndpoint() {
+        // When both regionId and endpoint are passed, regionId wins and
+        // endpoint is ignored (a deprecation warning is logged).
         Config cfg = new Config("ap-southeast-1", "should-be-ignored.example.com", 30000);
         assertEquals("ap-southeast-1", cfg.getRegionId());
         assertEquals("agentbay.ap-southeast-1.aliyuncs.com", cfg.getEndpoint());
@@ -122,10 +122,21 @@ public class ConfigRegionEndpointMappingTest {
 
     @Test
     @SuppressWarnings("deprecation")
-    public void testDeprecatedSetEndpointIsIgnored() {
+    public void testDeprecatedConstructorUsesEndpointWhenRegionIsNull() {
+        // Backwards compat fallback: when regionId is null/empty, the
+        // user-supplied endpoint is honored as-is (with a deprecation warning).
+        Config cfg = new Config(null, "fallback.example.com", 30000);
+        assertEquals("fallback.example.com", cfg.getEndpoint());
+        assertEquals(30000, cfg.getTimeoutMs());
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void testDeprecatedSetEndpointAppliesValue() {
+        // setEndpoint is deprecated but still applies the value — callers who
+        // relied on the old API keep working until the next major version.
         Config cfg = new Config("cn-hangzhou");
-        cfg.setEndpoint("should-be-ignored.example.com");
-        // Endpoint still reflects regionId, not the value passed to setEndpoint.
-        assertEquals("agentbay.cn-hangzhou.aliyuncs.com", cfg.getEndpoint());
+        cfg.setEndpoint("custom.example.com");
+        assertEquals("custom.example.com", cfg.getEndpoint());
     }
 }

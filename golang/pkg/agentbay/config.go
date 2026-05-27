@@ -9,17 +9,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config stores SDK configuration. Endpoint is no longer a user-supplied input —
-// it is derived from RegionID by direct pattern substitution. The field is kept
-// on the struct as the resolved output (used by AgentBay to initialize the
-// OpenAPI client), but any value the caller sets in a struct literal is
-// overwritten by loadConfig.
+// Config stores SDK configuration. The preferred input is RegionID; the SDK
+// derives the endpoint from it via direct pattern substitution. Endpoint is
+// retained as a deprecated fallback: when RegionID is not set the value of
+// Endpoint is used as-is. When both are set, RegionID wins and Endpoint is
+// ignored. Either form emits a deprecation warning via Deprecated(...).
 type Config struct {
-	// Deprecated: Endpoint is derived from RegionID by direct pattern
-	// substitution (agentbay.{RegionID}.aliyuncs.com). Any value set here
-	// by callers is ignored and overwritten by loadConfig (a deprecation
-	// warning is logged). Set RegionID instead. Will be removed in a
-	// future major version.
+	// Deprecated: pass RegionID instead. When RegionID is unset (in code or
+	// via AGENTBAY_REGION_ID), Endpoint is honored as a fallback so legacy
+	// callers keep working. Will be removed in a future major version.
 	Endpoint  string `json:"endpoint"`
 	TimeoutMs int    `json:"timeout_ms"`
 	RegionID  string `json:"region_id"`
@@ -219,15 +217,17 @@ func loadDotEnvWithFallback(customEnvPath string) {
 }
 
 // loadConfig loads the configuration from file or environment variables.
-// The SDK uses the following precedence order for region_id (highest to lowest):
-// 1. Explicitly passed configuration in code.
-// 2. Environment variable AGENTBAY_REGION_ID.
-// 3. .env file (searched upward from current directory).
-// 4. Default region (cn-hangzhou).
+// Precedence (highest to lowest), evaluated independently for region_id and
+// the deprecated endpoint fallback:
+//  1. Explicit cfg.RegionID in code.
+//  2. Explicit cfg.Endpoint in code (deprecated fallback).
+//  3. AGENTBAY_REGION_ID environment variable.
+//  4. AGENTBAY_ENDPOINT environment variable (deprecated fallback).
+//  5. Default region (cn-hangzhou).
 //
-// Endpoint is always derived from the resolved region — it is not a user input.
-// If the caller sets cfg.Endpoint in a struct literal it is silently overwritten
-// (with a warning logged); use cfg.RegionID instead.
+// When region_id is resolved at any level, the endpoint is derived from it via
+// the pattern. The endpoint fallback only kicks in when no region_id is found
+// at any level, and it bypasses the pattern (the value is used as-is).
 //
 // Args:
 //
@@ -235,21 +235,35 @@ func loadDotEnvWithFallback(customEnvPath string) {
 //	customEnvPath: Custom path to .env file (empty string means search upward)
 func loadConfig(cfg *Config, customEnvPath string) Config {
 	config := defaultConfig()
+	var explicitRegion, explicitEndpoint string
 
 	if cfg != nil {
 		// If config is explicitly provided, do NOT load env/.env.
-		// Fill missing/zero fields with defaults, but preserve explicit values.
 		if cfg.TimeoutMs > 0 {
 			config.TimeoutMs = cfg.TimeoutMs
 		}
 		if cfg.RegionID != "" {
-			config.RegionID = cfg.RegionID
+			explicitRegion = cfg.RegionID
 		}
 		if cfg.Endpoint != "" {
+			explicitEndpoint = cfg.Endpoint
+		}
+		// Both set in code: RegionID wins, Endpoint ignored with deprecation warning.
+		if explicitRegion != "" && explicitEndpoint != "" {
 			Deprecated(
 				fmt.Sprintf(
-					"Config.Endpoint=%q is ignored; endpoint is derived from RegionID.",
-					cfg.Endpoint),
+					"Config.Endpoint=%q is ignored because Config.RegionID=%q is also set.",
+					explicitEndpoint, explicitRegion),
+				"Config.RegionID",
+				"0.21.0",
+			)
+			explicitEndpoint = ""
+		} else if explicitEndpoint != "" {
+			Deprecated(
+				fmt.Sprintf(
+					"Config.Endpoint=%q is deprecated; pass RegionID instead. "+
+						"The value is used as a fallback when RegionID is not set.",
+					explicitEndpoint),
 				"Config.RegionID",
 				"0.21.0",
 			)
@@ -265,14 +279,38 @@ func loadConfig(cfg *Config, customEnvPath string) Config {
 			}
 		}
 		if regionID := os.Getenv("AGENTBAY_REGION_ID"); regionID != "" {
-			config.RegionID = regionID
+			explicitRegion = regionID
+		}
+		if envEndpoint := os.Getenv("AGENTBAY_ENDPOINT"); envEndpoint != "" {
+			if explicitRegion != "" {
+				LogWarn(fmt.Sprintf(
+					"AGENTBAY_ENDPOINT=%q is deprecated and ignored because "+
+						"AGENTBAY_REGION_ID is also set. Unset AGENTBAY_ENDPOINT "+
+						"to silence this warning.", envEndpoint))
+			} else {
+				LogWarn(fmt.Sprintf(
+					"AGENTBAY_ENDPOINT=%q is deprecated; set AGENTBAY_REGION_ID "+
+						"instead. The value is used as a fallback and will be "+
+						"removed in a future major version.", envEndpoint))
+				explicitEndpoint = envEndpoint
+			}
 		}
 	}
 
-	// Always derive endpoint from region_id; normalize region by stripping pre- prefix.
-	actualRegion, endpoint := resolveEndpoint(config.RegionID)
-	config.RegionID = actualRegion
-	config.Endpoint = endpoint
+	if explicitRegion != "" {
+		actualRegion, endpoint := resolveEndpoint(explicitRegion)
+		config.RegionID = actualRegion
+		config.Endpoint = endpoint
+	} else if explicitEndpoint != "" {
+		// Deprecated fallback: use the user-supplied endpoint verbatim.
+		// RegionID is left at its default so downstream code that reads it
+		// (e.g. for telemetry) still has a non-empty value.
+		config.Endpoint = explicitEndpoint
+	} else {
+		actualRegion, endpoint := resolveEndpoint(config.RegionID)
+		config.RegionID = actualRegion
+		config.Endpoint = endpoint
+	}
 	return config
 }
 

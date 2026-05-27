@@ -209,4 +209,33 @@ func TestRegionIDSupport(t *testing.T) {
 			t.Errorf("Endpoint: want %q, got %q", want, got)
 		}
 	})
+
+	t.Run("CfgEndpointAloneIsUsedAsFallback", func(t *testing.T) {
+		// Deprecated fallback: when only Endpoint is set (no RegionID at any
+		// level), the user-supplied endpoint is honored as-is.
+		t.Setenv("AGENTBAY_REGION_ID", "")
+		t.Setenv("AGENTBAY_ENDPOINT", "")
+		config := &agentbay.Config{Endpoint: "custom.example.com"}
+		client, err := agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
+		if err != nil {
+			t.Fatalf("Failed to create AgentBay client: %v", err)
+		}
+		if got, want := *client.Client.Endpoint, "custom.example.com"; got != want {
+			t.Errorf("Endpoint: want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("CfgEndpointWinsOverEnvRegionID", func(t *testing.T) {
+		// Code layer beats env layer entirely: cfg.Endpoint takes effect even
+		// though AGENTBAY_REGION_ID is set in the environment.
+		t.Setenv("AGENTBAY_REGION_ID", "us-east-1")
+		config := &agentbay.Config{Endpoint: "cfg-endpoint.example.com"}
+		client, err := agentbay.NewAgentBay("test-api-key", agentbay.WithConfig(config))
+		if err != nil {
+			t.Fatalf("Failed to create AgentBay client: %v", err)
+		}
+		if got, want := *client.Client.Endpoint, "cfg-endpoint.example.com"; got != want {
+			t.Errorf("Endpoint: want %q, got %q", want, got)
+		}
+	})
 }

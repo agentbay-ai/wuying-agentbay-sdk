@@ -161,5 +161,64 @@ class LoadConfigTestCase(unittest.TestCase):
         self.assertEqual(result["timeout_ms"], 10000)
 
 
+class EndpointFallbackTestCase(unittest.TestCase):
+    """Covers the deprecated `endpoint` fallback path.
+
+    `endpoint` is honored as-is only when `region_id` is not resolved at any
+    level. When both are set at the same level (or at any level above the
+    endpoint), region_id wins. Within a level, code beats env.
+    """
+
+    def setUp(self):
+        for var in ("AGENTBAY_REGION_ID", "AGENTBAY_ENDPOINT", "AGENTBAY_TIMEOUT_MS"):
+            os.environ.pop(var, None)
+
+    def tearDown(self):
+        for var in ("AGENTBAY_REGION_ID", "AGENTBAY_ENDPOINT", "AGENTBAY_TIMEOUT_MS"):
+            os.environ.pop(var, None)
+
+    def _load_without_dotenv(self, cfg):
+        with patch(
+            "agentbay._common.config._load_dotenv_with_fallback",
+            lambda *a, **kw: None,
+        ):
+            return _load_config(cfg)
+
+    def test_cfg_endpoint_only_is_used_as_fallback(self):
+        cfg = Config(endpoint="custom.example.com")
+        result = self._load_without_dotenv(cfg)
+        self.assertEqual(result["endpoint"], "custom.example.com")
+
+    def test_cfg_region_wins_over_cfg_endpoint(self):
+        cfg = Config(region_id="ap-southeast-1", endpoint="ignored.example.com")
+        result = self._load_without_dotenv(cfg)
+        self.assertEqual(result["region_id"], "ap-southeast-1")
+        self.assertEqual(result["endpoint"], "agentbay.ap-southeast-1.aliyuncs.com")
+
+    def test_env_endpoint_only_is_used_as_fallback(self):
+        os.environ["AGENTBAY_ENDPOINT"] = "env-endpoint.example.com"
+        result = self._load_without_dotenv(None)
+        self.assertEqual(result["endpoint"], "env-endpoint.example.com")
+
+    def test_env_region_wins_over_env_endpoint(self):
+        os.environ["AGENTBAY_REGION_ID"] = "us-east-1"
+        os.environ["AGENTBAY_ENDPOINT"] = "env-endpoint.example.com"
+        result = self._load_without_dotenv(None)
+        self.assertEqual(result["region_id"], "us-east-1")
+        self.assertEqual(result["endpoint"], "agentbay.us-east-1.aliyuncs.com")
+
+    def test_cfg_endpoint_wins_over_env_region(self):
+        # Code layer (even just endpoint) beats env layer entirely.
+        os.environ["AGENTBAY_REGION_ID"] = "us-east-1"
+        cfg = Config(endpoint="cfg-endpoint.example.com")
+        result = self._load_without_dotenv(cfg)
+        self.assertEqual(result["endpoint"], "cfg-endpoint.example.com")
+
+    def test_empty_region_id_with_endpoint_uses_endpoint(self):
+        cfg = Config(region_id="", endpoint="fallback.example.com")
+        result = self._load_without_dotenv(cfg)
+        self.assertEqual(result["endpoint"], "fallback.example.com")
+
+
 if __name__ == "__main__":
     unittest.main()

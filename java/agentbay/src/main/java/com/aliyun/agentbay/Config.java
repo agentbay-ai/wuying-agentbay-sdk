@@ -11,12 +11,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Configuration class for AgentBay SDK.
  *
- * <p>Endpoint is no longer a user input — it is derived from {@code regionId} by
- * direct pattern substitution ({@code agentbay.{regionId}.aliyuncs.com}, or
- * {@code agentbay-pre.{regionId}.aliyuncs.com} when the regionId has a
- * {@code pre-} prefix). The {@code endpoint} field is kept on the class as the
- * resolved output (used by AgentBay to initialize the OpenAPI client), but
- * cannot be set directly by callers.
+ * <p>The preferred input is {@code regionId}; the SDK derives the endpoint from
+ * it via direct pattern substitution ({@code agentbay.{regionId}.aliyuncs.com},
+ * or {@code agentbay-pre.{regionId}.aliyuncs.com} when the regionId has a
+ * {@code pre-} prefix). {@code endpoint} is retained as a deprecated fallback:
+ * when {@code regionId} is not set the user-supplied {@code endpoint} is used
+ * as-is. When both are set, {@code regionId} wins and {@code endpoint} is
+ * ignored. Either form emits a deprecation warning.
  */
 public class Config {
     private static final Logger logger = LoggerFactory.getLogger(Config.class);
@@ -77,31 +78,66 @@ public class Config {
 
     /**
      * No-arg constructor: load configuration from environment variables (with .env fallback).
+     *
+     * <p>Reads {@code AGENTBAY_REGION_ID} (preferred). If unset, falls back to
+     * the deprecated {@code AGENTBAY_ENDPOINT} env var (a warning is logged).
+     * If neither is set, the default region applies.
      */
     public Config() {
-        applyRegion(loadRegionId());
+        String envRegion = loadRegionId();
+        if (envRegion != null) {
+            applyRegion(envRegion);
+        } else {
+            String envEndpoint = loadEnvEndpoint();
+            if (envEndpoint != null) {
+                logger.warn(
+                    "[DeprecationWarning] AGENTBAY_ENDPOINT=\"{}\" is deprecated; "
+                    + "set AGENTBAY_REGION_ID instead. The value is used as a "
+                    + "fallback and will be removed in a future major version.",
+                    envEndpoint);
+                this.regionId = DEFAULT_REGION;
+                this.endpoint = envEndpoint;
+            } else {
+                applyRegion(null);
+            }
+        }
         this.timeoutMs = loadTimeoutMs();
     }
 
     /**
      * Backwards-compatibility constructor. The {@code endpoint} argument is
-     * ignored (a deprecation warning is logged) — endpoint is derived from
-     * {@code regionId}. Use {@link #Config(String, int)} instead.
+     * honored only when {@code regionId} is null/empty (a deprecation warning
+     * is logged either way). When both are set, {@code regionId} wins and
+     * {@code endpoint} is ignored. Use {@link #Config(String, int)} instead.
      *
-     * @deprecated since 0.21.0. The {@code endpoint} parameter is ignored.
+     * @deprecated since 0.21.0. The {@code endpoint} parameter is a fallback only.
      *     Will be removed in a future major version.
      */
     @Deprecated
     public Config(String regionId, String endpoint, int timeoutMs) {
-        applyRegion(regionId);
-        this.timeoutMs = timeoutMs > 0 ? timeoutMs : DEFAULT_TIMEOUT_MS;
-        if (endpoint != null && !endpoint.isEmpty()) {
+        boolean hasRegion = regionId != null && !regionId.isEmpty();
+        boolean hasEndpoint = endpoint != null && !endpoint.isEmpty();
+        if (hasRegion) {
+            applyRegion(regionId);
+            if (hasEndpoint) {
+                logger.warn(
+                    "[DeprecationWarning] Config(regionId=\"{}\", endpoint=\"{}\", "
+                    + "timeoutMs) ignores the endpoint argument because regionId "
+                    + "is also set. Use Config(regionId, timeoutMs) instead.",
+                    regionId, endpoint);
+            }
+        } else if (hasEndpoint) {
             logger.warn(
-                "[DeprecationWarning] Config(regionId, endpoint=\"{}\", timeoutMs) is deprecated; "
-                + "the endpoint argument is ignored and endpoint is derived from regionId. "
-                + "Use Config(regionId, timeoutMs) instead.",
+                "[DeprecationWarning] Config(regionId=null, endpoint=\"{}\", "
+                + "timeoutMs) is deprecated; pass regionId instead. The endpoint "
+                + "is used as a fallback and will be removed in a future major version.",
                 endpoint);
+            this.regionId = DEFAULT_REGION;
+            this.endpoint = endpoint;
+        } else {
+            applyRegion(null);
         }
+        this.timeoutMs = timeoutMs > 0 ? timeoutMs : DEFAULT_TIMEOUT_MS;
     }
 
     /**
@@ -149,6 +185,11 @@ public class Config {
         return (envValue != null && !envValue.trim().isEmpty()) ? envValue : null;
     }
 
+    private String loadEnvEndpoint() {
+        String envValue = System.getenv("AGENTBAY_ENDPOINT");
+        return (envValue != null && !envValue.trim().isEmpty()) ? envValue : null;
+    }
+
     private int loadTimeoutMs() {
         String envValue = System.getenv("AGENTBAY_TIMEOUT_MS");
         if (envValue != null && !envValue.trim().isEmpty()) {
@@ -177,20 +218,23 @@ public class Config {
     }
 
     /**
-     * Backwards-compatibility setter. The argument is ignored (a deprecation
-     * warning is logged) — endpoint is derived from {@code regionId}.
+     * Backwards-compatibility setter. Sets the endpoint directly, overriding
+     * any value previously derived from {@code regionId}. A deprecation
+     * warning is always logged.
      *
-     * @deprecated since 0.21.0. The endpoint cannot be set directly anymore.
-     *     Use {@link #setRegionId(String)} instead. Will be removed in a
+     * @deprecated since 0.21.0. Use {@link #setRegionId(String)} instead so
+     *     the endpoint stays in sync with the region. Will be removed in a
      *     future major version.
      */
     @Deprecated
     public void setEndpoint(String endpoint) {
         if (endpoint != null && !endpoint.isEmpty()) {
             logger.warn(
-                "[DeprecationWarning] Config.setEndpoint(\"{}\") is deprecated and ignored; "
-                + "endpoint is derived from regionId. Use setRegionId(String) instead.",
+                "[DeprecationWarning] Config.setEndpoint(\"{}\") is deprecated; "
+                + "use setRegionId(String) instead. The value is applied as-is "
+                + "and will be removed in a future major version.",
                 endpoint);
+            this.endpoint = endpoint;
         }
     }
 

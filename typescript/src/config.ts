@@ -9,17 +9,19 @@ interface Config {
 }
 
 /**
- * User-supplied configuration. `endpoint` is no longer a user input — it is
- * derived from `region_id` via the mapping below.
+ * User-supplied configuration. The preferred input is `region_id`; the SDK
+ * derives the endpoint from it via direct pattern substitution. `endpoint`
+ * is retained as a deprecated fallback: when `region_id` is not set the
+ * value of `endpoint` is used as-is. When both are set, `region_id` wins.
  */
 type ConfigOptions = {
   timeout_ms?: number;
   region_id?: string;
   /**
-   * @deprecated Since 0.21.0. Endpoint is derived from `region_id` and any
-   * value passed here is ignored (a deprecation warning is logged to
-   * console.warn). Pass `region_id` instead. Will be removed in a future
-   * major version.
+   * @deprecated Since 0.21.0. Pass `region_id` instead. The value is honored
+   * only as a fallback when `region_id` is not set (in code or via
+   * AGENTBAY_REGION_ID). Either form emits a deprecation warning. Will be
+   * removed in a future major version.
    */
   endpoint?: string;
 };
@@ -222,24 +224,28 @@ if (!dotEnvLoaded) {
 }
 
 /**
- * The SDK uses the following precedence order for region_id (highest to lowest):
- * 1. Explicitly passed configuration in code.
- * 2. Environment variable AGENTBAY_REGION_ID.
- * 3. .env file.
- * 4. Default region (cn-hangzhou).
+ * Precedence (highest to lowest), evaluated independently for region_id and
+ * the deprecated endpoint fallback:
+ *  1. Explicit customConfig.region_id in code.
+ *  2. Explicit customConfig.endpoint in code (deprecated fallback).
+ *  3. AGENTBAY_REGION_ID environment variable.
+ *  4. AGENTBAY_ENDPOINT environment variable (deprecated fallback).
+ *  5. Default region (cn-hangzhou).
  *
- * Endpoint is always derived from the resolved region — it is not a user input.
+ * When region_id is resolved at any level, the endpoint is derived from it
+ * via the pattern. The endpoint fallback only kicks in when no region_id is
+ * found at any level, and it bypasses the pattern (the value is used as-is).
  */
 function loadConfig(
   customConfig?: ConfigOptions,
   customEnvPath?: string
 ): Config {
-  // If custom config is provided, do NOT load env/.env.
-  // Fill missing/empty fields with defaults, but preserve explicit values.
-  if (customConfig) {
-    const config = defaultConfig();
+  const config = defaultConfig();
+  let explicitRegion: string | undefined;
+  let explicitEndpoint: string | undefined;
 
-    // Treat non-positive numbers as "not provided" for timeout
+  if (customConfig) {
+    // If custom config is provided, do NOT load env/.env.
     if (
       typeof customConfig.timeout_ms === "number" &&
       Number.isFinite(customConfig.timeout_ms) &&
@@ -248,59 +254,87 @@ function loadConfig(
       config.timeout_ms = customConfig.timeout_ms;
     }
 
-    // Empty string region_id is treated as "not provided" → default
     if (
       typeof customConfig.region_id === "string" &&
       customConfig.region_id.length > 0
     ) {
-      config.region_id = customConfig.region_id;
+      explicitRegion = customConfig.region_id;
     }
 
-    // Backwards compat: warn when the deprecated `endpoint` option is set,
-    // then ignore the value — endpoint is always derived from region_id.
     if (
       typeof customConfig.endpoint === "string" &&
       customConfig.endpoint.length > 0
     ) {
-      console.warn(
-        `[DeprecationWarning] Config endpoint=${JSON.stringify(
-          customConfig.endpoint
-        )} is ignored; endpoint is derived from region_id. Pass region_id instead.`
-      );
+      explicitEndpoint = customConfig.endpoint;
     }
 
+    if (explicitRegion && explicitEndpoint) {
+      console.warn(
+        `[DeprecationWarning] Config region_id=${JSON.stringify(
+          explicitRegion
+        )} and endpoint=${JSON.stringify(
+          explicitEndpoint
+        )}: both set; endpoint is ignored because region_id takes precedence.`
+      );
+      explicitEndpoint = undefined;
+    } else if (explicitEndpoint) {
+      console.warn(
+        `[DeprecationWarning] Config endpoint=${JSON.stringify(
+          explicitEndpoint
+        )} is deprecated; pass region_id instead. The value is used as a fallback when region_id is not set, and will be removed in a future major version.`
+      );
+    }
+  } else {
+    // Load .env file with improved search first
+    try {
+      loadDotEnvWithFallback(customEnvPath);
+    } catch (error) {
+      // Silently fail - .env loading is optional
+    }
+
+    if (process.env.AGENTBAY_TIMEOUT_MS) {
+      const timeout = parseInt(process.env.AGENTBAY_TIMEOUT_MS, 10);
+      if (!isNaN(timeout) && timeout > 0) {
+        config.timeout_ms = timeout;
+      }
+    }
+
+    if (process.env.AGENTBAY_REGION_ID) {
+      explicitRegion = process.env.AGENTBAY_REGION_ID;
+    }
+    if (process.env.AGENTBAY_ENDPOINT) {
+      const envEndpoint = process.env.AGENTBAY_ENDPOINT;
+      if (explicitRegion) {
+        console.warn(
+          `[DeprecationWarning] AGENTBAY_ENDPOINT=${JSON.stringify(
+            envEndpoint
+          )} is deprecated and ignored because AGENTBAY_REGION_ID is also set. Unset AGENTBAY_ENDPOINT to silence this warning.`
+        );
+      } else {
+        console.warn(
+          `[DeprecationWarning] AGENTBAY_ENDPOINT=${JSON.stringify(
+            envEndpoint
+          )} is deprecated; set AGENTBAY_REGION_ID instead. The value is used as a fallback and will be removed in a future major version.`
+        );
+        explicitEndpoint = envEndpoint;
+      }
+    }
+  }
+
+  if (explicitRegion) {
+    const resolved = resolveEndpoint(explicitRegion);
+    config.region_id = resolved.region;
+    config.endpoint = resolved.endpoint;
+  } else if (explicitEndpoint) {
+    // Deprecated fallback: use the user-supplied endpoint verbatim.
+    // region_id is left at its default so downstream code that reads it
+    // (e.g. for telemetry) still has a non-empty value.
+    config.endpoint = explicitEndpoint;
+  } else {
     const resolved = resolveEndpoint(config.region_id);
     config.region_id = resolved.region;
     config.endpoint = resolved.endpoint;
-    return config;
   }
-
-  // Create base config from default values
-  const config = defaultConfig();
-
-  // Load .env file with improved search first
-  try {
-    loadDotEnvWithFallback(customEnvPath);
-  } catch (error) {
-    // Silently fail - .env loading is optional
-  }
-
-  // Override with environment variables if they exist (highest priority)
-  if (process.env.AGENTBAY_TIMEOUT_MS) {
-    const timeout = parseInt(process.env.AGENTBAY_TIMEOUT_MS, 10);
-    if (!isNaN(timeout) && timeout > 0) {
-      config.timeout_ms = timeout;
-    }
-  }
-
-  if (process.env.AGENTBAY_REGION_ID) {
-    config.region_id = process.env.AGENTBAY_REGION_ID;
-  }
-
-  // Always derive endpoint from region_id; normalize region by stripping pre- prefix.
-  const resolved = resolveEndpoint(config.region_id);
-  config.region_id = resolved.region;
-  config.endpoint = resolved.endpoint;
   return config;
 }
 

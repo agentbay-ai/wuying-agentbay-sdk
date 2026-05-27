@@ -78,9 +78,11 @@ class Config:
     """
     Configuration object for AgentBay client.
 
-    `endpoint` is derived from `region_id` and is no longer a user input.
-    The ``endpoint=`` keyword argument is kept for backwards compatibility
-    and is silently ignored (with a ``DeprecationWarning``).
+    The preferred input is ``region_id``; the SDK derives the endpoint from it
+    via direct pattern substitution. ``endpoint`` is retained as a deprecated
+    fallback: when ``region_id`` is not set the value of ``endpoint`` is used
+    as-is. When both are set, ``region_id`` wins and ``endpoint`` is ignored.
+    Either form emits a ``DeprecationWarning``.
 
     .. deprecated:: 0.21.0
         ``endpoint`` parameter. Use ``region_id`` instead.
@@ -94,12 +96,13 @@ class Config:
     ):
         self.timeout_ms = timeout_ms
         self.region_id = region_id
-        self.endpoint: Optional[str] = None
-        if endpoint is not None:
+        self.endpoint: Optional[str] = endpoint if endpoint else None
+        if endpoint:
             import warnings
             warnings.warn(
-                f"Config(endpoint={endpoint!r}) is deprecated and ignored; "
-                "endpoint is derived from region_id. Pass region_id instead.",
+                f"Config(endpoint={endpoint!r}) is deprecated; pass region_id "
+                "instead. The value is used only as a fallback when region_id "
+                "is not set, and will be removed in a future major version.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -203,13 +206,18 @@ def _load_dotenv_with_fallback(custom_env_path: Optional[str] = None) -> None:
 
 
 """
-The SDK uses the following precedence order for region_id (highest to lowest):
-1. Explicitly passed configuration in code.
-2. Environment variable AGENTBAY_REGION_ID.
-3. .env file (searched upward from current directory).
-4. Default region (cn-hangzhou).
+Precedence (highest to lowest), evaluated independently for region_id and the
+deprecated endpoint fallback:
 
-Endpoint is always derived from the resolved region — it is not a user input.
+1. Explicit cfg.region_id in code.
+2. Explicit cfg.endpoint in code (deprecated fallback).
+3. AGENTBAY_REGION_ID environment variable.
+4. AGENTBAY_ENDPOINT environment variable (deprecated fallback).
+5. Default region (cn-hangzhou).
+
+When region_id is resolved at any level, the endpoint is derived from it via
+the pattern. The endpoint fallback only kicks in when no region_id is found
+at any level, and it bypasses the pattern (the value is used as-is).
 """
 
 
@@ -222,22 +230,34 @@ def _load_config(cfg, custom_env_path: Optional[str] = None) -> Dict[str, Any]:
         custom_env_path: Custom path to .env file (optional)
 
     Returns:
-        Configuration dictionary with endpoint derived from region_id.
+        Configuration dictionary with endpoint either derived from region_id
+        (preferred) or taken from the deprecated endpoint fallback.
     """
-    if cfg is not None:
-        config = _default_config()
+    config = _default_config()
+    explicit_region: Optional[str] = None
+    explicit_endpoint: Optional[str] = None
 
+    if cfg is not None:
         # When explicit config is provided, do NOT load env/.env.
-        # Fill missing/empty fields with defaults, but preserve explicit values.
         if getattr(cfg, "timeout_ms", None):
             if isinstance(cfg.timeout_ms, int) and cfg.timeout_ms > 0:
                 config["timeout_ms"] = cfg.timeout_ms
         if getattr(cfg, "region_id", None):
-            # Empty string falls back to default (treated as "not provided")
-            config["region_id"] = cfg.region_id
+            explicit_region = cfg.region_id
+        if getattr(cfg, "endpoint", None):
+            explicit_endpoint = cfg.endpoint
+        # If both are set in code, region_id wins; warn that endpoint is ignored.
+        if explicit_region and explicit_endpoint:
+            import warnings
+            warnings.warn(
+                f"Config(region_id={explicit_region!r}, "
+                f"endpoint={explicit_endpoint!r}): both set; endpoint is "
+                "ignored because region_id takes precedence.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            explicit_endpoint = None
     else:
-        config = _default_config()
-
         # Load .env file with improved search
         try:
             _load_dotenv_with_fallback(custom_env_path)
@@ -252,10 +272,33 @@ def _load_config(cfg, custom_env_path: Optional[str] = None) -> Dict[str, Any]:
                     f"Invalid AGENTBAY_TIMEOUT_MS value: {timeout_ms}, using default"
                 )
         if region_id := os.getenv("AGENTBAY_REGION_ID"):
-            config["region_id"] = region_id
+            explicit_region = region_id
+        if env_endpoint := os.getenv("AGENTBAY_ENDPOINT"):
+            if explicit_region:
+                _logger.warning(
+                    f"AGENTBAY_ENDPOINT={env_endpoint!r} is deprecated and "
+                    "ignored because AGENTBAY_REGION_ID is also set. Unset "
+                    "AGENTBAY_ENDPOINT to silence this warning."
+                )
+            else:
+                _logger.warning(
+                    f"AGENTBAY_ENDPOINT={env_endpoint!r} is deprecated; set "
+                    "AGENTBAY_REGION_ID instead. The value is used as a "
+                    "fallback and will be removed in a future major version."
+                )
+                explicit_endpoint = env_endpoint
 
-    # Always derive endpoint from region_id; normalize region by stripping pre- prefix.
-    actual_region, endpoint = _resolve_endpoint(config["region_id"])
-    config["region_id"] = actual_region
-    config["endpoint"] = endpoint
+    if explicit_region:
+        actual_region, endpoint = _resolve_endpoint(explicit_region)
+        config["region_id"] = actual_region
+        config["endpoint"] = endpoint
+    elif explicit_endpoint:
+        # Deprecated fallback: use the user-supplied endpoint verbatim.
+        # region_id is left at its default so downstream code that reads it
+        # (e.g. for telemetry) still has a non-empty value.
+        config["endpoint"] = explicit_endpoint
+    else:
+        actual_region, endpoint = _resolve_endpoint(config["region_id"])
+        config["region_id"] = actual_region
+        config["endpoint"] = endpoint
     return config
