@@ -115,6 +115,12 @@ public class CreateMcpSessionResponseBody extends TeaModel {
         @NameInMap("VpcResource")
         public Boolean vpcResource;
 
+        @NameInMap("VpcIp")
+        public String vpcIp;
+
+        @NameInMap("VpcId")
+        public String vpcId;
+
         @NameInMap("WsUrl")
         public String wsUrl;
 
@@ -225,6 +231,22 @@ public class CreateMcpSessionResponseBody extends TeaModel {
         }
         public Boolean getVpcResource() {
             return this.vpcResource;
+        }
+
+        public CreateMcpSessionResponseBodyData setVpcIp(String vpcIp) {
+            this.vpcIp = vpcIp;
+            return this;
+        }
+        public String getVpcIp() {
+            return this.vpcIp;
+        }
+
+        public CreateMcpSessionResponseBodyData setVpcId(String vpcId) {
+            this.vpcId = vpcId;
+            return this;
+        }
+        public String getVpcId() {
+            return this.vpcId;
         }
 
         public CreateMcpSessionResponseBodyData setWsUrl(String wsUrl) {

@@ -654,6 +654,10 @@ export class AgentBay {
       session.appInstanceId = data.appInstanceId || "";
       session.resourceUrl = resourceUrl;
 
+      // VPC info, populated when upstream returns them
+      session.vpcIp = data.vpcIp || "";
+      session.vpcId = data.vpcId || "";
+
       // LinkUrl/token may be returned by the server for direct tool calls.
       session.token = data.token || "";
       session.linkUrl = data.linkUrl || "";
@@ -1153,6 +1157,8 @@ export class AgentBay {
           linkUrl: (body.data as any).linkUrl || "",
           wsUrl,
           vpcResource: body.data.vpcResource || false,
+          vpcIp: body.data.vpcIp || "",
+          vpcId: body.data.vpcId || "",
           resourceUrl: body.data.resourceUrl || "",
           status: body.data.status || "",
           toolList: body.data.toolList || "",
@@ -1252,6 +1258,8 @@ export class AgentBay {
     if (getResult.data) {
       session.appInstanceId = getResult.data.appInstanceId || "";
       session.resourceUrl = getResult.data.resourceUrl;
+      session.vpcIp = getResult.data.vpcIp || "";
+      session.vpcId = getResult.data.vpcId || "";
       session.token = getResult.data.token || "";
       session.linkUrl = getResult.data.linkUrl || "";
       session.wsUrl = getResult.data.wsUrl || "";

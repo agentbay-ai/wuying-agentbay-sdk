@@ -480,6 +480,12 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	if response.Body.Data.ResourceUrl != nil {
 		session.ResourceUrl = *response.Body.Data.ResourceUrl
 	}
+	if response.Body.Data.GetVpcIp() != nil {
+		session.VpcIp = *response.Body.Data.GetVpcIp()
+	}
+	if response.Body.Data.GetVpcId() != nil {
+		session.VpcId = *response.Body.Data.GetVpcId()
+	}
 
 	// LinkUrl/token may be returned by the server for direct tool calls.
 	if response.Body.Data.Token != nil {
@@ -1025,6 +1031,8 @@ type GetSessionData struct {
 	LinkUrl            string
 	WsUrl              string
 	VpcResource        bool
+	VpcIp              string
+	VpcId              string
 	ResourceUrl        string
 	Status             string
 	ToolList           string
@@ -1218,6 +1226,12 @@ func (a *AgentBay) getSession(sessionID string) (*GetSessionResult, error) {
 			if response.Body.Data.GetVpcResource() != nil {
 				data.VpcResource = *response.Body.Data.GetVpcResource()
 			}
+			if response.Body.Data.GetVpcIp() != nil {
+				data.VpcIp = *response.Body.Data.GetVpcIp()
+			}
+			if response.Body.Data.GetVpcId() != nil {
+				data.VpcId = *response.Body.Data.GetVpcId()
+			}
 			if response.Body.Data.GetResourceUrl() != nil {
 				data.ResourceUrl = *response.Body.Data.GetResourceUrl()
 			}
@@ -1345,6 +1359,8 @@ func (a *AgentBay) Get(sessionID string) (*SessionResult, error) {
 	if getResult.Data != nil {
 		session.AppInstanceId = getResult.Data.AppInstanceID
 		session.ResourceUrl = getResult.Data.ResourceUrl
+		session.VpcIp = getResult.Data.VpcIp
+		session.VpcId = getResult.Data.VpcId
 		session.McpTools = parseToolListToMcpTools(getResult.Data.ToolList)
 		session.Token = getResult.Data.Token
 		session.LinkUrl = getResult.Data.LinkUrl

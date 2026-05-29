@@ -38,7 +38,7 @@ public class PauseResumePersistenceVerificationExample {
 
         Session session = null;
         try {
-            AgentBay agentBay = new AgentBay("akm-a3e6b693-2288-40c5-a622-09cfbe3a72fe", new Config("cn-hangzhou", "wuyingai-pre.cn-hangzhou.aliyuncs.com", 60000));
+            AgentBay agentBay = new AgentBay();
 
             // ========== Step 1: Create session ==========
             System.out.println(SEPARATOR);

@@ -224,6 +224,11 @@ export class Session {
   /** Application instance ID */
   public appInstanceId = "";
 
+  /** VPC IP, populated when upstream returns it (VPC sessions) */
+  public vpcIp = "";
+  /** VPC ID, populated when upstream returns it (VPC sessions) */
+  public vpcId = "";
+
   /** Token for VPC sessions */
   public token = "";
   public linkUrl = "";

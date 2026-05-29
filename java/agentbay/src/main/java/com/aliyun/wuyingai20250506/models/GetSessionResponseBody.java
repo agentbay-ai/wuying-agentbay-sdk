@@ -213,6 +213,12 @@ public class GetSessionResponseBody extends TeaModel {
         @NameInMap("VpcResource")
         public Boolean vpcResource;
 
+        @NameInMap("VpcIp")
+        public String vpcIp;
+
+        @NameInMap("VpcId")
+        public String vpcId;
+
         @NameInMap("WsUrl")
         public String wsUrl;
 
@@ -310,6 +316,22 @@ public class GetSessionResponseBody extends TeaModel {
         }
         public Boolean getVpcResource() {
             return this.vpcResource;
+        }
+
+        public GetSessionResponseBodyData setVpcIp(String vpcIp) {
+            this.vpcIp = vpcIp;
+            return this;
+        }
+        public String getVpcIp() {
+            return this.vpcIp;
+        }
+
+        public GetSessionResponseBodyData setVpcId(String vpcId) {
+            this.vpcId = vpcId;
+            return this;
+        }
+        public String getVpcId() {
+            return this.vpcId;
         }
 
         public GetSessionResponseBodyData setWsUrl(String wsUrl) {

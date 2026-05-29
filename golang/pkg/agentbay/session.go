@@ -130,6 +130,10 @@ type Session struct {
 	// Resource URL for accessing the session
 	ResourceUrl string
 
+	// VPC IP/ID, populated when the upstream returns them (VPC sessions)
+	VpcIp string
+	VpcId string
+
 	// LinkUrl-based direct tool call (non-VPC)
 	Token   string
 	LinkUrl string

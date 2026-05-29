@@ -94,6 +94,8 @@ class CreateMcpSessionResponseBodyData(DaraModel):
         token: Optional[str] = None,
         tool_list: Optional[str] = None,
         vpc_resource: Optional[bool] = None,
+        vpc_ip: Optional[str] = None,
+        vpc_id: Optional[str] = None,
         ws_url: Optional[str] = None,
     ):
         self.app_instance_id = app_instance_id
@@ -108,6 +110,8 @@ class CreateMcpSessionResponseBodyData(DaraModel):
         self.token = token
         self.tool_list = tool_list
         self.vpc_resource = vpc_resource
+        self.vpc_ip = vpc_ip
+        self.vpc_id = vpc_id
         self.ws_url = ws_url
 
     def validate(self):
@@ -154,6 +158,12 @@ class CreateMcpSessionResponseBodyData(DaraModel):
         if self.vpc_resource is not None:
             result["VpcResource"] = self.vpc_resource
 
+        if self.vpc_ip is not None:
+            result["VpcIp"] = self.vpc_ip
+
+        if self.vpc_id is not None:
+            result["VpcId"] = self.vpc_id
+
         if self.ws_url is not None:
             result["WsUrl"] = self.ws_url
 
@@ -196,6 +206,12 @@ class CreateMcpSessionResponseBodyData(DaraModel):
 
         if m.get("VpcResource") is not None:
             self.vpc_resource = m.get("VpcResource")
+
+        if m.get("VpcIp") is not None:
+            self.vpc_ip = m.get("VpcIp")
+
+        if m.get("VpcId") is not None:
+            self.vpc_id = m.get("VpcId")
 
         if m.get("WsUrl") is not None:
             self.ws_url = m.get("WsUrl")

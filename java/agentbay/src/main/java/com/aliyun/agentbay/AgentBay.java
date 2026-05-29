@@ -172,7 +172,9 @@ public class AgentBay {
                     body.getCode() != null ? body.getCode() : "",
                     toolListToString(responseData.getToolList()),
                     success,
-                    responseData.getStatus() != null ? responseData.getStatus() : ""
+                    responseData.getStatus() != null ? responseData.getStatus() : "",
+                    responseData.getVpcIp(),
+                    responseData.getVpcId()
                 );
             }
 
@@ -270,6 +272,12 @@ public class AgentBay {
             session.setWsUrl(data.getWsUrl());
             if (data.getAppInstanceId() != null) {
                 session.setAppInstanceId(data.getAppInstanceId());
+            }
+            if (data.getVpcIp() != null) {
+                session.setVpcIp(data.getVpcIp());
+            }
+            if (data.getVpcId() != null) {
+                session.setVpcId(data.getVpcId());
             }
             if (data.getToolList() != null && !data.getToolList().isEmpty()) {
                 session.updateMcpTools(data.getToolList());
@@ -654,6 +662,12 @@ public class AgentBay {
                 }
                 if (response.getBody().getData().getAppInstanceId() != null) {
                     session.setAppInstanceId(response.getBody().getData().getAppInstanceId());
+                }
+                if (response.getBody().getData().getVpcIp() != null) {
+                    session.setVpcIp(response.getBody().getData().getVpcIp());
+                }
+                if (response.getBody().getData().getVpcId() != null) {
+                    session.setVpcId(response.getBody().getData().getVpcId());
                 }
                 if (response.getBody().getData().getToolList() != null) {
                     session.updateMcpTools(response.getBody().getData().getToolList());

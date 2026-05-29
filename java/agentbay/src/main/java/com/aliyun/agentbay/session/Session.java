@@ -49,6 +49,8 @@ public class Session {
     private String fileTransferContextId;
     private String appInstanceId;
     private String resourceUrl;
+    private String vpcIp;
+    private String vpcId;
     private String token;
     private String linkUrl;
     private String wsUrl;
@@ -85,6 +87,8 @@ public class Session {
         this.imageId = "";
         this.wsUrl = "";
         this.appInstanceId = "";
+        this.vpcIp = "";
+        this.vpcId = "";
     }
 
     /**
@@ -103,6 +107,28 @@ public class Session {
      */
     public void setAppInstanceId(String appInstanceId) {
         this.appInstanceId = appInstanceId;
+    }
+
+    /**
+     * Get the VPC IP, populated when upstream returns it (VPC sessions).
+     */
+    public String getVpcIp() {
+        return vpcIp;
+    }
+
+    public void setVpcIp(String vpcIp) {
+        this.vpcIp = vpcIp;
+    }
+
+    /**
+     * Get the VPC ID, populated when upstream returns it (VPC sessions).
+     */
+    public String getVpcId() {
+        return vpcId;
+    }
+
+    public void setVpcId(String vpcId) {
+        this.vpcId = vpcId;
     }
 
     public String getWsUrl() {

@@ -10,6 +10,8 @@ public class GetSessionData {
     private String resourceUrl;
     private boolean vpcResource;
     private String networkInterfaceIp;
+    private String vpcIp;
+    private String vpcId;
     private String httpPort;
     private String token;
     private String linkUrl;
@@ -24,8 +26,18 @@ public class GetSessionData {
 
     public GetSessionData(String sessionId, String appInstanceId, String resourceId,
                          String resourceUrl, boolean vpcResource, String networkInterfaceIp,
-                         String httpPort, String token, String linkUrl, String wsUrl, 
+                         String httpPort, String token, String linkUrl, String wsUrl,
                          String code, String toolList, boolean success, String status) {
+        this(sessionId, appInstanceId, resourceId, resourceUrl, vpcResource,
+             networkInterfaceIp, httpPort, token, linkUrl, wsUrl, code, toolList,
+             success, status, null, null);
+    }
+
+    public GetSessionData(String sessionId, String appInstanceId, String resourceId,
+                         String resourceUrl, boolean vpcResource, String networkInterfaceIp,
+                         String httpPort, String token, String linkUrl, String wsUrl,
+                         String code, String toolList, boolean success, String status,
+                         String vpcIp, String vpcId) {
         this.sessionId = sessionId;
         this.appInstanceId = appInstanceId;
         this.resourceId = resourceId;
@@ -40,6 +52,8 @@ public class GetSessionData {
         this.toolList = toolList;
         this.success = success;
         this.status = status;
+        this.vpcIp = vpcIp;
+        this.vpcId = vpcId;
     }
 
     public String getSessionId() {
@@ -88,6 +102,22 @@ public class GetSessionData {
 
     public void setNetworkInterfaceIp(String networkInterfaceIp) {
         this.networkInterfaceIp = networkInterfaceIp;
+    }
+
+    public String getVpcIp() {
+        return vpcIp;
+    }
+
+    public void setVpcIp(String vpcIp) {
+        this.vpcIp = vpcIp;
+    }
+
+    public String getVpcId() {
+        return vpcId;
+    }
+
+    public void setVpcId(String vpcId) {
+        this.vpcId = vpcId;
     }
 
     public String getHttpPort() {

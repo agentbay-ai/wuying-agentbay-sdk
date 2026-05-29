@@ -16,6 +16,8 @@ export class CreateMcpSessionResponseBodyData extends $dara.Model {
   toolList?: string;
   wsUrl?: string;
   vpcResource?: boolean;
+  vpcIp?: string;
+  vpcId?: string;
   static names(): { [key: string]: string } {
     return {
       appInstanceId: 'AppInstanceId',
@@ -31,6 +33,8 @@ export class CreateMcpSessionResponseBodyData extends $dara.Model {
       toolList: 'ToolList',
       wsUrl: 'WsUrl',
       vpcResource: 'VpcResource',
+      vpcIp: 'VpcIp',
+      vpcId: 'VpcId',
     };
   }
 
@@ -49,6 +53,8 @@ export class CreateMcpSessionResponseBodyData extends $dara.Model {
       toolList: 'any',
       wsUrl: 'string',
       vpcResource: 'boolean',
+      vpcIp: 'string',
+      vpcId: 'string',
     };
   }
 

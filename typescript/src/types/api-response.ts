@@ -64,6 +64,10 @@ export interface GetSessionData {
   wsUrl?: string;
   /** Whether this session uses VPC resources */
   vpcResource: boolean;
+  /** VPC IP, populated when upstream returns it (VPC sessions) */
+  vpcIp: string;
+  /** VPC ID, populated when upstream returns it (VPC sessions) */
+  vpcId: string;
   /** Resource URL for accessing the session */
   resourceUrl: string;
   /** Current status of the session */

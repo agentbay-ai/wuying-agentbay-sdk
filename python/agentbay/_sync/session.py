@@ -126,6 +126,10 @@ class Session:
         # Resource URL for accessing the session
         self.resource_url = ""
 
+        # VPC IP/ID, populated when upstream returns them (VPC sessions)
+        self.vpc_ip = ""
+        self.vpc_id = ""
+
         # LinkUrl-based direct tool call (non-VPC)
         self.token = ""
         self.link_url = ""

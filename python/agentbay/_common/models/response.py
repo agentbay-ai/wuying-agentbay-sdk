@@ -234,6 +234,8 @@ class GetSessionData:
         link_url: str = "",
         ws_url: str = "",
         vpc_resource: bool = False,
+        vpc_ip: str = "",
+        vpc_id: str = "",
         resource_url: str = "",
         status: str = "",
         tool_list: str = "",
@@ -266,6 +268,8 @@ class GetSessionData:
         self.link_url = link_url
         self.ws_url = ws_url
         self.vpc_resource = vpc_resource
+        self.vpc_ip = vpc_ip
+        self.vpc_id = vpc_id
         self.resource_url = resource_url
         self.status = status
         self.tool_list = tool_list

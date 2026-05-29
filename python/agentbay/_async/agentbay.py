@@ -307,6 +307,10 @@ class AsyncAgentBay:
         session.app_instance_id = app_instance_id
         session.resource_url = resource_url
 
+        # VPC info, populated when upstream returns them
+        session.vpc_ip = response_data.get("VpcIp", "") or ""
+        session.vpc_id = response_data.get("VpcId", "") or ""
+
         # LinkUrl/token may be returned by the server for direct tool calls.
         if "Token" in response_data and response_data.get("Token") is not None:
             session.token = str(response_data.get("Token") or "")
@@ -1208,6 +1212,8 @@ class AsyncAgentBay:
                         ws_url=data_dict.get("WsUrl", "") or data_dict.get(
                             "wsUrl", "") or "",
                         vpc_resource=data_dict.get("VpcResource", False),
+                        vpc_ip=data_dict.get("VpcIp", "") or "",
+                        vpc_id=data_dict.get("VpcId", "") or "",
                         resource_url=data_dict.get("ResourceUrl", ""),
                         status=data_dict.get("Status", ""),
                         tool_list=data_dict.get("ToolList", "") or "",
@@ -1315,6 +1321,8 @@ class AsyncAgentBay:
             session.app_instance_id = str(
                 getattr(get_result.data, "app_instance_id", "") or "")
             session.resource_url = get_result.data.resource_url
+            session.vpc_ip = str(getattr(get_result.data, "vpc_ip", "") or "")
+            session.vpc_id = str(getattr(get_result.data, "vpc_id", "") or "")
             session.mcpTools = self._parse_tool_list_to_mcp_tools(
                 get_result.data.tool_list)
             session.token = str(get_result.data.token or "")
