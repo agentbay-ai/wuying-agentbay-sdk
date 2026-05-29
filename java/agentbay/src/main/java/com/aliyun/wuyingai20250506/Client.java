@@ -1278,7 +1278,7 @@ public class Client extends com.aliyun.teaopenapi.Client {
     public GetSessionResponse getSession(GetSessionRequest request) throws Exception {
         com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
         runtime.setAutoretry(true);
-        runtime.setMaxAttempts(3);
+        runtime.setMaxAttempts(8);
         return this.getSessionWithOptions(request, runtime);
     }
 
@@ -1836,7 +1836,7 @@ public class Client extends com.aliyun.teaopenapi.Client {
     public RefreshSessionIdleTimeResponse refreshSessionIdleTime(RefreshSessionIdleTimeRequest request) throws Exception {
         com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
         runtime.setAutoretry(true);
-        runtime.setMaxAttempts(3);
+        runtime.setMaxAttempts(6);
         return this.refreshSessionIdleTimeWithOptions(request, runtime);
     }
 

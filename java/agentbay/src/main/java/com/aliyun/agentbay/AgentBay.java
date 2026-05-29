@@ -92,7 +92,7 @@ public class AgentBay {
             clientConfig.setAccessKeySecret(apiKey);
             clientConfig.setReadTimeout(config.getTimeoutMs());
             clientConfig.setConnectTimeout(config.getTimeoutMs());
-            clientConfig.setMaxIdleConns(64);
+            clientConfig.setMaxIdleConns(50);
 
             this.client = new Client(clientConfig);
             this.apiClient = new ApiClient(this.client, apiKey);
