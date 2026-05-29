@@ -3,7 +3,7 @@ package com.aliyun.wuyingai20250506.models;
 
 import com.aliyun.tea.*;
 
-public class ApplyMqttTokenResponse extends TeaModel {
+public class MountOssResponse extends TeaModel {
     @NameInMap("headers")
     public java.util.Map<String, String> headers;
 
@@ -11,14 +11,14 @@ public class ApplyMqttTokenResponse extends TeaModel {
     public Integer statusCode;
 
     @NameInMap("body")
-    public ApplyMqttTokenResponseBody body;
+    public MountOssResponseBody body;
 
-    public static ApplyMqttTokenResponse build(java.util.Map<String, ?> map) throws Exception {
-        ApplyMqttTokenResponse self = new ApplyMqttTokenResponse();
+    public static MountOssResponse build(java.util.Map<String, ?> map) throws Exception {
+        MountOssResponse self = new MountOssResponse();
         return TeaModel.build(map, self);
     }
 
-    public ApplyMqttTokenResponse setHeaders(java.util.Map<String, String> headers) {
+    public MountOssResponse setHeaders(java.util.Map<String, String> headers) {
         this.headers = headers;
         return this;
     }
@@ -26,7 +26,7 @@ public class ApplyMqttTokenResponse extends TeaModel {
         return this.headers;
     }
 
-    public ApplyMqttTokenResponse setStatusCode(Integer statusCode) {
+    public MountOssResponse setStatusCode(Integer statusCode) {
         this.statusCode = statusCode;
         return this;
     }
@@ -34,11 +34,11 @@ public class ApplyMqttTokenResponse extends TeaModel {
         return this.statusCode;
     }
 
-    public ApplyMqttTokenResponse setBody(ApplyMqttTokenResponseBody body) {
+    public MountOssResponse setBody(MountOssResponseBody body) {
         this.body = body;
         return this;
     }
-    public ApplyMqttTokenResponseBody getBody() {
+    public MountOssResponseBody getBody() {
         return this.body;
     }
 

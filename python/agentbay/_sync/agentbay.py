@@ -1245,25 +1245,28 @@ class AgentBay:
                     error_message=f"Failed to parse response: {str(e)}",
                 )
         except ClientException as e:
-            # Check if this is an expected business error (e.g., session not found)
+            # Extract error code and request ID from the exception
             error_str = str(e)
+            error_code = getattr(e, 'code', '') or ''
+            request_id = getattr(e, 'request_id', '') or ''
+
+            # Determine error message based on error type
             if "InvalidMcpSession.NotFound" in error_str or "NotFound" in error_str:
-                # This is an expected error - session doesn't exist
-                # Use info level logging without stack trace, but with red color for visibility
                 _log_info_with_color(f"Session not found: {session_id}")
                 _logger.debug(f"GetSession error details: {error_str}")
                 return GetSessionResult(
-                    request_id="",
+                    request_id=request_id,
                     success=False,
                     error_message=f"Session {session_id} not found",
+                    code=error_code,
                 )
             else:
-                # This is an unexpected error - log with stack trace
                 _logger.error(f"Error calling GetSession: {e}")
                 return GetSessionResult(
-                    request_id="",
+                    request_id=request_id,
                     success=False,
                     error_message=f"Failed to get session {session_id}: {e}",
+                    code=error_code,
                 )
         except Exception as e:
             # Unexpected system error - log with stack trace

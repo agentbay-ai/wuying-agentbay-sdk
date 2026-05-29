@@ -167,10 +167,9 @@ public class FileTransfer {
                     "Upload failed with HTTP " + putResult.statusCode
                 );
             }
-            String remoteDir = getDirectoryPath(remotePath);
-            String reqIdSync = awaitSync("download", remoteDir, contextId);
+            String reqIdSync = awaitSync("download", remotePath, contextId);
             if (wait) {
-                WaitResult waitResult = waitForTask(contextId, remoteDir, "download", waitTimeout, pollInterval);
+                WaitResult waitResult = waitForTask(contextId, remotePath, "download", waitTimeout, pollInterval);
                 if (!waitResult.success) {
                     return new UploadResult(
                         "", false, reqIdUpload, reqIdSync, putResult.statusCode, putResult.etag,
@@ -306,10 +305,9 @@ public class FileTransfer {
                     "Upload failed with HTTP " + putResult.statusCode
                 );
             }
-            String remoteDir = getDirectoryPath(remotePath);
-            String reqIdSync = awaitSync("download", remoteDir, contextId);
+            String reqIdSync = awaitSync("download", remotePath, contextId);
             if (wait) {
-                WaitResult waitResult = waitForTask(contextId, remoteDir, "download", waitTimeout, pollInterval);
+                WaitResult waitResult = waitForTask(contextId, remotePath, "download", waitTimeout, pollInterval);
                 if (!waitResult.success) {
                     return new UploadResult(
                         "", false, reqIdUpload, reqIdSync, putResult.statusCode, putResult.etag,

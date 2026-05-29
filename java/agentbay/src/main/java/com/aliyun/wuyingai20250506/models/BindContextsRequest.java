@@ -1,7 +1,8 @@
 // This file is auto-generated, don't edit it. Thanks.
 package com.aliyun.wuyingai20250506.models;
 
-import com.aliyun.tea.*;
+import com.aliyun.tea.NameInMap;
+import com.aliyun.tea.TeaModel;
 
 public class BindContextsRequest extends TeaModel {
     @NameInMap("Authorization")
@@ -154,4 +155,5 @@ public class BindContextsRequest extends TeaModel {
             return this.mountConfig;
         }
     }
+
 }

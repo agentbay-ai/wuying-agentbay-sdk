@@ -15,7 +15,7 @@ public class CreateMcpSessionShrinkRequest extends TeaModel {
 
     /**
      * <strong>if can be null:</strong>
-     * <p>true</p>
+     * <p>false</p>
      */
     @NameInMap("EnableRecord")
     public Boolean enableRecord;
@@ -59,14 +59,11 @@ public class CreateMcpSessionShrinkRequest extends TeaModel {
     @NameInMap("Skills")
     public String skillsShrink;
 
-    @NameInMap("VpcResource")
-    public Boolean vpcResource;
-
-    @NameInMap("ExtraConfigs")
-    public String extraConfigs;
-
     @NameInMap("Timeout")
     public Integer timeout;
+
+    @NameInMap("VpcResource")
+    public Boolean vpcResource;
 
     public static CreateMcpSessionShrinkRequest build(java.util.Map<String, ?> map) throws Exception {
         CreateMcpSessionShrinkRequest self = new CreateMcpSessionShrinkRequest();
@@ -209,28 +206,20 @@ public class CreateMcpSessionShrinkRequest extends TeaModel {
         return this.skillsShrink;
     }
 
-    public CreateMcpSessionShrinkRequest setVpcResource(Boolean vpcResource) {
-        this.vpcResource = vpcResource;
-        return this;
-    }
-    public Boolean getVpcResource() {
-        return this.vpcResource;
-    }
-
-    public CreateMcpSessionShrinkRequest setExtraConfigs(String extraConfigs) {
-        this.extraConfigs = extraConfigs;
-        return this;
-    }
-    public String getExtraConfigs() {
-        return this.extraConfigs;
-    }
-
     public CreateMcpSessionShrinkRequest setTimeout(Integer timeout) {
         this.timeout = timeout;
         return this;
     }
     public Integer getTimeout() {
         return this.timeout;
+    }
+
+    public CreateMcpSessionShrinkRequest setVpcResource(Boolean vpcResource) {
+        this.vpcResource = vpcResource;
+        return this;
+    }
+    public Boolean getVpcResource() {
+        return this.vpcResource;
     }
 
 }

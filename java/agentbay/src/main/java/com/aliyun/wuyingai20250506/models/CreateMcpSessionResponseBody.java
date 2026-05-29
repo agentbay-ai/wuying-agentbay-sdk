@@ -82,6 +82,9 @@ public class CreateMcpSessionResponseBody extends TeaModel {
         @NameInMap("ErrMsg")
         public String errMsg;
 
+        @NameInMap("ErrorCode")
+        public String errorCode;
+
         @NameInMap("HttpPort")
         public String httpPort;
 
@@ -107,13 +110,13 @@ public class CreateMcpSessionResponseBody extends TeaModel {
         public String token;
 
         @NameInMap("ToolList")
-        public Object toolList;
-
-        @NameInMap("WsUrl")
-        public String wsUrl;
+        public String toolList;
 
         @NameInMap("VpcResource")
         public Boolean vpcResource;
+
+        @NameInMap("WsUrl")
+        public String wsUrl;
 
         public static CreateMcpSessionResponseBodyData build(java.util.Map<String, ?> map) throws Exception {
             CreateMcpSessionResponseBodyData self = new CreateMcpSessionResponseBodyData();
@@ -134,6 +137,14 @@ public class CreateMcpSessionResponseBody extends TeaModel {
         }
         public String getErrMsg() {
             return this.errMsg;
+        }
+
+        public CreateMcpSessionResponseBodyData setErrorCode(String errorCode) {
+            this.errorCode = errorCode;
+            return this;
+        }
+        public String getErrorCode() {
+            return this.errorCode;
         }
 
         public CreateMcpSessionResponseBodyData setHttpPort(String httpPort) {
@@ -200,20 +211,12 @@ public class CreateMcpSessionResponseBody extends TeaModel {
             return this.token;
         }
 
-        public CreateMcpSessionResponseBodyData setToolList(Object toolList) {
+        public CreateMcpSessionResponseBodyData setToolList(String toolList) {
             this.toolList = toolList;
             return this;
         }
-        public Object getToolList() {
+        public String getToolList() {
             return this.toolList;
-        }
-
-        public CreateMcpSessionResponseBodyData setWsUrl(String wsUrl) {
-            this.wsUrl = wsUrl;
-            return this;
-        }
-        public String getWsUrl() {
-            return this.wsUrl;
         }
 
         public CreateMcpSessionResponseBodyData setVpcResource(Boolean vpcResource) {
@@ -222,6 +225,14 @@ public class CreateMcpSessionResponseBody extends TeaModel {
         }
         public Boolean getVpcResource() {
             return this.vpcResource;
+        }
+
+        public CreateMcpSessionResponseBodyData setWsUrl(String wsUrl) {
+            this.wsUrl = wsUrl;
+            return this;
+        }
+        public String getWsUrl() {
+            return this.wsUrl;
         }
 
     }

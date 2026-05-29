@@ -30,4 +30,5 @@ public class DescribeSessionContextsRequest extends TeaModel {
     public String getSessionId() {
         return this.sessionId;
     }
+
 }

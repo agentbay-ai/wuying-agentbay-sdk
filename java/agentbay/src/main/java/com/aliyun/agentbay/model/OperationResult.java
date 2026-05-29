@@ -9,6 +9,9 @@ public class OperationResult {
     private boolean success;
     private String data;
     private String errorMessage;
+    private String code;
+    private String message;
+    private Integer httpStatusCode;
 
     public OperationResult() {
     }
@@ -18,6 +21,16 @@ public class OperationResult {
         this.success = success;
         this.data = data;
         this.errorMessage = errorMessage;
+    }
+
+    public OperationResult(String requestId, boolean success, String data, String code, String message, String errorMessage, Integer httpStatusCode) {
+        this.requestId = requestId;
+        this.success = success;
+        this.data = data;
+        this.code = code;
+        this.message = message;
+        this.errorMessage = errorMessage;
+        this.httpStatusCode = httpStatusCode;
     }
 
     public String getRequestId() {
@@ -52,6 +65,30 @@ public class OperationResult {
         this.errorMessage = errorMessage;
     }
 
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public Integer getHttpStatusCode() {
+        return httpStatusCode;
+    }
+
+    public void setHttpStatusCode(Integer httpStatusCode) {
+        this.httpStatusCode = httpStatusCode;
+    }
+
     @Override
     public String toString() {
         return "OperationResult{" +
@@ -59,6 +96,8 @@ public class OperationResult {
                 ", success=" + success +
                 ", data='" + data + '\'' +
                 ", errorMessage='" + errorMessage + '\'' +
+                ", code='" + code + '\'' +
+                ", httpStatusCode=" + httpStatusCode +
                 '}';
     }
 }

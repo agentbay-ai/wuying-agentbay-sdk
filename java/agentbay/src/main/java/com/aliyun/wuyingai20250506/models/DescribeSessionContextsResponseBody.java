@@ -135,5 +135,7 @@ public class DescribeSessionContextsResponseBody extends TeaModel {
         public String getPolicy() {
             return this.policy;
         }
+
     }
+
 }

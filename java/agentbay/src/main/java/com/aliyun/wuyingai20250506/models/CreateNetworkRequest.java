@@ -7,11 +7,11 @@ public class CreateNetworkRequest extends TeaModel {
     @NameInMap("Authorization")
     public String authorization;
 
-    @NameInMap("NetworkId")
-    public String networkId;
-
     @NameInMap("LoginRegionId")
     public String loginRegionId;
+
+    @NameInMap("NetworkId")
+    public String networkId;
 
     public static CreateNetworkRequest build(java.util.Map<String, ?> map) throws Exception {
         CreateNetworkRequest self = new CreateNetworkRequest();
@@ -26,20 +26,20 @@ public class CreateNetworkRequest extends TeaModel {
         return this.authorization;
     }
 
-    public CreateNetworkRequest setNetworkId(String networkId) {
-        this.networkId = networkId;
-        return this;
-    }
-    public String getNetworkId() {
-        return this.networkId;
-    }
-
     public CreateNetworkRequest setLoginRegionId(String loginRegionId) {
         this.loginRegionId = loginRegionId;
         return this;
     }
     public String getLoginRegionId() {
         return this.loginRegionId;
+    }
+
+    public CreateNetworkRequest setNetworkId(String networkId) {
+        this.networkId = networkId;
+        return this;
+    }
+    public String getNetworkId() {
+        return this.networkId;
     }
 
 }

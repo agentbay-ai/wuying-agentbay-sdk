@@ -28,56 +28,6 @@ public class Client extends com.aliyun.teaopenapi.Client {
 
     /**
      * <b>summary</b> : 
-     * <p>获取MQTT Token</p>
-     * 
-     * @param request ApplyMqttTokenRequest
-     * @param runtime runtime options for this request RuntimeOptions
-     * @return ApplyMqttTokenResponse
-     */
-    public ApplyMqttTokenResponse applyMqttTokenWithOptions(ApplyMqttTokenRequest request, com.aliyun.teautil.models.RuntimeOptions runtime) throws Exception {
-        com.aliyun.teautil.Common.validateModel(request);
-        java.util.Map<String, Object> query = new java.util.HashMap<>();
-        if (!com.aliyun.teautil.Common.isUnset(request.desktopId)) {
-            query.put("DesktopId", request.desktopId);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.sessionToken)) {
-            query.put("SessionToken", request.sessionToken);
-        }
-
-        com.aliyun.teaopenapi.models.OpenApiRequest req = com.aliyun.teaopenapi.models.OpenApiRequest.build(TeaConverter.buildMap(
-            new TeaPair("query", com.aliyun.openapiutil.Client.query(query))
-        ));
-        com.aliyun.teaopenapi.models.Params params = com.aliyun.teaopenapi.models.Params.build(TeaConverter.buildMap(
-            new TeaPair("action", "ApplyMqttToken"),
-            new TeaPair("version", "2025-05-06"),
-            new TeaPair("protocol", "HTTPS"),
-            new TeaPair("pathname", "/"),
-            new TeaPair("method", "POST"),
-            new TeaPair("authType", "Anonymous"),
-            new TeaPair("style", "RPC"),
-            new TeaPair("reqBodyType", "formData"),
-            new TeaPair("bodyType", "json")
-        ));
-        return TeaModel.toModel(this.doRPCRequest(params.action, params.version, params.protocol, params.method, params.authType, params.bodyType, req, runtime), new ApplyMqttTokenResponse());
-    }
-
-    /**
-     * <b>summary</b> : 
-     * <p>获取MQTT Token</p>
-     * 
-     * @param request ApplyMqttTokenRequest
-     * @return ApplyMqttTokenResponse
-     */
-    public ApplyMqttTokenResponse applyMqttToken(ApplyMqttTokenRequest request) throws Exception {
-        com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
-        runtime.setAutoretry(true);
-        runtime.setMaxAttempts(3);
-        return this.applyMqttTokenWithOptions(request, runtime);
-    }
-
-    /**
-     * <b>summary</b> : 
      * <p>调用mcp工具</p>
      * 
      * @param request CallMcpToolRequest
@@ -275,10 +225,6 @@ public class Client extends com.aliyun.teaopenapi.Client {
 
         if (!com.aliyun.teautil.Common.isUnset(request.vpcResource)) {
             body.put("VpcResource", request.vpcResource);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.extraConfigs)) {
-            body.put("ExtraConfigs", request.extraConfigs);
         }
 
         if (!com.aliyun.teautil.Common.isUnset(request.sdkStats)) {
@@ -602,56 +548,6 @@ public class Client extends com.aliyun.teaopenapi.Client {
         runtime.setAutoretry(true);
         runtime.setMaxAttempts(3);
         return this.deleteSessionAsyncWithOptions(request, runtime);
-    }
-
-    /**
-     * <b>summary</b> : 
-     * <p>删除Volume</p>
-     * 
-     * @param request DeleteVolumeRequest
-     * @param runtime runtime options for this request RuntimeOptions
-     * @return DeleteVolumeResponse
-     */
-    public DeleteVolumeResponse deleteVolumeWithOptions(DeleteVolumeRequest request, com.aliyun.teautil.models.RuntimeOptions runtime) throws Exception {
-        com.aliyun.teautil.Common.validateModel(request);
-        java.util.Map<String, Object> body = new java.util.HashMap<>();
-        if (!com.aliyun.teautil.Common.isUnset(request.authorization)) {
-            body.put("Authorization", request.authorization);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.volumeId)) {
-            body.put("VolumeId", request.volumeId);
-        }
-
-        com.aliyun.teaopenapi.models.OpenApiRequest req = com.aliyun.teaopenapi.models.OpenApiRequest.build(TeaConverter.buildMap(
-            new TeaPair("body", com.aliyun.openapiutil.Client.parseToMap(body))
-        ));
-        com.aliyun.teaopenapi.models.Params params = com.aliyun.teaopenapi.models.Params.build(TeaConverter.buildMap(
-            new TeaPair("action", "DeleteVolume"),
-            new TeaPair("version", "2025-05-06"),
-            new TeaPair("protocol", "HTTPS"),
-            new TeaPair("pathname", "/"),
-            new TeaPair("method", "POST"),
-            new TeaPair("authType", "Anonymous"),
-            new TeaPair("style", "RPC"),
-            new TeaPair("reqBodyType", "formData"),
-            new TeaPair("bodyType", "json")
-        ));
-        return TeaModel.toModel(this.doRPCRequest(params.action, params.version, params.protocol, params.method, params.authType, params.bodyType, req, runtime), new DeleteVolumeResponse());
-    }
-
-    /**
-     * <b>summary</b> : 
-     * <p>删除Volume</p>
-     * 
-     * @param request DeleteVolumeRequest
-     * @return DeleteVolumeResponse
-     */
-    public DeleteVolumeResponse deleteVolume(DeleteVolumeRequest request) throws Exception {
-        com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
-        runtime.setAutoretry(true);
-        runtime.setMaxAttempts(3);
-        return this.deleteVolumeWithOptions(request, runtime);
     }
 
     /**
@@ -1440,120 +1336,6 @@ public class Client extends com.aliyun.teaopenapi.Client {
 
     /**
      * <b>summary</b> : 
-     * <p>创建或获取Volume</p>
-     * 
-     * @param request GetVolumeRequest
-     * @param runtime runtime options for this request RuntimeOptions
-     * @return GetVolumeResponse
-     */
-    public GetVolumeResponse getVolumeWithOptions(GetVolumeRequest request, com.aliyun.teautil.models.RuntimeOptions runtime) throws Exception {
-        com.aliyun.teautil.Common.validateModel(request);
-        java.util.Map<String, Object> body = new java.util.HashMap<>();
-        if (!com.aliyun.teautil.Common.isUnset(request.allowCreate)) {
-            body.put("AllowCreate", request.allowCreate);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.authorization)) {
-            body.put("Authorization", request.authorization);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.imageId)) {
-            body.put("ImageId", request.imageId);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.volumeName)) {
-            body.put("VolumeName", request.volumeName);
-        }
-
-        com.aliyun.teaopenapi.models.OpenApiRequest req = com.aliyun.teaopenapi.models.OpenApiRequest.build(TeaConverter.buildMap(
-            new TeaPair("body", com.aliyun.openapiutil.Client.parseToMap(body))
-        ));
-        com.aliyun.teaopenapi.models.Params params = com.aliyun.teaopenapi.models.Params.build(TeaConverter.buildMap(
-            new TeaPair("action", "GetVolume"),
-            new TeaPair("version", "2025-05-06"),
-            new TeaPair("protocol", "HTTPS"),
-            new TeaPair("pathname", "/"),
-            new TeaPair("method", "POST"),
-            new TeaPair("authType", "Anonymous"),
-            new TeaPair("style", "RPC"),
-            new TeaPair("reqBodyType", "formData"),
-            new TeaPair("bodyType", "json")
-        ));
-        return TeaModel.toModel(this.doRPCRequest(params.action, params.version, params.protocol, params.method, params.authType, params.bodyType, req, runtime), new GetVolumeResponse());
-    }
-
-    /**
-     * <b>summary</b> : 
-     * <p>创建或获取Volume</p>
-     * 
-     * @param request GetVolumeRequest
-     * @return GetVolumeResponse
-     */
-    public GetVolumeResponse getVolume(GetVolumeRequest request) throws Exception {
-        com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
-        runtime.setAutoretry(true);
-        runtime.setMaxAttempts(3);
-        return this.getVolumeWithOptions(request, runtime);
-    }
-
-    /**
-     * <b>summary</b> : 
-     * <p>处理来自AI Engine的消息</p>
-     * 
-     * @param request HandleAIEngineMessageRequest
-     * @param runtime runtime options for this request RuntimeOptions
-     * @return HandleAIEngineMessageResponse
-     */
-    public HandleAIEngineMessageResponse handleAIEngineMessageWithOptions(HandleAIEngineMessageRequest request, com.aliyun.teautil.models.RuntimeOptions runtime) throws Exception {
-        com.aliyun.teautil.Common.validateModel(request);
-        java.util.Map<String, Object> query = new java.util.HashMap<>();
-        if (!com.aliyun.teautil.Common.isUnset(request.sessionToken)) {
-            query.put("SessionToken", request.sessionToken);
-        }
-
-        java.util.Map<String, Object> body = new java.util.HashMap<>();
-        if (!com.aliyun.teautil.Common.isUnset(request.data)) {
-            body.put("Data", request.data);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.msgType)) {
-            body.put("MsgType", request.msgType);
-        }
-
-        com.aliyun.teaopenapi.models.OpenApiRequest req = com.aliyun.teaopenapi.models.OpenApiRequest.build(TeaConverter.buildMap(
-            new TeaPair("query", com.aliyun.openapiutil.Client.query(query)),
-            new TeaPair("body", com.aliyun.openapiutil.Client.parseToMap(body))
-        ));
-        com.aliyun.teaopenapi.models.Params params = com.aliyun.teaopenapi.models.Params.build(TeaConverter.buildMap(
-            new TeaPair("action", "HandleAIEngineMessage"),
-            new TeaPair("version", "2025-05-06"),
-            new TeaPair("protocol", "HTTPS"),
-            new TeaPair("pathname", "/"),
-            new TeaPair("method", "POST"),
-            new TeaPair("authType", "Anonymous"),
-            new TeaPair("style", "RPC"),
-            new TeaPair("reqBodyType", "formData"),
-            new TeaPair("bodyType", "json")
-        ));
-        return TeaModel.toModel(this.doRPCRequest(params.action, params.version, params.protocol, params.method, params.authType, params.bodyType, req, runtime), new HandleAIEngineMessageResponse());
-    }
-
-    /**
-     * <b>summary</b> : 
-     * <p>处理来自AI Engine的消息</p>
-     * 
-     * @param request HandleAIEngineMessageRequest
-     * @return HandleAIEngineMessageResponse
-     */
-    public HandleAIEngineMessageResponse handleAIEngineMessage(HandleAIEngineMessageRequest request) throws Exception {
-        com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
-        runtime.setAutoretry(true);
-        runtime.setMaxAttempts(3);
-        return this.handleAIEngineMessageWithOptions(request, runtime);
-    }
-
-    /**
-     * <b>summary</b> : 
      * <p>初始化AI浏览器</p>
      * 
      * @param request InitBrowserRequest
@@ -1842,74 +1624,6 @@ public class Client extends com.aliyun.teaopenapi.Client {
 
     /**
      * <b>summary</b> : 
-     * <p>查询Volume详情</p>
-     * 
-     * @param request ListVolumesRequest
-     * @param runtime runtime options for this request RuntimeOptions
-     * @return ListVolumesResponse
-     */
-    public ListVolumesResponse listVolumesWithOptions(ListVolumesRequest request, com.aliyun.teautil.models.RuntimeOptions runtime) throws Exception {
-        com.aliyun.teautil.Common.validateModel(request);
-        java.util.Map<String, Object> query = new java.util.HashMap<>();
-        if (!com.aliyun.teautil.Common.isUnset(request.nextToken)) {
-            query.put("NextToken", request.nextToken);
-        }
-
-        java.util.Map<String, Object> body = new java.util.HashMap<>();
-        if (!com.aliyun.teautil.Common.isUnset(request.authorization)) {
-            body.put("Authorization", request.authorization);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.imageId)) {
-            body.put("ImageId", request.imageId);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.maxResults)) {
-            body.put("MaxResults", request.maxResults);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.volumeIds)) {
-            body.put("VolumeIds", request.volumeIds);
-        }
-
-        if (!com.aliyun.teautil.Common.isUnset(request.volumeName)) {
-            body.put("VolumeName", request.volumeName);
-        }
-
-        com.aliyun.teaopenapi.models.OpenApiRequest req = com.aliyun.teaopenapi.models.OpenApiRequest.build(TeaConverter.buildMap(
-            new TeaPair("query", com.aliyun.openapiutil.Client.query(query)),
-            new TeaPair("body", com.aliyun.openapiutil.Client.parseToMap(body))
-        ));
-        com.aliyun.teaopenapi.models.Params params = com.aliyun.teaopenapi.models.Params.build(TeaConverter.buildMap(
-            new TeaPair("action", "ListVolumes"),
-            new TeaPair("version", "2025-05-06"),
-            new TeaPair("protocol", "HTTPS"),
-            new TeaPair("pathname", "/"),
-            new TeaPair("method", "POST"),
-            new TeaPair("authType", "Anonymous"),
-            new TeaPair("style", "RPC"),
-            new TeaPair("reqBodyType", "formData"),
-            new TeaPair("bodyType", "json")
-        ));
-        return TeaModel.toModel(this.doRPCRequest(params.action, params.version, params.protocol, params.method, params.authType, params.bodyType, req, runtime), new ListVolumesResponse());
-    }
-
-    /**
-     * <b>summary</b> : 
-     * <p>查询Volume详情</p>
-     * 
-     * @param request ListVolumesRequest
-     * @return ListVolumesResponse
-     */
-    public ListVolumesResponse listVolumes(ListVolumesRequest request) throws Exception {
-        com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
-        runtime.setAutoretry(true);
-        runtime.setMaxAttempts(3);
-        return this.listVolumesWithOptions(request, runtime);
-    }
-
-    /**
-     * <b>summary</b> : 
      * <p>修改上下文</p>
      * 
      * @param request ModifyContextRequest
@@ -1960,6 +1674,70 @@ public class Client extends com.aliyun.teaopenapi.Client {
         runtime.setAutoretry(true);
         runtime.setMaxAttempts(3);
         return this.modifyContextWithOptions(request, runtime);
+    }
+
+    /**
+     * <b>summary</b> : 
+     * <p>挂载OSS</p>
+     * 
+     * @param tmpReq MountOssRequest
+     * @param runtime runtime options for this request RuntimeOptions
+     * @return MountOssResponse
+     */
+    public MountOssResponse mountOssWithOptions(MountOssRequest tmpReq, com.aliyun.teautil.models.RuntimeOptions runtime) throws Exception {
+        com.aliyun.teautil.Common.validateModel(tmpReq);
+        MountOssShrinkRequest request = new MountOssShrinkRequest();
+        com.aliyun.openapiutil.Client.convert(tmpReq, request);
+        if (!com.aliyun.teautil.Common.isUnset(tmpReq.ossMountConfigs)) {
+            request.ossMountConfigsShrink = com.aliyun.openapiutil.Client.arrayToStringWithSpecifiedStyle(tmpReq.ossMountConfigs, "OssMountConfigs", "json");
+        }
+
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        if (!com.aliyun.teautil.Common.isUnset(request.authorization)) {
+            body.put("Authorization", request.authorization);
+        }
+
+        if (!com.aliyun.teautil.Common.isUnset(request.ossMountConfigsShrink)) {
+            body.put("OssMountConfigs", request.ossMountConfigsShrink);
+        }
+
+        if (!com.aliyun.teautil.Common.isUnset(request.sessionId)) {
+            body.put("SessionId", request.sessionId);
+        }
+
+        if (!com.aliyun.teautil.Common.isUnset(request.fsType)) {
+            body.put("FsType", request.fsType);
+        }
+
+        com.aliyun.teaopenapi.models.OpenApiRequest req = com.aliyun.teaopenapi.models.OpenApiRequest.build(TeaConverter.buildMap(
+            new TeaPair("body", com.aliyun.openapiutil.Client.parseToMap(body))
+        ));
+        com.aliyun.teaopenapi.models.Params params = com.aliyun.teaopenapi.models.Params.build(TeaConverter.buildMap(
+            new TeaPair("action", "MountOss"),
+            new TeaPair("version", "2025-05-06"),
+            new TeaPair("protocol", "HTTPS"),
+            new TeaPair("pathname", "/"),
+            new TeaPair("method", "POST"),
+            new TeaPair("authType", "Anonymous"),
+            new TeaPair("style", "RPC"),
+            new TeaPair("reqBodyType", "formData"),
+            new TeaPair("bodyType", "json")
+        ));
+        return TeaModel.toModel(this.doRPCRequest(params.action, params.version, params.protocol, params.method, params.authType, params.bodyType, req, runtime), new MountOssResponse());
+    }
+
+    /**
+     * <b>summary</b> : 
+     * <p>挂载OSS</p>
+     * 
+     * @param request MountOssRequest
+     * @return MountOssResponse
+     */
+    public MountOssResponse mountOss(MountOssRequest request) throws Exception {
+        com.aliyun.teautil.models.RuntimeOptions runtime = new com.aliyun.teautil.models.RuntimeOptions();
+        runtime.setAutoretry(true);
+        runtime.setMaxAttempts(3);
+        return this.mountOssWithOptions(request, runtime);
     }
 
     /**

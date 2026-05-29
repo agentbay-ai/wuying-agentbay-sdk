@@ -40,7 +40,7 @@ public class FileSystemExample {
             // Create a session
             System.out.println("Creating a new session...");
             CreateSessionParams params = new CreateSessionParams();
-            params.setImageId("linux_latest");
+            params.setImageId("code_latest");
 
             SessionResult sessionResult = agentBay.create(params);
             session = sessionResult.getSession();
@@ -60,6 +60,8 @@ public class FileSystemExample {
             
             BoolResult result = fs.writeFile(testFilePath, testContent, "overwrite");
             System.out.println("File write successful: " + result.isSuccess());
+            SessionResult test = agentBay.get(session.getSessionId());
+            SessionResult test2 = agentBay.get(session.getSessionId()+ "2424");
             if (!result.isSuccess()) {
                 System.out.println("Error: " + result.getErrorMessage());
             }

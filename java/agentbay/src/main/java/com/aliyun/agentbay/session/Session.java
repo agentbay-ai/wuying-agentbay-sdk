@@ -244,17 +244,27 @@ public class Session {
 
         } catch (Exception e) {
             String errorStr = e.getMessage() != null ? e.getMessage() : e.toString();
-            
+            String errorCode = "";
+
+            // Try to extract error code from TeaException
+            if (e instanceof com.aliyun.tea.TeaException) {
+                com.aliyun.tea.TeaException teaEx = (com.aliyun.tea.TeaException) e;
+                if (teaEx.getData() != null && teaEx.getData().get("Code") != null) {
+                    errorCode = teaEx.getData().get("Code").toString();
+                }
+            }
+
             // Check for NotFound error
-            if (errorStr.contains("InvalidMcpSession.NotFound") || errorStr.contains("NotFound")) {
+            if (errorStr.contains("InvalidMcpSession.NotFound") || errorStr.contains("NotFound") ||
+                "InvalidMcpSession.NotFound".equals(errorCode)) {
                 logger.info("Session not found: {}", sessionId);
                 logger.debug("GetSessionDetail error details: {}", errorStr);
-                return new SessionStatusResult("", 400, "InvalidMcpSession.NotFound", false, "", 
+                return new SessionStatusResult("", 400, errorCode.isEmpty() ? "InvalidMcpSession.NotFound" : errorCode, false, "",
                                               "Session " + sessionId + " not found");
             }
 
             logger.error("Error calling GetSessionDetail: {}", errorStr, e);
-            return new SessionStatusResult("", 0, "", false, "", 
+            return new SessionStatusResult("", 0, errorCode, false, "",
                                           "Failed to get session status " + sessionId + ": " + errorStr);
         }
     }
@@ -293,7 +303,16 @@ public class Session {
 
             return new OperationResult(requestId, true, "", "");
         } catch (Exception e) {
-            return new OperationResult("", false, "", "Failed to keep session alive: " + e.getMessage());
+            String errorCode = "";
+            if (e instanceof com.aliyun.tea.TeaException) {
+                com.aliyun.tea.TeaException teaEx = (com.aliyun.tea.TeaException) e;
+                if (teaEx.getData() != null && teaEx.getData().get("Code") != null) {
+                    errorCode = teaEx.getData().get("Code").toString();
+                }
+            }
+            OperationResult result = new OperationResult("", false, "", "Failed to keep session alive: " + e.getMessage());
+            result.setCode(errorCode);
+            return result;
         }
     }
 
@@ -400,8 +419,17 @@ public class Session {
             return callMcpToolApi(toolName, args, serverName);
 
         } catch (Exception e) {
-            return new OperationResult("", false, "",
+            String errorCode = "";
+            if (e instanceof com.aliyun.tea.TeaException) {
+                com.aliyun.tea.TeaException teaEx = (com.aliyun.tea.TeaException) e;
+                if (teaEx.getData() != null && teaEx.getData().get("Code") != null) {
+                    errorCode = teaEx.getData().get("Code").toString();
+                }
+            }
+            OperationResult result = new OperationResult("", false, "",
                 "Failed to call MCP tool " + toolName + ": " + e.getMessage());
+            result.setCode(errorCode);
+            return result;
         }
     }
 
@@ -473,8 +501,17 @@ public class Session {
             return new OperationResult(requestId, true, textContent, "");
 
         } catch (Exception e) {
-            return new OperationResult("", false, "",
+            String errorCode = "";
+            if (e instanceof com.aliyun.tea.TeaException) {
+                com.aliyun.tea.TeaException teaEx = (com.aliyun.tea.TeaException) e;
+                if (teaEx.getData() != null && teaEx.getData().get("Code") != null) {
+                    errorCode = teaEx.getData().get("Code").toString();
+                }
+            }
+            OperationResult result = new OperationResult("", false, "",
                 "Failed to call MCP tool via API: " + e.getMessage());
+            result.setCode(errorCode);
+            return result;
         }
     }
 
@@ -692,8 +729,16 @@ public class Session {
             return new SessionMetricsResult(result.getRequestId(), true, metrics, "", raw);
 
         } catch (Exception e) {
-            return new SessionMetricsResult("", false, null,
+            String errorCode = "";
+            if (e instanceof com.aliyun.tea.TeaException) {
+                com.aliyun.tea.TeaException teaEx = (com.aliyun.tea.TeaException) e;
+                if (teaEx.getData() != null && teaEx.getData().get("Code") != null) {
+                    errorCode = teaEx.getData().get("Code").toString();
+                }
+            }
+            SessionMetricsResult result = new SessionMetricsResult("", false, null,
                 "Failed to get metrics: " + e.getMessage());
+            return result;
         }
     }
 

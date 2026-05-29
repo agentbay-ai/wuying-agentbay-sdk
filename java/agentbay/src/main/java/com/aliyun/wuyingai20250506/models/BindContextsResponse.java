@@ -41,4 +41,5 @@ public class BindContextsResponse extends TeaModel {
     public BindContextsResponseBody getBody() {
         return this.body;
     }
+
 }

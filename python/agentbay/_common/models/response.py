@@ -129,6 +129,7 @@ class SessionResult(ApiResponse):
         success: bool = False,
         error_message: str = "",
         session: Optional["Session"] = None,
+        code: str = "",
     ):
         """
         Initialize a SessionResult.
@@ -141,11 +142,13 @@ class SessionResult(ApiResponse):
                 Defaults to False.
             error_message (str, optional): Error message if the operation failed.
                 Defaults to "".
+            code (str, optional): API error code. Defaults to "".
         """
         super().__init__(request_id)
         self.success = success
         self.error_message = error_message
         self.session = session
+        self.code = code
 
 
 class SessionListResult(ApiResponse):

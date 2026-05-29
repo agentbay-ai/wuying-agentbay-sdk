@@ -41,4 +41,5 @@ public class DescribeSessionContextsResponse extends TeaModel {
     public DescribeSessionContextsResponseBody getBody() {
         return this.body;
     }
+
 }

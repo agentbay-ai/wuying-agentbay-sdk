@@ -92,6 +92,7 @@ public class AgentBay {
             clientConfig.setAccessKeySecret(apiKey);
             clientConfig.setReadTimeout(config.getTimeoutMs());
             clientConfig.setConnectTimeout(config.getTimeoutMs());
+            clientConfig.setMaxIdleConns(64);
 
             this.client = new Client(clientConfig);
             this.apiClient = new ApiClient(this.client, apiKey);
@@ -143,12 +144,14 @@ public class AgentBay {
                 if (code != null) {
                     errorMsg = "[" + code + "] " + errorMsg;
                 }
-                return new GetSessionResult(
+                GetSessionResult result = new GetSessionResult(
                     requestId,
                     false,
                     null,
                     errorMsg
                 );
+                result.setCode(code != null ? code : "");
+                return result;
             }
 
             // Extract session data
@@ -182,27 +185,35 @@ public class AgentBay {
         } catch (com.aliyun.tea.TeaException e) {
             String errorStr = e.getMessage();
             String requestId = "";
-            if (e.getData() != null && e.getData().get("RequestId") != null) {
-                requestId = e.getData().get("RequestId").toString();
+            String errorCode = "";
+
+            if (e.getData() != null) {
+                if (e.getData().get("RequestId") != null) {
+                    requestId = e.getData().get("RequestId").toString();
+                }
+                if (e.getData().get("Code") != null) {
+                    errorCode = e.getData().get("Code").toString();
+                }
             }
 
-            // Check if this is an expected business error (e.g., session not found)
+            // Determine error message based on error type
+            String errorMsg;
             if (errorStr != null && (errorStr.contains("InvalidMcpSession.NotFound") ||
-                                     errorStr.contains("NotFound"))) {
-                return new GetSessionResult(
-                    requestId,
-                    false,
-                    null,
-                    "Session " + sessionId + " not found"
-                );
+                                     errorStr.contains("NotFound")) ||
+                "InvalidMcpSession.NotFound".equals(errorCode)) {
+                errorMsg = "Session " + sessionId + " not found";
             } else {
-                return new GetSessionResult(
-                    requestId,
-                    false,
-                    null,
-                    "Failed to get session " + sessionId + ": " + errorStr
-                );
+                errorMsg = "Failed to get session " + sessionId + ": " + errorStr;
             }
+
+            GetSessionResult result = new GetSessionResult(
+                requestId,
+                false,
+                null,
+                errorMsg
+            );
+            result.setCode(errorCode);
+            return result;
         } catch (Exception e) {
             return new GetSessionResult(
                 "",
@@ -238,10 +249,12 @@ public class AgentBay {
         // Check if the API call was successful
         if (!getResult.isSuccess()) {
             String errorMsg = getResult.getErrorMessage() != null ? getResult.getErrorMessage() : "Unknown error";
+            String code = getResult.getCode() != null ? getResult.getCode() : "";
             SessionResult result = new SessionResult();
             result.setSuccess(false);
             result.setErrorMessage("Failed to get session " + sessionId + ": " + errorMsg);
             result.setRequestId(getResult.getRequestId());
+            result.setCode(code);
             return result;
         }
 
@@ -594,6 +607,9 @@ public class AgentBay {
                     response.getBody().getData().getErrMsg() : "Session creation failed";
                 result.setSuccess(false);
                 result.setErrorMessage(errorMsg);
+                if (response.getBody().getData().getErrorCode() != null) {
+                    result.setCode(response.getBody().getData().getErrorCode());
+                }
                 return result;
             }
 
@@ -700,11 +716,16 @@ public class AgentBay {
             SessionResult result = new SessionResult();
             result.setSuccess(false);
             result.setErrorMessage(e.getMessage());
-            // Try to extract requestId if exception has it (for ClientException cases)
+            // Try to extract requestId and code if exception has it (for TeaException cases)
             if (e instanceof com.aliyun.tea.TeaException) {
                 com.aliyun.tea.TeaException teaException = (com.aliyun.tea.TeaException) e;
-                if (teaException.getData() != null && teaException.getData().get("RequestId") != null) {
-                    result.setRequestId(teaException.getData().get("RequestId").toString());
+                if (teaException.getData() != null) {
+                    if (teaException.getData().get("RequestId") != null) {
+                        result.setRequestId(teaException.getData().get("RequestId").toString());
+                    }
+                    if (teaException.getData().get("Code") != null) {
+                        result.setCode(teaException.getData().get("Code").toString());
+                    }
                 }
             }
             return result;

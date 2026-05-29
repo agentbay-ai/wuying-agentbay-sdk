@@ -41,4 +41,5 @@ public class BindContextsShrinkRequest extends TeaModel {
     public String getSessionId() {
         return this.sessionId;
     }
+
 }
