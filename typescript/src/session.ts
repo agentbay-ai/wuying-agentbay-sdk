@@ -224,9 +224,9 @@ export class Session {
   /** Application instance ID */
   public appInstanceId = "";
 
-  /** VPC IP, populated when upstream returns it (VPC sessions) */
+  /** VPC IP. Returned only for sessions created on a custom VPC network; empty otherwise. */
   public vpcIp = "";
-  /** VPC ID, populated when upstream returns it (VPC sessions) */
+  /** VPC ID. Returned only for sessions created on a custom VPC network; empty otherwise. */
   public vpcId = "";
 
   /** Token for VPC sessions */

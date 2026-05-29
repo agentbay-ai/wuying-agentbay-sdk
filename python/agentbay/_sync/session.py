@@ -126,7 +126,8 @@ class Session:
         # Resource URL for accessing the session
         self.resource_url = ""
 
-        # VPC IP/ID, populated when upstream returns them (VPC sessions)
+        # vpc_ip / vpc_id are returned only for sessions created on a custom
+        # VPC network. For default-network sessions both fields are empty.
         self.vpc_ip = ""
         self.vpc_id = ""
 

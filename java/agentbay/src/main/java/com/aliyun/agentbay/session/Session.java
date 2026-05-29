@@ -110,7 +110,8 @@ public class Session {
     }
 
     /**
-     * Get the VPC IP, populated when upstream returns it (VPC sessions).
+     * Get the VPC IP. Returned only for sessions created on a custom VPC network;
+     * empty for default-network sessions.
      */
     public String getVpcIp() {
         return vpcIp;
@@ -121,7 +122,8 @@ public class Session {
     }
 
     /**
-     * Get the VPC ID, populated when upstream returns it (VPC sessions).
+     * Get the VPC ID. Returned only for sessions created on a custom VPC network;
+     * empty for default-network sessions.
      */
     public String getVpcId() {
         return vpcId;

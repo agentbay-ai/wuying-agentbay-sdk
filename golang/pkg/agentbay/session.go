@@ -130,7 +130,8 @@ type Session struct {
 	// Resource URL for accessing the session
 	ResourceUrl string
 
-	// VPC IP/ID, populated when the upstream returns them (VPC sessions)
+	// VpcIp / VpcId are returned only for sessions created on a custom VPC network.
+	// For default-network sessions both fields are empty.
 	VpcIp string
 	VpcId string
 
