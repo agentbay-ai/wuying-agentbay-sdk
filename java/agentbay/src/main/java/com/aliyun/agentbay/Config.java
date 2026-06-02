@@ -110,7 +110,7 @@ public class Config {
      * is logged either way). When both are set, {@code regionId} wins and
      * {@code endpoint} is ignored. Use {@link #Config(String, int)} instead.
      *
-     * @deprecated since 0.21.0. The {@code endpoint} parameter is a fallback only.
+     * @deprecated since 0.22.0. The {@code endpoint} parameter is a fallback only.
      *     Will be removed in a future major version.
      */
     @Deprecated
@@ -222,7 +222,7 @@ public class Config {
      * any value previously derived from {@code regionId}. A deprecation
      * warning is always logged.
      *
-     * @deprecated since 0.21.0. Use {@link #setRegionId(String)} instead so
+     * @deprecated since 0.22.0. Use {@link #setRegionId(String)} instead so
      *     the endpoint stays in sync with the region. Will be removed in a
      *     future major version.
      */

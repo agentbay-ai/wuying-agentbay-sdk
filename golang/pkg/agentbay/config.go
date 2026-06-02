@@ -255,7 +255,7 @@ func loadConfig(cfg *Config, customEnvPath string) Config {
 					"Config.Endpoint=%q is ignored because Config.RegionID=%q is also set.",
 					explicitEndpoint, explicitRegion),
 				"Config.RegionID",
-				"0.21.0",
+				"0.22.0",
 			)
 			explicitEndpoint = ""
 		} else if explicitEndpoint != "" {
@@ -265,7 +265,7 @@ func loadConfig(cfg *Config, customEnvPath string) Config {
 						"The value is used as a fallback when RegionID is not set.",
 					explicitEndpoint),
 				"Config.RegionID",
-				"0.21.0",
+				"0.22.0",
 			)
 		}
 	} else {

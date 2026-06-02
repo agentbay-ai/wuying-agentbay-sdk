@@ -18,7 +18,7 @@ type ConfigOptions = {
   timeout_ms?: number;
   region_id?: string;
   /**
-   * @deprecated Since 0.21.0. Pass `region_id` instead. The value is honored
+   * @deprecated Since 0.22.0. Pass `region_id` instead. The value is honored
    * only as a fallback when `region_id` is not set (in code or via
    * AGENTBAY_REGION_ID). Either form emits a deprecation warning. Will be
    * removed in a future major version.

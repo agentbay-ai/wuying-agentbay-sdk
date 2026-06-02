@@ -84,7 +84,7 @@ class Config:
     as-is. When both are set, ``region_id`` wins and ``endpoint`` is ignored.
     Either form emits a ``DeprecationWarning``.
 
-    .. deprecated:: 0.21.0
+    .. deprecated:: 0.22.0
         ``endpoint`` parameter. Use ``region_id`` instead.
     """
 
