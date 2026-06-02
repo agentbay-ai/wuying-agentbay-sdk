@@ -15,7 +15,7 @@ public class CreateMcpSessionRequest extends TeaModel {
 
     /**
      * <strong>if can be null:</strong>
-     * <p>true</p>
+     * <p>false</p>
      */
     @NameInMap("EnableRecord")
     public Boolean enableRecord;
@@ -25,9 +25,6 @@ public class CreateMcpSessionRequest extends TeaModel {
 
     @NameInMap("ImageId")
     public String imageId;
-
-    @NameInMap("Timeout")
-    public Integer timeout;
 
     @NameInMap("Labels")
     public String labels;
@@ -61,6 +58,9 @@ public class CreateMcpSessionRequest extends TeaModel {
 
     @NameInMap("Skills")
     public java.util.List<String> skills;
+
+    @NameInMap("Timeout")
+    public Integer timeout;
 
     @NameInMap("VpcResource")
     public Boolean vpcResource;
@@ -116,14 +116,6 @@ public class CreateMcpSessionRequest extends TeaModel {
     }
     public String getImageId() {
         return this.imageId;
-    }
-
-    public CreateMcpSessionRequest setTimeout(Integer timeout) {
-        this.timeout = timeout;
-        return this;
-    }
-    public Integer getTimeout() {
-        return this.timeout;
     }
 
     public CreateMcpSessionRequest setLabels(String labels) {
@@ -212,6 +204,14 @@ public class CreateMcpSessionRequest extends TeaModel {
     }
     public java.util.List<String> getSkills() {
         return this.skills;
+    }
+
+    public CreateMcpSessionRequest setTimeout(Integer timeout) {
+        this.timeout = timeout;
+        return this;
+    }
+    public Integer getTimeout() {
+        return this.timeout;
     }
 
     public CreateMcpSessionRequest setVpcResource(Boolean vpcResource) {

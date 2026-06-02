@@ -63,4 +63,5 @@ public class BindContextsResponseBody extends TeaModel {
     public Boolean getSuccess() {
         return this.success;
     }
+
 }

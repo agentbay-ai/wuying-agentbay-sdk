@@ -309,6 +309,10 @@ class AgentBay:
         session.app_instance_id = app_instance_id
         session.resource_url = resource_url
 
+        # VPC info, populated when upstream returns them
+        session.vpc_ip = response_data.get("VpcIp", "") or ""
+        session.vpc_id = response_data.get("VpcId", "") or ""
+
         # LinkUrl/token may be returned by the server for direct tool calls.
         if "Token" in response_data and response_data.get("Token") is not None:
             session.token = str(response_data.get("Token") or "")
@@ -891,6 +895,7 @@ class AgentBay:
         page: Optional[int] = None,
         limit: Optional[int] = None,
         status: Optional[str] = None,
+        image_id: Optional[str] = None,
     ) -> SessionListResult:
         """
         Returns paginated list of session IDs filtered by labels synchronously.
@@ -905,6 +910,8 @@ class AgentBay:
             status (Optional[str], optional): Status to filter sessions. Must be one of:
                 RUNNING, PAUSING, PAUSED, RESUMING, DELETING, DELETED.
                 Defaults to None (returns sessions with any status).
+            image_id (Optional[str], optional): Image ID to filter sessions.
+                Defaults to None (returns sessions with any image).
 
         Returns:
             SessionListResult: Paginated list of session IDs that match the filters.
@@ -955,6 +962,7 @@ class AgentBay:
                         labels=labels_json,
                         max_results=limit,
                         status=status,
+                        image_id=image_id,
                     )
                     if next_token:
                         request.next_token = next_token
@@ -1000,6 +1008,7 @@ class AgentBay:
                 labels=labels_json,
                 max_results=limit,
                 status=status,
+                image_id=image_id,
             )
             if next_token:
                 request.next_token = next_token
@@ -1062,11 +1071,15 @@ class AgentBay:
                     if isinstance(session_data, dict):
                         session_id = session_data.get("SessionId")
                         session_status = session_data.get("SessionStatus")
+                        app_instance_id = session_data.get("AppInstanceId")
+                        image_id_value = session_data.get("ImageId")
                         if session_id:
                             # Create a structured session object with both ID and status
                             session_info = {
                                 "sessionId": session_id,
-                                "sessionStatus": session_status if session_status else "UNKNOWN"
+                                "sessionStatus": session_status if session_status else "UNKNOWN",
+                                "appInstanceId": app_instance_id,
+                                "imageId": image_id_value,
                             }
                             session_ids.append(session_info)
 
@@ -1201,6 +1214,8 @@ class AgentBay:
                         ws_url=data_dict.get("WsUrl", "") or data_dict.get(
                             "wsUrl", "") or "",
                         vpc_resource=data_dict.get("VpcResource", False),
+                        vpc_ip=data_dict.get("VpcIp", "") or "",
+                        vpc_id=data_dict.get("VpcId", "") or "",
                         resource_url=data_dict.get("ResourceUrl", ""),
                         status=data_dict.get("Status", ""),
                         tool_list=data_dict.get("ToolList", "") or "",
@@ -1236,25 +1251,28 @@ class AgentBay:
                     error_message=f"Failed to parse response: {str(e)}",
                 )
         except ClientException as e:
-            # Check if this is an expected business error (e.g., session not found)
+            # Extract error code and request ID from the exception
             error_str = str(e)
+            error_code = getattr(e, 'code', '') or ''
+            request_id = getattr(e, 'request_id', '') or ''
+
+            # Determine error message based on error type
             if "InvalidMcpSession.NotFound" in error_str or "NotFound" in error_str:
-                # This is an expected error - session doesn't exist
-                # Use info level logging without stack trace, but with red color for visibility
                 _log_info_with_color(f"Session not found: {session_id}")
                 _logger.debug(f"GetSession error details: {error_str}")
                 return GetSessionResult(
-                    request_id="",
+                    request_id=request_id,
                     success=False,
                     error_message=f"Session {session_id} not found",
+                    code=error_code,
                 )
             else:
-                # This is an unexpected error - log with stack trace
                 _logger.error(f"Error calling GetSession: {e}")
                 return GetSessionResult(
-                    request_id="",
+                    request_id=request_id,
                     success=False,
                     error_message=f"Failed to get session {session_id}: {e}",
+                    code=error_code,
                 )
         except Exception as e:
             # Unexpected system error - log with stack trace
@@ -1303,6 +1321,8 @@ class AgentBay:
             session.app_instance_id = str(
                 getattr(get_result.data, "app_instance_id", "") or "")
             session.resource_url = get_result.data.resource_url
+            session.vpc_ip = str(getattr(get_result.data, "vpc_ip", "") or "")
+            session.vpc_id = str(getattr(get_result.data, "vpc_id", "") or "")
             session.mcpTools = self._parse_tool_list_to_mcp_tools(
                 get_result.data.tool_list)
             session.token = str(get_result.data.token or "")

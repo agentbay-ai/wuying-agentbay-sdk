@@ -654,6 +654,10 @@ export class AgentBay {
       session.appInstanceId = data.appInstanceId || "";
       session.resourceUrl = resourceUrl;
 
+      // VPC info, populated when upstream returns them
+      session.vpcIp = data.vpcIp || "";
+      session.vpcId = data.vpcId || "";
+
       // LinkUrl/token may be returned by the server for direct tool calls.
       session.token = data.token || "";
       session.linkUrl = data.linkUrl || "";
@@ -825,7 +829,8 @@ export class AgentBay {
     labels: Record<string, string> = {},
     page?: number,
     limit = 10,
-    status?: string
+    status?: string,
+    imageId?: string
   ): Promise<SessionListResult> {
     try {
       // Validate status parameter
@@ -886,6 +891,9 @@ export class AgentBay {
           if (status) {
             request.status = status;
           }
+          if (imageId) {
+            request.imageId = imageId;
+          }
 
           const response = await this.client.listSession(request);
           const requestId = extractRequestId(response) || "";
@@ -933,6 +941,9 @@ export class AgentBay {
       if (status) {
         request.status = status;
       }
+      if (imageId) {
+        request.imageId = imageId;
+      }
 
       // Log API request
       logAPICall("ListSession", {
@@ -974,7 +985,7 @@ export class AgentBay {
         };
       }
 
-      const sessionIds: Array<{ sessionId: string; sessionStatus: string }> =
+      const sessionIds: Array<{ sessionId: string; sessionStatus: string; appInstanceId?: string; imageId?: string }> =
         [];
 
       // Extract session data
@@ -982,10 +993,16 @@ export class AgentBay {
         for (const sessionData of response.body.data) {
           if (sessionData.sessionId) {
             // Create a structured session object with both ID and status
-            const sessionInfo = {
+            const sessionInfo: { sessionId: string; sessionStatus: string; appInstanceId?: string; imageId?: string } = {
               sessionId: sessionData.sessionId,
               sessionStatus: sessionData.sessionStatus || "UNKNOWN",
             };
+            if (sessionData.appInstanceId) {
+              sessionInfo.appInstanceId = sessionData.appInstanceId;
+            }
+            if (sessionData.imageId) {
+              sessionInfo.imageId = sessionData.imageId;
+            }
             sessionIds.push(sessionInfo);
           }
         }
@@ -1140,6 +1157,8 @@ export class AgentBay {
           linkUrl: (body.data as any).linkUrl || "",
           wsUrl,
           vpcResource: body.data.vpcResource || false,
+          vpcIp: body.data.vpcIp || "",
+          vpcId: body.data.vpcId || "",
           resourceUrl: body.data.resourceUrl || "",
           status: body.data.status || "",
           toolList: body.data.toolList || "",
@@ -1239,6 +1258,8 @@ export class AgentBay {
     if (getResult.data) {
       session.appInstanceId = getResult.data.appInstanceId || "";
       session.resourceUrl = getResult.data.resourceUrl;
+      session.vpcIp = getResult.data.vpcIp || "";
+      session.vpcId = getResult.data.vpcId || "";
       session.token = getResult.data.token || "";
       session.linkUrl = getResult.data.linkUrl || "";
       session.wsUrl = getResult.data.wsUrl || "";

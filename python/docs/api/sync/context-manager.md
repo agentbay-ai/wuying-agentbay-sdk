@@ -36,7 +36,8 @@ write-through persistence) objects. They can be mixed in a single call.
 **Arguments**:
 
     *contexts: One or more ContextSync or BetaContextMount objects.
-    wait_for_completion: If True, polls list_bindings() until all bound contexts appear.
+    wait_for_completion: If True, waits for bind registration and data download
+  to complete (ContextSync only). BetaContextMount only waits for bind registration.
   
 
 **Returns**:

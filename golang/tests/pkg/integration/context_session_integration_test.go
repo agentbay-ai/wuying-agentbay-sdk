@@ -81,7 +81,7 @@ func TestContextSessionManagement(t *testing.T) {
 	// Ensure cleanup of the session if it's not released during the test
 	defer func() {
 		// Check if the session still exists before trying to delete it
-		listResult, listErr := agentBay.List("", nil, nil, nil)
+		listResult, listErr := agentBay.List("", nil, nil, nil, "")
 		if listErr != nil {
 			t.Logf("Warning: Error listing sessions: %v", listErr)
 			return

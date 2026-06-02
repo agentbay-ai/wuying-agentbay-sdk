@@ -70,8 +70,6 @@ If no configuration is provided, the SDK uses the following default values:
 }
 ```
 
-`endpoint` is shown for reference — it is derived internally from `region_id` and cannot be set directly.
-
 ## Configuration Priority
 
 Configuration values are resolved in the following order (highest to lowest priority):

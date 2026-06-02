@@ -3,9 +3,12 @@ package com.aliyun.wuyingai20250506.models;
 
 import com.aliyun.tea.*;
 
-public class HandleAIEngineMessageResponseBody extends TeaModel {
+public class MountOssResponseBody extends TeaModel {
     @NameInMap("Code")
     public String code;
+
+    @NameInMap("Data")
+    public Boolean data;
 
     @NameInMap("HttpStatusCode")
     public Integer httpStatusCode;
@@ -19,12 +22,12 @@ public class HandleAIEngineMessageResponseBody extends TeaModel {
     @NameInMap("Success")
     public Boolean success;
 
-    public static HandleAIEngineMessageResponseBody build(java.util.Map<String, ?> map) throws Exception {
-        HandleAIEngineMessageResponseBody self = new HandleAIEngineMessageResponseBody();
+    public static MountOssResponseBody build(java.util.Map<String, ?> map) throws Exception {
+        MountOssResponseBody self = new MountOssResponseBody();
         return TeaModel.build(map, self);
     }
 
-    public HandleAIEngineMessageResponseBody setCode(String code) {
+    public MountOssResponseBody setCode(String code) {
         this.code = code;
         return this;
     }
@@ -32,7 +35,15 @@ public class HandleAIEngineMessageResponseBody extends TeaModel {
         return this.code;
     }
 
-    public HandleAIEngineMessageResponseBody setHttpStatusCode(Integer httpStatusCode) {
+    public MountOssResponseBody setData(Boolean data) {
+        this.data = data;
+        return this;
+    }
+    public Boolean getData() {
+        return this.data;
+    }
+
+    public MountOssResponseBody setHttpStatusCode(Integer httpStatusCode) {
         this.httpStatusCode = httpStatusCode;
         return this;
     }
@@ -40,7 +51,7 @@ public class HandleAIEngineMessageResponseBody extends TeaModel {
         return this.httpStatusCode;
     }
 
-    public HandleAIEngineMessageResponseBody setMessage(String message) {
+    public MountOssResponseBody setMessage(String message) {
         this.message = message;
         return this;
     }
@@ -48,7 +59,7 @@ public class HandleAIEngineMessageResponseBody extends TeaModel {
         return this.message;
     }
 
-    public HandleAIEngineMessageResponseBody setRequestId(String requestId) {
+    public MountOssResponseBody setRequestId(String requestId) {
         this.requestId = requestId;
         return this;
     }
@@ -56,7 +67,7 @@ public class HandleAIEngineMessageResponseBody extends TeaModel {
         return this.requestId;
     }
 
-    public HandleAIEngineMessageResponseBody setSuccess(Boolean success) {
+    public MountOssResponseBody setSuccess(Boolean success) {
         this.success = success;
         return this;
     }

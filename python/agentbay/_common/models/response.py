@@ -129,6 +129,7 @@ class SessionResult(ApiResponse):
         success: bool = False,
         error_message: str = "",
         session: Optional["Session"] = None,
+        code: str = "",
     ):
         """
         Initialize a SessionResult.
@@ -141,11 +142,13 @@ class SessionResult(ApiResponse):
                 Defaults to False.
             error_message (str, optional): Error message if the operation failed.
                 Defaults to "".
+            code (str, optional): API error code. Defaults to "".
         """
         super().__init__(request_id)
         self.success = success
         self.error_message = error_message
         self.session = session
+        self.code = code
 
 
 class SessionListResult(ApiResponse):
@@ -231,6 +234,8 @@ class GetSessionData:
         link_url: str = "",
         ws_url: str = "",
         vpc_resource: bool = False,
+        vpc_ip: str = "",
+        vpc_id: str = "",
         resource_url: str = "",
         status: str = "",
         tool_list: str = "",
@@ -263,6 +268,8 @@ class GetSessionData:
         self.link_url = link_url
         self.ws_url = ws_url
         self.vpc_resource = vpc_resource
+        self.vpc_ip = vpc_ip
+        self.vpc_id = vpc_id
         self.resource_url = resource_url
         self.status = status
         self.tool_list = tool_list

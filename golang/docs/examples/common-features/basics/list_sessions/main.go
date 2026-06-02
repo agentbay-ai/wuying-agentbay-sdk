@@ -114,7 +114,7 @@ func main() {
 	fmt.Println("Example 1: List all sessions (no filter)")
 	fmt.Println("============================================================")
 
-	result, err := client.List("", nil, nil, nil)
+	result, err := client.List("", nil, nil, nil, "")
 	if err != nil {
 		fmt.Printf("❌ Error: %v\n", err)
 	} else {
@@ -139,7 +139,7 @@ func main() {
 	fmt.Println("Example 2: List sessions filtered by project label")
 	fmt.Println("============================================================")
 
-	result, err = client.List("", map[string]string{"project": "list-demo"}, nil, nil)
+	result, err = client.List("", map[string]string{"project": "list-demo"}, nil, nil, "")
 	if err != nil {
 		fmt.Printf("❌ Error: %v\n", err)
 	} else {
@@ -169,6 +169,7 @@ func main() {
 		},
 		nil,
 		nil,
+		"",
 	)
 	if err != nil {
 		fmt.Printf("❌ Error: %v\n", err)
@@ -199,6 +200,7 @@ func main() {
 		map[string]string{"project": "list-demo"},
 		&page1,
 		&limit,
+		"",
 	)
 	if err != nil {
 		fmt.Printf("❌ Error: %v\n", err)
@@ -226,6 +228,7 @@ func main() {
 				map[string]string{"project": "list-demo"},
 				&page2,
 				&limit,
+				"",
 			)
 			if err != nil {
 				fmt.Printf("❌ Error on page 2: %v\n", err)
@@ -260,6 +263,7 @@ func main() {
 			map[string]string{"owner": "demo-user"},
 			&page,
 			&pageLimit,
+			"",
 		)
 
 		if err != nil {

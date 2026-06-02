@@ -74,7 +74,7 @@ func TestAgentBayListStatusIntegration(t *testing.T) {
 		currentStatus := initialStatus
 
 		// Test list with current status
-		listResult, err := agentBay.List(currentStatus, nil, nil, nil)
+		listResult, err := agentBay.List(currentStatus, nil, nil, nil, "")
 		require.NoError(t, err)
 
 		// Verify session is in the list and check array structure
@@ -213,7 +213,7 @@ func TestAgentBayListStatusIntegration(t *testing.T) {
 
 		// Test listing with RUNNING status filter
 		fmt.Printf("Testing list with RUNNING status filter...\n")
-		listResult, err := agentBay.List(agentbay.SessionStatusRunning.String(), nil, nil, nil)
+		listResult, err := agentBay.List(agentbay.SessionStatusRunning.String(), nil, nil, nil, "")
 		require.NoError(t, err)
 
 		// Verify our session is in the RUNNING list
@@ -236,7 +236,7 @@ func TestAgentBayListStatusIntegration(t *testing.T) {
 
 		// Test invalid status validation
 		fmt.Printf("Testing invalid status validation...\n")
-		_, err = agentBay.List("INVALID_STATUS", nil, nil, nil)
+		_, err = agentBay.List("INVALID_STATUS", nil, nil, nil, "")
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid session status 'INVALID_STATUS'")
 		fmt.Printf("  ✓ Invalid status validation works correctly\n")

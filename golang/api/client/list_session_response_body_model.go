@@ -135,6 +135,8 @@ func (s *ListSessionResponseBody) Validate() error {
 }
 
 type ListSessionResponseBodyData struct {
+	AppInstanceId *string `json:"AppInstanceId,omitempty" xml:"AppInstanceId,omitempty"`
+	ImageId       *string `json:"ImageId,omitempty" xml:"ImageId,omitempty"`
 	SessionId     *string `json:"SessionId,omitempty" xml:"SessionId,omitempty"`
 	SessionStatus *string `json:"SessionStatus,omitempty" xml:"SessionStatus,omitempty"`
 }
@@ -145,6 +147,24 @@ func (s ListSessionResponseBodyData) String() string {
 
 func (s ListSessionResponseBodyData) GoString() string {
 	return s.String()
+}
+
+func (s *ListSessionResponseBodyData) GetAppInstanceId() *string {
+	return s.AppInstanceId
+}
+
+func (s *ListSessionResponseBodyData) SetAppInstanceId(v string) *ListSessionResponseBodyData {
+	s.AppInstanceId = &v
+	return s
+}
+
+func (s *ListSessionResponseBodyData) GetImageId() *string {
+	return s.ImageId
+}
+
+func (s *ListSessionResponseBodyData) SetImageId(v string) *ListSessionResponseBodyData {
+	s.ImageId = &v
+	return s
 }
 
 func (s *ListSessionResponseBodyData) GetSessionId() *string {

@@ -126,6 +126,11 @@ class Session:
         # Resource URL for accessing the session
         self.resource_url = ""
 
+        # vpc_ip / vpc_id are returned only for sessions created on a custom
+        # VPC network. For default-network sessions both fields are empty.
+        self.vpc_ip = ""
+        self.vpc_id = ""
+
         # LinkUrl-based direct tool call (non-VPC)
         self.token = ""
         self.link_url = ""

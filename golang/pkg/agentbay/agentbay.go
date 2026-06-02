@@ -480,6 +480,12 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	if response.Body.Data.ResourceUrl != nil {
 		session.ResourceUrl = *response.Body.Data.ResourceUrl
 	}
+	if response.Body.Data.GetVpcIp() != nil {
+		session.VpcIp = *response.Body.Data.GetVpcIp()
+	}
+	if response.Body.Data.GetVpcId() != nil {
+		session.VpcId = *response.Body.Data.GetVpcId()
+	}
 
 	// LinkUrl/token may be returned by the server for direct tool calls.
 	if response.Body.Data.Token != nil {
@@ -691,10 +697,10 @@ func NewListSessionParams() *ListSessionParams {
 // Example:
 //
 //	client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
-//	result, _ := client.List("", nil, nil, nil)
+//	result, _ := client.List("", nil, nil, nil, "")
 //	// Or using enum:
-//	result, _ := client.List(SessionStatusRunning.String(), nil, nil, nil)
-func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32) (*SessionListResult, error) {
+//	result, _ := client.List(SessionStatusRunning.String(), nil, nil, nil, "")
+func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32, imageId string) (*SessionListResult, error) {
 	// Validate status parameter if provided
 	if status != "" {
 		sessionStatus := SessionStatus(status)
@@ -759,6 +765,9 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 			}
 			if nextToken != "" {
 				listSessionRequest.NextToken = tea.String(nextToken)
+			}
+			if imageId != "" {
+				listSessionRequest.ImageId = tea.String(imageId)
 			}
 
 			response, err := a.Client.ListSession(listSessionRequest)
@@ -826,6 +835,11 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 	// Add status filter if provided
 	if status != "" {
 		listSessionRequest.Status = tea.String(status)
+	}
+
+	// Add image ID filter if provided
+	if imageId != "" {
+		listSessionRequest.ImageId = tea.String(imageId)
 	}
 
 	// Log API request
@@ -903,6 +917,12 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 						"sessionId":     *sessionData.SessionId,
 						"sessionStatus": sessionStatus,
 					}
+					if sessionData.AppInstanceId != nil {
+						sessionInfo["appInstanceId"] = *sessionData.AppInstanceId
+					}
+					if sessionData.ImageId != nil {
+						sessionInfo["imageId"] = *sessionData.ImageId
+					}
 					sessionIds = append(sessionIds, sessionInfo)
 				}
 			}
@@ -952,7 +972,7 @@ func (a *AgentBay) List(status string, labels map[string]string, page *int, limi
 //	result, _ := client.ListByStatus(SessionStatusRunning, nil, nil, nil)
 //	result, _ := client.ListByStatus("", nil, nil, nil) // No status filter
 func (a *AgentBay) ListByStatus(status SessionStatus, labels map[string]string, page *int, limit *int32) (*SessionListResult, error) {
-	return a.List(status.String(), labels, page, limit)
+	return a.List(status.String(), labels, page, limit, "")
 }
 
 // Delete deletes a session from the AgentBay cloud environment.
@@ -1011,6 +1031,8 @@ type GetSessionData struct {
 	LinkUrl            string
 	WsUrl              string
 	VpcResource        bool
+	VpcIp              string
+	VpcId              string
 	ResourceUrl        string
 	Status             string
 	ToolList           string
@@ -1204,6 +1226,12 @@ func (a *AgentBay) getSession(sessionID string) (*GetSessionResult, error) {
 			if response.Body.Data.GetVpcResource() != nil {
 				data.VpcResource = *response.Body.Data.GetVpcResource()
 			}
+			if response.Body.Data.GetVpcIp() != nil {
+				data.VpcIp = *response.Body.Data.GetVpcIp()
+			}
+			if response.Body.Data.GetVpcId() != nil {
+				data.VpcId = *response.Body.Data.GetVpcId()
+			}
 			if response.Body.Data.GetResourceUrl() != nil {
 				data.ResourceUrl = *response.Body.Data.GetResourceUrl()
 			}
@@ -1331,6 +1359,8 @@ func (a *AgentBay) Get(sessionID string) (*SessionResult, error) {
 	if getResult.Data != nil {
 		session.AppInstanceId = getResult.Data.AppInstanceID
 		session.ResourceUrl = getResult.Data.ResourceUrl
+		session.VpcIp = getResult.Data.VpcIp
+		session.VpcId = getResult.Data.VpcId
 		session.McpTools = parseToolListToMcpTools(getResult.Data.ToolList)
 		session.Token = getResult.Data.Token
 		session.LinkUrl = getResult.Data.LinkUrl

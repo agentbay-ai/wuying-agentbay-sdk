@@ -112,6 +112,8 @@ type CreateMcpSessionResponseBodyData struct {
 	ToolList           interface{} `json:"ToolList,omitempty" xml:"ToolList,omitempty"`
 	WsUrl              *string `json:"WsUrl,omitempty" xml:"WsUrl,omitempty"`
 	VpcResource        *bool   `json:"VpcResource,omitempty" xml:"VpcResource,omitempty"`
+	VpcIp              *string `json:"VpcIp,omitempty" xml:"VpcIp,omitempty"`
+	VpcId              *string `json:"VpcId,omitempty" xml:"VpcId,omitempty"`
 }
 
 func (s CreateMcpSessionResponseBodyData) String() string {
@@ -172,6 +174,14 @@ func (s *CreateMcpSessionResponseBodyData) GetWsUrl() *string {
 
 func (s *CreateMcpSessionResponseBodyData) GetVpcResource() *bool {
 	return s.VpcResource
+}
+
+func (s *CreateMcpSessionResponseBodyData) GetVpcIp() *string {
+	return s.VpcIp
+}
+
+func (s *CreateMcpSessionResponseBodyData) GetVpcId() *string {
+	return s.VpcId
 }
 
 func (s *CreateMcpSessionResponseBodyData) SetAppInstanceId(v string) *CreateMcpSessionResponseBodyData {
@@ -236,6 +246,16 @@ func (s *CreateMcpSessionResponseBodyData) SetWsUrl(v string) *CreateMcpSessionR
 
 func (s *CreateMcpSessionResponseBodyData) SetVpcResource(v bool) *CreateMcpSessionResponseBodyData {
 	s.VpcResource = &v
+	return s
+}
+
+func (s *CreateMcpSessionResponseBodyData) SetVpcIp(v string) *CreateMcpSessionResponseBodyData {
+	s.VpcIp = &v
+	return s
+}
+
+func (s *CreateMcpSessionResponseBodyData) SetVpcId(v string) *CreateMcpSessionResponseBodyData {
+	s.VpcId = &v
 	return s
 }
 

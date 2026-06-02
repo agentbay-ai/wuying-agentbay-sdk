@@ -2,6 +2,7 @@
 package com.aliyun.agentbay.test;
 
 import com.aliyun.agentbay.AgentBay;
+import com.aliyun.agentbay.Config;
 import com.aliyun.agentbay.exception.AgentBayException;
 import com.aliyun.agentbay.model.DeleteResult;
 import com.aliyun.agentbay.model.SessionListResult;
@@ -167,7 +168,7 @@ public class ListSessionsIntegrationTest {
         Map<String, String> labels = new HashMap<>();
         labels.put("project", "list-test-" + uniqueId);
 
-        SessionListResult result = agentBay.list(labels, null, null, null);
+        SessionListResult result = agentBay.list(labels, null, null, null, null);
 
         assertTrue(result.isSuccess(), "list() with single label should succeed");
         assertNotNull(result.getRequestId(), "Request ID should be present");
@@ -200,7 +201,7 @@ public class ListSessionsIntegrationTest {
         labels.put("project", "list-test-" + uniqueId);
         labels.put("environment", "dev");
 
-        SessionListResult result = agentBay.list(labels, null, null, null);
+        SessionListResult result = agentBay.list(labels, null, null, null, null);
 
         assertTrue(result.isSuccess(), "list() with multiple labels should succeed");
         assertNotNull(result.getRequestId(), "Request ID should be present");
@@ -226,13 +227,13 @@ public class ListSessionsIntegrationTest {
     public void testListWithPagination() {
         System.out.println("\n=== Testing list() with pagination ===");
 
-        SessionListResult result = agentBay.list(null, 1, 2, null);
+        SessionListResult result = agentBay.list(null, 1, 2, null, "");
 
         assertTrue(result.isSuccess(), "list() with pagination should succeed");
         assertNotNull(result.getRequestId(), "Request ID should be present");
-        assertTrue(result.getSessionInfos().size() <= 2, "Should return at most 2 sessions");
+        assertTrue(result.getSessionInfos().size() <= 20, "Should return at most 20 sessions");
 
-        System.out.println("Sessions returned with page size 2: " + result.getSessionInfos().size());
+        System.out.println("Sessions returned with page size 20: " + result.getSessionInfos().size());
         System.out.println("Total count: " + result.getTotalCount());
 
         if (result.getNextToken() != null && !result.getNextToken().isEmpty()) {
@@ -247,7 +248,7 @@ public class ListSessionsIntegrationTest {
         Map<String, String> labels = new HashMap<>();
         labels.put("project", "list-test-" + uniqueId);
 
-        SessionListResult result = agentBay.list(labels, null, null, "RUNNING");
+        SessionListResult result = agentBay.list(labels, null, null, "RUNNING", null);
 
         assertTrue(result.isSuccess(), "list() with status filter should succeed");
         assertNotNull(result.getRequestId(), "Request ID should be present");

@@ -9,7 +9,25 @@ from agentbay import (
     ContextBindingsResult,
     ContextBindResult,
 )
+from agentbay._common.models.context import ContextInfoResult, ContextStatusData
 from agentbay._common.params.context_sync import ContextSync
+
+
+def _mock_info_download_success(context_id="ctx-123", path="/tmp/test"):
+    """Return an AsyncMock for info() that immediately returns download Success."""
+    async def _info(context_id=None, path=None, task_type=None):
+        return ContextInfoResult(
+            success=True,
+            context_status_data=[
+                ContextStatusData(
+                    context_id=context_id or "ctx-123",
+                    path=path or "/tmp/test",
+                    status="Success",
+                    task_type="download",
+                )
+            ],
+        )
+    return _info
 
 
 class TestAsyncContextManagerBind(unittest.IsolatedAsyncioTestCase):
@@ -42,7 +60,8 @@ class TestAsyncContextManagerBind(unittest.IsolatedAsyncioTestCase):
         }
         self.mock_client.bind_contexts_async = AsyncMock(return_value=mock_response)
 
-        with patch.object(self.context_manager, "list_bindings") as mock_list:
+        with patch.object(self.context_manager, "list_bindings") as mock_list, \
+             patch.object(self.context_manager, "info", side_effect=_mock_info_download_success()):
             mock_list.return_value = ContextBindingsResult(
                 success=True,
                 bindings=[ContextBinding(context_id="ctx-123", path="/tmp/test")],
@@ -71,7 +90,8 @@ class TestAsyncContextManagerBind(unittest.IsolatedAsyncioTestCase):
         }
         self.mock_client.bind_contexts_async = AsyncMock(return_value=mock_response)
 
-        with patch.object(self.context_manager, "list_bindings") as mock_list:
+        with patch.object(self.context_manager, "list_bindings") as mock_list, \
+             patch.object(self.context_manager, "info", side_effect=_mock_info_download_success()):
             mock_list.return_value = ContextBindingsResult(
                 success=True,
                 bindings=[
@@ -235,6 +255,155 @@ class TestAsyncContextManagerBind(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result.success)
         self.assertEqual(len(result.bindings), 0)
+
+
+class TestAsyncContextManagerBindDownloadPolling(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.mock_session = MagicMock()
+        self.mock_session._get_api_key.return_value = "test-api-key"
+        self.mock_session._get_session_id.return_value = "test-session-id"
+        self.mock_client = MagicMock()
+        self.mock_session._get_client.return_value = self.mock_client
+        self.context_manager = AsyncContextManager(self.mock_session)
+
+    @pytest.mark.asyncio
+    async def test_bind_waits_for_download_completion(self):
+        """bind(wait_for_completion=True) should poll info() until download completes."""
+        mock_response = MagicMock()
+        mock_response.to_map.return_value = {
+            "body": {"RequestId": "req-005", "Success": True}
+        }
+        self.mock_client.bind_contexts_async = AsyncMock(return_value=mock_response)
+
+        info_call_count = 0
+
+        async def mock_list_bindings():
+            return ContextBindingsResult(
+                success=True,
+                bindings=[ContextBinding(context_id="ctx-123", path="/tmp/test")],
+            )
+
+        async def mock_info(context_id=None, path=None, task_type=None):
+            nonlocal info_call_count
+            info_call_count += 1
+            if info_call_count <= 2:
+                return ContextInfoResult(
+                    success=True,
+                    context_status_data=[
+                        ContextStatusData(
+                            context_id="ctx-123",
+                            path="/tmp/test",
+                            status="InProgress",
+                            task_type="download",
+                        )
+                    ],
+                )
+            return ContextInfoResult(
+                success=True,
+                context_status_data=[
+                    ContextStatusData(
+                        context_id="ctx-123",
+                        path="/tmp/test",
+                        status="Success",
+                        task_type="download",
+                    )
+                ],
+            )
+
+        with patch.object(self.context_manager, "list_bindings", side_effect=mock_list_bindings):
+            with patch.object(self.context_manager, "info", side_effect=mock_info):
+                result = await self.context_manager.bind(
+                    ContextSync(context_id="ctx-123", path="/tmp/test"),
+                    wait_for_completion=True,
+                )
+
+        self.assertTrue(result.success)
+        self.assertGreaterEqual(info_call_count, 3)
+
+    @pytest.mark.asyncio
+    async def test_bind_no_download_polling_for_beta_context_mount(self):
+        """bind() with BetaContextMount should NOT poll info() for download."""
+        mock_response = MagicMock()
+        mock_response.to_map.return_value = {
+            "body": {"RequestId": "req-006", "Success": True}
+        }
+        self.mock_client.bind_contexts_async = AsyncMock(return_value=mock_response)
+
+        info_call_count = 0
+
+        async def mock_info(context_id=None, path=None, task_type=None):
+            nonlocal info_call_count
+            info_call_count += 1
+            return ContextInfoResult(success=True, context_status_data=[])
+
+        from agentbay._common.params.beta_context_mount import BetaContextMount
+
+        with patch.object(self.context_manager, "info", side_effect=mock_info):
+            result = await self.context_manager.bind(
+                BetaContextMount(context_id="ctx-456", path="/mnt/data"),
+                wait_for_completion=True,
+            )
+
+        self.assertTrue(result.success)
+        self.assertEqual(info_call_count, 0)
+
+    @pytest.mark.asyncio
+    async def test_bind_download_failure_returns_success(self):
+        """bind() returns success even if download fails (bind API itself succeeded)."""
+        mock_response = MagicMock()
+        mock_response.to_map.return_value = {
+            "body": {"RequestId": "req-007", "Success": True}
+        }
+        self.mock_client.bind_contexts_async = AsyncMock(return_value=mock_response)
+
+        async def mock_list_bindings():
+            return ContextBindingsResult(
+                success=True,
+                bindings=[ContextBinding(context_id="ctx-123", path="/tmp/test")],
+            )
+
+        async def mock_info(context_id=None, path=None, task_type=None):
+            return ContextInfoResult(
+                success=True,
+                context_status_data=[
+                    ContextStatusData(
+                        context_id="ctx-123",
+                        path="/tmp/test",
+                        status="Failed",
+                        task_type="download",
+                        error_message="Download timeout",
+                    )
+                ],
+            )
+
+        with patch.object(self.context_manager, "list_bindings", side_effect=mock_list_bindings):
+            with patch.object(self.context_manager, "info", side_effect=mock_info):
+                result = await self.context_manager.bind(
+                    ContextSync(context_id="ctx-123", path="/tmp/test"),
+                    wait_for_completion=True,
+                )
+
+        self.assertTrue(result.success)
+
+    @pytest.mark.asyncio
+    async def test_bind_without_wait_skips_download_polling(self):
+        """bind(wait_for_completion=False) should not poll info() at all."""
+        mock_response = MagicMock()
+        mock_response.to_map.return_value = {
+            "body": {"RequestId": "req-008", "Success": True}
+        }
+        self.mock_client.bind_contexts_async = AsyncMock(return_value=mock_response)
+
+        with patch.object(self.context_manager, "list_bindings") as mock_list:
+            with patch.object(self.context_manager, "info") as mock_info:
+                result = await self.context_manager.bind(
+                    ContextSync(context_id="ctx-123", path="/tmp/test"),
+                    wait_for_completion=False,
+                )
+                mock_list.assert_not_called()
+                mock_info.assert_not_called()
+
+        self.assertTrue(result.success)
 
 
 if __name__ == "__main__":

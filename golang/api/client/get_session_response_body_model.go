@@ -117,6 +117,8 @@ type GetSessionResponseBodyData struct {
 	ToolList           interface{}                            `json:"ToolList,omitempty" xml:"ToolList,omitempty"`
 	WsUrl              *string                               `json:"WsUrl,omitempty" xml:"WsUrl,omitempty"`
 	VpcResource        *bool                                 `json:"VpcResource,omitempty" xml:"VpcResource,omitempty"`
+	VpcIp              *string                               `json:"VpcIp,omitempty" xml:"VpcIp,omitempty"`
+	VpcId              *string                               `json:"VpcId,omitempty" xml:"VpcId,omitempty"`
 	Contexts           []*GetSessionResponseBodyDataContexts `json:"contexts,omitempty" xml:"contexts,omitempty" type:"Repeated"`
 }
 
@@ -178,6 +180,14 @@ func (s *GetSessionResponseBodyData) GetWsUrl() *string {
 
 func (s *GetSessionResponseBodyData) GetVpcResource() *bool {
 	return s.VpcResource
+}
+
+func (s *GetSessionResponseBodyData) GetVpcIp() *string {
+	return s.VpcIp
+}
+
+func (s *GetSessionResponseBodyData) GetVpcId() *string {
+	return s.VpcId
 }
 
 func (s *GetSessionResponseBodyData) GetContexts() []*GetSessionResponseBodyDataContexts {
@@ -246,6 +256,16 @@ func (s *GetSessionResponseBodyData) SetWsUrl(v string) *GetSessionResponseBodyD
 
 func (s *GetSessionResponseBodyData) SetVpcResource(v bool) *GetSessionResponseBodyData {
 	s.VpcResource = &v
+	return s
+}
+
+func (s *GetSessionResponseBodyData) SetVpcIp(v string) *GetSessionResponseBodyData {
+	s.VpcIp = &v
+	return s
+}
+
+func (s *GetSessionResponseBodyData) SetVpcId(v string) *GetSessionResponseBodyData {
+	s.VpcId = &v
 	return s
 }
 

@@ -99,7 +99,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 	t.Run("ListAllSessions", func(t *testing.T) {
 		t.Log("\n=== Testing List() without labels ===")
 
-		result, err := agentBayClient.List("", nil, nil, nil)
+		result, err := agentBayClient.List("", nil, nil, nil, "")
 		if err != nil {
 			t.Fatalf("Error listing all sessions: %v", err)
 		}
@@ -125,6 +125,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 			nil,
 			nil,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error listing sessions with single label: %v", err)
@@ -176,6 +177,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			},
 			nil,
 			nil,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error listing sessions with multiple labels: %v", err)
@@ -224,6 +226,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 			&page,
 			&limit,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error listing first page: %v", err)
@@ -248,6 +251,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 				map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 				&page2,
 				&limit,
+				"",
 			)
 			if err != nil {
 				t.Fatalf("Error listing second page: %v", err)
@@ -274,6 +278,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			},
 			nil,
 			nil,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error listing sessions with non-matching label: %v", err)
@@ -318,6 +323,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"owner": fmt.Sprintf("test-%s", uniqueID)},
 			nil,
 			nil,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error listing sessions with default limit: %v", err)
@@ -340,7 +346,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 		t.Log("\n=== Testing List() request_id presence ===")
 
 		// Test 1: No labels
-		result1, err := agentBayClient.List("", nil, nil, nil)
+		result1, err := agentBayClient.List("", nil, nil, nil, "")
 		if err != nil {
 			t.Fatalf("Error in test 1: %v", err)
 		}
@@ -355,6 +361,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 			nil,
 			nil,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error in test 2: %v", err)
@@ -372,6 +379,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 			&page,
 			&limit,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error in test 3: %v", err)
@@ -395,6 +403,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 			&page0,
 			&limit,
+			"",
 		)
 		if err == nil {
 			t.Error("page=0 should return an error")
@@ -410,6 +419,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 			&pageNeg,
 			&limit,
+			"",
 		)
 		if err == nil {
 			t.Error("page=-1 should return an error")
@@ -426,6 +436,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 			&pageHuge,
 			&limitSmall,
+			"",
 		)
 		if err == nil {
 			t.Error("page=999999 should return an error (out of range)")
@@ -449,6 +460,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 				map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 				&page,
 				&limit,
+				"",
 			)
 			if err != nil {
 				t.Fatalf("Error listing page %d: %v", page, err)
@@ -516,6 +528,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"owner": fmt.Sprintf("test-%s", uniqueID)},
 			nil,
 			&limit,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error listing sessions: %v", err)
@@ -533,6 +546,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 			map[string]string{"owner": fmt.Sprintf("test-%s", uniqueID)},
 			nil,
 			&limit,
+			"",
 		)
 		if err != nil {
 			t.Fatalf("Error listing sessions: %v", err)
@@ -556,6 +570,7 @@ func TestAgentBay_List_Integration(t *testing.T) {
 				map[string]string{"project": fmt.Sprintf("list-test-%s", uniqueID)},
 				&page,
 				&pageLimit,
+				"",
 			)
 			if err != nil {
 				t.Fatalf("Error listing page %d: %v", page, err)

@@ -19,6 +19,9 @@ public class ListSessionRequest extends TeaModel {
     @NameInMap("NextToken")
     public String nextToken;
 
+    @NameInMap("ImageId")
+    public String imageId;
+
     @NameInMap("Status")
     public String status;
 
@@ -33,6 +36,14 @@ public class ListSessionRequest extends TeaModel {
     }
     public String getAuthorization() {
         return this.authorization;
+    }
+
+    public ListSessionRequest setImageId(String imageId) {
+        this.imageId = imageId;
+        return this;
+    }
+    public String getImageId() {
+        return this.imageId;
     }
 
     public ListSessionRequest setIsAll(Boolean isAll) {

@@ -1862,6 +1862,8 @@ class Client(OpenApiClient):
             body["NextToken"] = request.next_token
         if not DaraCore.is_null(request.status):
             body["Status"] = request.status
+        if not DaraCore.is_null(request.image_id):
+            body["ImageId"] = request.image_id
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
         params = open_api_util_models.Params(
             action="ListSession",
@@ -1895,6 +1897,8 @@ class Client(OpenApiClient):
             body["NextToken"] = request.next_token
         if not DaraCore.is_null(request.status):
             body["Status"] = request.status
+        if not DaraCore.is_null(request.image_id):
+            body["ImageId"] = request.image_id
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
         params = open_api_util_models.Params(
             action="ListSession",

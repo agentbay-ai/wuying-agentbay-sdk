@@ -75,6 +75,80 @@ public class GetSessionResponseBody extends TeaModel {
         return this.success;
     }
 
+    public static class GetSessionResponseBodyDataToolList extends TeaModel {
+        @NameInMap("Description")
+        public String description;
+
+        @NameInMap("InputSchema")
+        public String inputSchema;
+
+        @NameInMap("IsMcpAvailable")
+        public String isMcpAvailable;
+
+        @NameInMap("Name")
+        public String name;
+
+        @NameInMap("Server")
+        public String server;
+
+        @NameInMap("Tool")
+        public String tool;
+
+        public static GetSessionResponseBodyDataToolList build(java.util.Map<String, ?> map) throws Exception {
+            GetSessionResponseBodyDataToolList self = new GetSessionResponseBodyDataToolList();
+            return TeaModel.build(map, self);
+        }
+
+        public GetSessionResponseBodyDataToolList setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+        public String getDescription() {
+            return this.description;
+        }
+
+        public GetSessionResponseBodyDataToolList setInputSchema(String inputSchema) {
+            this.inputSchema = inputSchema;
+            return this;
+        }
+        public String getInputSchema() {
+            return this.inputSchema;
+        }
+
+        public GetSessionResponseBodyDataToolList setIsMcpAvailable(String isMcpAvailable) {
+            this.isMcpAvailable = isMcpAvailable;
+            return this;
+        }
+        public String getIsMcpAvailable() {
+            return this.isMcpAvailable;
+        }
+
+        public GetSessionResponseBodyDataToolList setName(String name) {
+            this.name = name;
+            return this;
+        }
+        public String getName() {
+            return this.name;
+        }
+
+        public GetSessionResponseBodyDataToolList setServer(String server) {
+            this.server = server;
+            return this;
+        }
+        public String getServer() {
+            return this.server;
+        }
+
+        public GetSessionResponseBodyDataToolList setTool(String tool) {
+            this.tool = tool;
+            return this;
+        }
+        public String getTool() {
+            return this.tool;
+        }
+
+    }
+
     public static class GetSessionResponseBodyDataContexts extends TeaModel {
         @NameInMap("id")
         public String id;
@@ -133,17 +207,20 @@ public class GetSessionResponseBody extends TeaModel {
         @NameInMap("Token")
         public String token;
 
-        @NameInMap("WsUrl")
-        public String wsUrl;
-
-        @NameInMap("wsUrl")
-        public String wsUrlLower;
-
         @NameInMap("ToolList")
-        public Object toolList;
+        public java.util.List<GetSessionResponseBodyDataToolList> toolList;
 
         @NameInMap("VpcResource")
         public Boolean vpcResource;
+
+        @NameInMap("VpcIp")
+        public String vpcIp;
+
+        @NameInMap("VpcId")
+        public String vpcId;
+
+        @NameInMap("WsUrl")
+        public String wsUrl;
 
         @NameInMap("contexts")
         public java.util.List<GetSessionResponseBodyDataContexts> contexts;
@@ -225,22 +302,11 @@ public class GetSessionResponseBody extends TeaModel {
             return this.token;
         }
 
-        public GetSessionResponseBodyData setWsUrl(String wsUrl) {
-            this.wsUrl = wsUrl;
-            return this;
-        }
-        public String getWsUrl() {
-            if (this.wsUrl != null) {
-                return this.wsUrl;
-            }
-            return this.wsUrlLower;
-        }
-
-        public GetSessionResponseBodyData setToolList(Object toolList) {
+        public GetSessionResponseBodyData setToolList(java.util.List<GetSessionResponseBodyDataToolList> toolList) {
             this.toolList = toolList;
             return this;
         }
-        public Object getToolList() {
+        public java.util.List<GetSessionResponseBodyDataToolList> getToolList() {
             return this.toolList;
         }
 
@@ -250,6 +316,30 @@ public class GetSessionResponseBody extends TeaModel {
         }
         public Boolean getVpcResource() {
             return this.vpcResource;
+        }
+
+        public GetSessionResponseBodyData setVpcIp(String vpcIp) {
+            this.vpcIp = vpcIp;
+            return this;
+        }
+        public String getVpcIp() {
+            return this.vpcIp;
+        }
+
+        public GetSessionResponseBodyData setVpcId(String vpcId) {
+            this.vpcId = vpcId;
+            return this;
+        }
+        public String getVpcId() {
+            return this.vpcId;
+        }
+
+        public GetSessionResponseBodyData setWsUrl(String wsUrl) {
+            this.wsUrl = wsUrl;
+            return this;
+        }
+        public String getWsUrl() {
+            return this.wsUrl;
         }
 
         public GetSessionResponseBodyData setContexts(java.util.List<GetSessionResponseBodyDataContexts> contexts) {

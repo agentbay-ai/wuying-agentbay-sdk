@@ -18,6 +18,10 @@ public class SessionResult extends ApiResponse {
     @JsonProperty("requestId")
     private String requestId;
 
+    private String code;
+    private String message;
+    private Integer httpStatusCode;
+
     public String getSessionId() {
         return sessionId;
     }
@@ -56,5 +60,29 @@ public class SessionResult extends ApiResponse {
 
     public void setSession(Session session) {
         this.session = session;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public Integer getHttpStatusCode() {
+        return httpStatusCode;
+    }
+
+    public void setHttpStatusCode(Integer httpStatusCode) {
+        this.httpStatusCode = httpStatusCode;
     }
 }

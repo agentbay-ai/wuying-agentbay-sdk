@@ -31,7 +31,7 @@ write-through persistence) objects. They can be mixed in a single call.
 | Name | Type | Default value | Description |
 | :------ | :------ | :------ | :------ |
 | `contexts` | [`ContextSync`](context-sync.md) \| ``BetaContextMount`` \| ([`ContextSync`](context-sync.md) \| ``BetaContextMount``)[] | `undefined` | One or more ContextSync or BetaContextMount objects |
-| `waitForCompletion` | `boolean` | `true` | Whether to poll until all bindings are confirmed (default: true) |
+| `waitForCompletion` | `boolean` | `true` | Whether to wait for bind registration and data download to complete (default: true). For ContextSync, waits until data is fully downloaded. For BetaContextMount, only waits for bind registration. |
 
 #### Returns
 

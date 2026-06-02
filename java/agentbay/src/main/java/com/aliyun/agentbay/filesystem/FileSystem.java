@@ -146,7 +146,7 @@ public class FileSystem extends BaseService {
             Map<String, Object> args = new HashMap<>();
             args.put("command", "test -e \"" + path + "\" && echo 'exists' || echo 'not exists'");
             OperationResult result = callShellTool(args);
-            return result.isSuccess() && result.getData() != null && result.getData().trim().equals("exists");
+            return result.isSuccess() && result.getData() != null && (result.getData().trim().contains("exists") && !result.getData().trim().contains("not exists"));
         } catch (Exception e) {
             return false;
         }

@@ -92,6 +92,7 @@ public class AgentBay {
             clientConfig.setAccessKeySecret(apiKey);
             clientConfig.setReadTimeout(config.getTimeoutMs());
             clientConfig.setConnectTimeout(config.getTimeoutMs());
+            clientConfig.setMaxIdleConns(50);
 
             this.client = new Client(clientConfig);
             this.apiClient = new ApiClient(this.client, apiKey);
@@ -143,12 +144,14 @@ public class AgentBay {
                 if (code != null) {
                     errorMsg = "[" + code + "] " + errorMsg;
                 }
-                return new GetSessionResult(
+                GetSessionResult result = new GetSessionResult(
                     requestId,
                     false,
                     null,
                     errorMsg
                 );
+                result.setCode(code != null ? code : "");
+                return result;
             }
 
             // Extract session data
@@ -169,7 +172,9 @@ public class AgentBay {
                     body.getCode() != null ? body.getCode() : "",
                     toolListToString(responseData.getToolList()),
                     success,
-                    responseData.getStatus() != null ? responseData.getStatus() : ""
+                    responseData.getStatus() != null ? responseData.getStatus() : "",
+                    responseData.getVpcIp(),
+                    responseData.getVpcId()
                 );
             }
 
@@ -182,27 +187,35 @@ public class AgentBay {
         } catch (com.aliyun.tea.TeaException e) {
             String errorStr = e.getMessage();
             String requestId = "";
-            if (e.getData() != null && e.getData().get("RequestId") != null) {
-                requestId = e.getData().get("RequestId").toString();
+            String errorCode = "";
+
+            if (e.getData() != null) {
+                if (e.getData().get("RequestId") != null) {
+                    requestId = e.getData().get("RequestId").toString();
+                }
+                if (e.getData().get("Code") != null) {
+                    errorCode = e.getData().get("Code").toString();
+                }
             }
 
-            // Check if this is an expected business error (e.g., session not found)
+            // Determine error message based on error type
+            String errorMsg;
             if (errorStr != null && (errorStr.contains("InvalidMcpSession.NotFound") ||
-                                     errorStr.contains("NotFound"))) {
-                return new GetSessionResult(
-                    requestId,
-                    false,
-                    null,
-                    "Session " + sessionId + " not found"
-                );
+                                     errorStr.contains("NotFound")) ||
+                "InvalidMcpSession.NotFound".equals(errorCode)) {
+                errorMsg = "Session " + sessionId + " not found";
             } else {
-                return new GetSessionResult(
-                    requestId,
-                    false,
-                    null,
-                    "Failed to get session " + sessionId + ": " + errorStr
-                );
+                errorMsg = "Failed to get session " + sessionId + ": " + errorStr;
             }
+
+            GetSessionResult result = new GetSessionResult(
+                requestId,
+                false,
+                null,
+                errorMsg
+            );
+            result.setCode(errorCode);
+            return result;
         } catch (Exception e) {
             return new GetSessionResult(
                 "",
@@ -238,10 +251,12 @@ public class AgentBay {
         // Check if the API call was successful
         if (!getResult.isSuccess()) {
             String errorMsg = getResult.getErrorMessage() != null ? getResult.getErrorMessage() : "Unknown error";
+            String code = getResult.getCode() != null ? getResult.getCode() : "";
             SessionResult result = new SessionResult();
             result.setSuccess(false);
             result.setErrorMessage("Failed to get session " + sessionId + ": " + errorMsg);
             result.setRequestId(getResult.getRequestId());
+            result.setCode(code);
             return result;
         }
 
@@ -257,6 +272,12 @@ public class AgentBay {
             session.setWsUrl(data.getWsUrl());
             if (data.getAppInstanceId() != null) {
                 session.setAppInstanceId(data.getAppInstanceId());
+            }
+            if (data.getVpcIp() != null) {
+                session.setVpcIp(data.getVpcIp());
+            }
+            if (data.getVpcId() != null) {
+                session.setVpcId(data.getVpcId());
             }
             if (data.getToolList() != null && !data.getToolList().isEmpty()) {
                 session.updateMcpTools(data.getToolList());
@@ -594,6 +615,9 @@ public class AgentBay {
                     response.getBody().getData().getErrMsg() : "Session creation failed";
                 result.setSuccess(false);
                 result.setErrorMessage(errorMsg);
+                if (response.getBody().getData().getErrorCode() != null) {
+                    result.setCode(response.getBody().getData().getErrorCode());
+                }
                 return result;
             }
 
@@ -638,6 +662,12 @@ public class AgentBay {
                 }
                 if (response.getBody().getData().getAppInstanceId() != null) {
                     session.setAppInstanceId(response.getBody().getData().getAppInstanceId());
+                }
+                if (response.getBody().getData().getVpcIp() != null) {
+                    session.setVpcIp(response.getBody().getData().getVpcIp());
+                }
+                if (response.getBody().getData().getVpcId() != null) {
+                    session.setVpcId(response.getBody().getData().getVpcId());
                 }
                 if (response.getBody().getData().getToolList() != null) {
                     session.updateMcpTools(response.getBody().getData().getToolList());
@@ -700,11 +730,16 @@ public class AgentBay {
             SessionResult result = new SessionResult();
             result.setSuccess(false);
             result.setErrorMessage(e.getMessage());
-            // Try to extract requestId if exception has it (for ClientException cases)
+            // Try to extract requestId and code if exception has it (for TeaException cases)
             if (e instanceof com.aliyun.tea.TeaException) {
                 com.aliyun.tea.TeaException teaException = (com.aliyun.tea.TeaException) e;
-                if (teaException.getData() != null && teaException.getData().get("RequestId") != null) {
-                    result.setRequestId(teaException.getData().get("RequestId").toString());
+                if (teaException.getData() != null) {
+                    if (teaException.getData().get("RequestId") != null) {
+                        result.setRequestId(teaException.getData().get("RequestId").toString());
+                    }
+                    if (teaException.getData().get("Code") != null) {
+                        result.setCode(teaException.getData().get("Code").toString());
+                    }
                 }
             }
             return result;
@@ -874,13 +909,15 @@ public class AgentBay {
      * @param page Page number for pagination starting from 1 (optional)
      * @param limit Maximum number of items per page (default: 10)
      * @param status Status to filter sessions: RUNNING, PAUSING, PAUSED, RESUMING, DELETING, DELETED (optional)
+     * @param imageId Image ID to filter sessions (optional)
      * @return SessionListResult containing paginated list of session information
      */
     public SessionListResult list(
             java.util.Map<String, String> labels,
             Integer page,
             Integer limit,
-            String status) {
+            String status,
+            String imageId) {
         try {
             // Set default values
             if (limit == null) {
@@ -926,6 +963,9 @@ public class AgentBay {
                     request.setLabels(labelsJson);
                     request.setMaxResults(limit);
                     request.setStatus(status);
+                    if (imageId != null && !imageId.isEmpty()) {
+                        request.setImageId(imageId);
+                    }
                     if (nextToken != null && !nextToken.isEmpty()) {
                         request.setNextToken(nextToken);
                     }
@@ -971,6 +1011,9 @@ public class AgentBay {
             request.setLabels(labelsJson);
             request.setMaxResults(limit);
             request.setStatus(status);
+            if (imageId != null && !imageId.isEmpty()) {
+                request.setImageId(imageId);
+            }
             if (nextToken != null && !nextToken.isEmpty()) {
                 request.setNextToken(nextToken);
             }
@@ -1001,10 +1044,14 @@ public class AgentBay {
                 for (ListSessionResponseBody.ListSessionResponseBodyData sessionData : body.getData()) {
                     String sessionId = sessionData.getSessionId();
                     String sessionStatus = sessionData.getSessionStatus();
+                    String appInstanceId = sessionData.getAppInstanceId();
+                    String imageIdValue = sessionData.getImageId();
                     if (sessionId != null) {
                         sessionInfos.add(new SessionListResult.SessionInfo(
                             sessionId,
-                            sessionStatus != null ? sessionStatus : "UNKNOWN"
+                            sessionStatus != null ? sessionStatus : "UNKNOWN",
+                            appInstanceId,
+                            imageIdValue
                         ));
                     }
                 }
@@ -1040,11 +1087,11 @@ public class AgentBay {
      * @return SessionListResult containing paginated list of session information
      */
     public SessionListResult list() {
-        return list(null, null, null, null);
+        return list((java.util.Map<String, String>) null, null, null, null, null);
     }
 
     public SessionListResult list(String status){
-        return list(null, null, null, status);
+        return list((java.util.Map<String, String>) null, null, null, status, null);
     }
     /**
      * Delete a session without context synchronization.

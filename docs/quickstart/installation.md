@@ -394,26 +394,15 @@ go get github.com/aliyun/wuying-agentbay-sdk/golang/pkg/agentbay
 
 ### Java Issues
 
-<<<<<<< HEAD
 **Dependency not found:**
 ```bash
 # Ensure Maven Central is accessible
 mvn dependency:resolve -U
 # Or add Alibaba Cloud Maven mirror to settings.xml if in China
-=======
-**Dependency resolution failures:**
-```bash
-# Verify the dependency is resolved correctly
-mvn dependency:tree -Dincludes=com.aliyun:agentbay-sdk
-# You should see: com.aliyun:agentbay-sdk:jar:x.x.x:compile
-# If not, check your pom.xml dependency configuration and ensure Maven Central is accessible
-# If behind a proxy, configure Maven settings.xml with proxy settings
->>>>>>> aliyun/main
 ```
 
 **`ClassNotFoundException` or `NoClassDefFoundError`:**
 ```bash
-<<<<<<< HEAD
 # Verify the dependency is in classpath
 mvn dependency:tree | grep agentbay
 # Check version matches your pom.xml
@@ -424,19 +413,6 @@ mvn dependency:tree | grep agentbay
 # Ensure Java 8+ and up-to-date CA certificates
 java -version
 # Update Java if needed for TLS 1.2+ support
-=======
-# Verify the dependency is correctly added
-mvn dependency:tree | grep agentbay
-# Rebuild the project
-mvn clean install
-```
-
-**Version conflicts:**
-```bash
-# Check for dependency conflicts
-mvn dependency:tree -Dverbose
-# Use Maven's dependencyManagement to pin versions if needed
->>>>>>> aliyun/main
 ```
 
 ### Network and API Issues

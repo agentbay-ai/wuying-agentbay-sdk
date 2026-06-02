@@ -11,6 +11,8 @@ type iListSessionRequest interface {
 	GoString() string
 	SetAuthorization(v string) *ListSessionRequest
 	GetAuthorization() *string
+	SetImageId(v string) *ListSessionRequest
+	GetImageId() *string
 	SetLabels(v string) *ListSessionRequest
 	GetLabels() *string
 	SetMaxResults(v int32) *ListSessionRequest
@@ -23,6 +25,7 @@ type iListSessionRequest interface {
 
 type ListSessionRequest struct {
 	Authorization *string `json:"Authorization,omitempty" xml:"Authorization,omitempty"`
+	ImageId       *string `json:"ImageId,omitempty" xml:"ImageId,omitempty"`
 	Labels        *string `json:"Labels,omitempty" xml:"Labels,omitempty"`
 	MaxResults    *int32  `json:"MaxResults,omitempty" xml:"MaxResults,omitempty"`
 	NextToken     *string `json:"NextToken,omitempty" xml:"NextToken,omitempty"`
@@ -39,6 +42,10 @@ func (s ListSessionRequest) GoString() string {
 
 func (s *ListSessionRequest) GetAuthorization() *string {
 	return s.Authorization
+}
+
+func (s *ListSessionRequest) GetImageId() *string {
+	return s.ImageId
 }
 
 func (s *ListSessionRequest) GetLabels() *string {
@@ -59,6 +66,11 @@ func (s *ListSessionRequest) GetStatus() *string {
 
 func (s *ListSessionRequest) SetAuthorization(v string) *ListSessionRequest {
 	s.Authorization = &v
+	return s
+}
+
+func (s *ListSessionRequest) SetImageId(v string) *ListSessionRequest {
+	s.ImageId = &v
 	return s
 }
 

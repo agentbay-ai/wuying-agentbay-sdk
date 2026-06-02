@@ -402,7 +402,7 @@ public class ContextManager {
      * }</pre>
      *
      * @param contexts List of ContextSync objects to bind
-     * @param waitForCompletion Whether to poll until all bindings are confirmed
+     * @param waitForCompletion Whether to wait for bind registration and data download to complete
      * @return ContextBindResult with the result of the operation
      */
     public ContextBindResult bind(List<ContextSync> contexts, boolean waitForCompletion) {
@@ -446,6 +446,9 @@ public class ContextManager {
                     .map(ContextSync::getContextId)
                     .collect(Collectors.toList());
                 pollForBindCompletion(contextIds, 60, 2000);
+                for (ContextSync ctx : contexts) {
+                    pollForDownloadAfterBind(ctx.getContextId(), ctx.getPath());
+                }
             }
 
             return new ContextBindResult(requestId, true);
@@ -486,7 +489,7 @@ public class ContextManager {
      * Binds a single context mount to the current session with write-through persistence.
      *
      * @param context The BetaContextMount object to bind
-     * @param waitForCompletion Whether to poll until the binding is confirmed
+     * @param waitForCompletion Whether to wait for bind registration to complete
      * @return ContextBindResult with the result of the operation
      */
     public ContextBindResult bind(BetaContextMount context, boolean waitForCompletion) {
@@ -525,6 +528,12 @@ public class ContextManager {
                     String message = body.getMessage() != null ? body.getMessage() : "Unknown error";
                     return new ContextBindResult(requestId, false, String.format("[%s] %s", code, message));
                 }
+            }
+
+            if (waitForCompletion) {
+                List<String> contextIds = new ArrayList<>();
+                contextIds.add(context.getContextId());
+                pollForBindCompletion(contextIds, 60, 2000);
             }
 
             return new ContextBindResult(requestId, true);
@@ -605,6 +614,57 @@ public class ContextManager {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
+            }
+        }
+    }
+
+    /**
+     * Poll info() until download task reaches terminal status after bind.
+     */
+    private void pollForDownloadAfterBind(String contextId, String path) {
+        long maxInterval = 5000;
+        double backoffFactor = 1.1;
+        int maxRetries = 150;
+        double currentInterval = 500;
+
+        for (int retry = 0; retry < maxRetries; retry++) {
+            try {
+                ContextInfoResult infoResult = info(contextId, path, null);
+
+                boolean hasDownload = false;
+                boolean allDone = true;
+
+                for (ContextStatusData item : infoResult.getContextStatusData()) {
+                    if (!"download".equals(item.getTaskType())) {
+                        continue;
+                    }
+                    hasDownload = true;
+                    if ("Failed".equals(item.getStatus())) {
+                        return;
+                    }
+                    if (!"Success".equals(item.getStatus())) {
+                        allDone = false;
+                        break;
+                    }
+                }
+
+                if (hasDownload && allDone) {
+                    return;
+                }
+
+                if (!hasDownload && retry >= 2) {
+                    return;
+                }
+            } catch (Exception e) {
+                // continue polling
+            }
+
+            try {
+                Thread.sleep((long) currentInterval);
+                currentInterval = Math.min(currentInterval * backoffFactor, maxInterval);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
     }

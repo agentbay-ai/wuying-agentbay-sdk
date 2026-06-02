@@ -20,7 +20,7 @@ export interface ListSessionParams {
  */
 export interface SessionListResult extends ApiResponse {
   /** Array of session information with ID and status */
-  sessionIds: Array<{ sessionId: string; sessionStatus: string }>;
+  sessionIds: Array<{ sessionId: string; sessionStatus: string; appInstanceId?: string; imageId?: string }>;
 
   /** Token for the next page (if available) */
   nextToken?: string;

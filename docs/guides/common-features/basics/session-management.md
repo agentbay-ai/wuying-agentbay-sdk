@@ -350,6 +350,21 @@ else:
 
 For detailed practical examples and use cases of session information, including browser access, Android SDK integration, and session health monitoring, see the [Session Information Use Cases Guide](../use-cases/session-info-use-cases.md).
 
+### VPC Session Fields
+
+When a session is created on a **custom VPC network**, `create()` and `get()` populate two extra fields on the returned `Session` object:
+
+- **`vpc_ip`** / `vpcIp` — the session's IP address inside your VPC
+- **`vpc_id`** / `vpcId` — the VPC ID the session belongs to
+
+For non-VPC (default network) sessions these fields are empty strings. Field names follow each language's naming convention: `vpc_ip` / `vpc_id` in Python, `vpcIp` / `vpcId` in TypeScript / Java, `VpcIp` / `VpcId` in Go.
+
+```python
+session = agent_bay.create(params).session
+if session.vpc_ip:
+    print(f"VPC session, IP={session.vpc_ip}, VPC={session.vpc_id}")
+```
+
 
 
 ## Session Beta Pause and Beta Resume

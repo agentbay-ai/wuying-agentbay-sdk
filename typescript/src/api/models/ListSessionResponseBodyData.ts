@@ -3,10 +3,14 @@ import * as $dara from '@darabonba/typescript';
 
 
 export class ListSessionResponseBodyData extends $dara.Model {
+  appInstanceId?: string;
+  imageId?: string;
   sessionId?: string;
   sessionStatus?: string;
   static names(): { [key: string]: string } {
     return {
+      appInstanceId: 'AppInstanceId',
+      imageId: 'ImageId',
       sessionId: 'SessionId',
       sessionStatus: 'SessionStatus',
     };
@@ -14,6 +18,8 @@ export class ListSessionResponseBodyData extends $dara.Model {
 
   static types(): { [key: string]: any } {
     return {
+      appInstanceId: 'string',
+      imageId: 'string',
       sessionId: 'string',
       sessionStatus: 'string',
     };

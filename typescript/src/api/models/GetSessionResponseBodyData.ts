@@ -39,6 +39,8 @@ export class GetSessionResponseBodyData extends $dara.Model {
   token?: string;
   wsUrl?: string;
   vpcResource?: boolean;
+  vpcIp?: string;
+  vpcId?: string;
   resourceUrl?: string;
   status?: string;
   toolList?: string;
@@ -55,6 +57,8 @@ export class GetSessionResponseBodyData extends $dara.Model {
       token: 'Token',
       wsUrl: 'WsUrl',
       vpcResource: 'VpcResource',
+      vpcIp: 'VpcIp',
+      vpcId: 'VpcId',
       resourceUrl: 'ResourceUrl',
       status: 'Status',
       toolList: 'ToolList',
@@ -74,6 +78,8 @@ export class GetSessionResponseBodyData extends $dara.Model {
       token: 'string',
       wsUrl: 'string',
       vpcResource: 'boolean',
+      vpcIp: 'string',
+      vpcId: 'string',
       contexts: { 'type': 'array', 'itemType': GetSessionResponseBodyDataContexts },
       resourceUrl: 'string',
       status: 'string',
