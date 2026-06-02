@@ -12,10 +12,10 @@ This guide explains how to configure the AgentBay SDK for different environments
 |-----------|---------------------|-------------|---------------|
 | API Key | `AGENTBAY_API_KEY` | Authentication key for API access | Required |
 | Region ID | `AGENTBAY_REGION_ID` | Region for sessions and endpoint derivation (see Supported Regions below) | `cn-hangzhou` |
-| Timeout | `AGENTBAY_TIMEOUT_MS` | Request timeout in milliseconds | `60000` |
+| Endpoint *(deprecated)* | `AGENTBAY_ENDPOINT` | Deprecated fallback — used as-is only when `AGENTBAY_REGION_ID` is not set | — |
 | Log Format | `AGENTBAY_LOG_FORMAT` | Log output format (`pretty`, `sls`) | `pretty` |
 
-> **Note:** `AGENTBAY_ENDPOINT` is no longer read by the SDK. Setting it has no effect — use `AGENTBAY_REGION_ID` instead.
+> **Note:** `AGENTBAY_ENDPOINT` is deprecated since v0.21.0. Prefer `AGENTBAY_REGION_ID`. When `AGENTBAY_REGION_ID` is set, `AGENTBAY_ENDPOINT` is ignored. When only `AGENTBAY_ENDPOINT` is set, its value is used as-is (no pattern substitution) as a fallback for backward compatibility. It will be removed in a future major version.
 
 ## Supported Regions
 
@@ -66,9 +66,7 @@ If no configuration is provided, the SDK uses the following default values:
 
 ```json
 {
-    "region_id": "cn-hangzhou",
-    "endpoint": "agentbay.cn-hangzhou.aliyuncs.com",
-    "timeout_ms": 60000
+    "region_id": "cn-hangzhou"
 }
 ```
 
@@ -78,10 +76,13 @@ If no configuration is provided, the SDK uses the following default values:
 
 Configuration values are resolved in the following order (highest to lowest priority):
 
-1. **Hard-coded configuration** (passed directly to SDK)
-2. **Environment variables**
-3. **`.env` configuration file** (searched upward from current directory)
-4. **Default configuration**
+1. **Explicit `region_id`** in code (`Config(region_id=...)`)
+2. **Explicit `endpoint`** in code (`Config(endpoint=...)`) — deprecated fallback, used only when `region_id` is not set
+3. **`AGENTBAY_REGION_ID`** environment variable (or `.env`)
+4. **`AGENTBAY_ENDPOINT`** environment variable (or `.env`) — deprecated fallback, used only when `AGENTBAY_REGION_ID` is not set
+5. **Default region** (`cn-hangzhou`)
+
+When `region_id` is resolved at any level, the endpoint is derived from it automatically. The `endpoint` fallback only activates when no `region_id` is found at any level, and bypasses pattern substitution (the value is used as-is).
 
 ## Configuration Methods
 
@@ -297,7 +298,7 @@ except Exception as e:
 
 - **Region Selection:** Pick the region closest to your users (`cn-hangzhou`, `ap-southeast-1`, `us-east-1`) for optimal network performance
 - **Security:** Use environment variables in production (not hardcoded values)
-- **Validation:** Test configuration during application startup — an unsupported `region_id` raises immediately
+- **Validation:** Test configuration during application startup — an unknown `region_id` logs a warning (the request may fail at DNS resolution if the host does not exist)
 
 ## 📚 Related Guides
 

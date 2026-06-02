@@ -8753,8 +8753,7 @@ The SDK automatically reads configuration from environment variables:
 
 ```bash
 export AGENTBAY_API_KEY=your_api_key
-export AGENTBAY_ENDPOINT=wuyingai.cn-shanghai.aliyuncs.com  # Optional
-export AGENTBAY_REGION_ID=cn-shanghai                       # Optional
+export AGENTBAY_REGION_ID=cn-hangzhou                       # Optional (default)
 export AGENTBAY_TIMEOUT_MS=60000                            # Optional
 ```
 
@@ -8768,7 +8767,8 @@ You can also provide configuration explicitly:
 
 ```java
 String apiKey = "your_api_key";
-Config config = new Config("cn-shanghai", "wuyingai.cn-shanghai.aliyuncs.com", 60000);
+Config config = new Config();
+config.setRegionId("ap-southeast-1");
 AgentBay agentBay = new AgentBay(apiKey, config);
 ```
 
@@ -8781,9 +8781,11 @@ AgentBay agentBay = new AgentBay("your_api_key");
 ### Configuration Priority
 
 The SDK uses the following precedence order (highest to lowest):
-1. Explicitly passed configuration in code
-2. Environment variables
-3. Default configuration
+1. Explicit `region_id` in code
+2. Explicit `endpoint` in code (deprecated fallback, only when `region_id` is not set)
+3. `AGENTBAY_REGION_ID` environment variable
+4. `AGENTBAY_ENDPOINT` environment variable (deprecated fallback, only when `AGENTBAY_REGION_ID` is not set)
+5. Default region (`cn-hangzhou`)
 
 ## 📖 Complete Documentation
 
