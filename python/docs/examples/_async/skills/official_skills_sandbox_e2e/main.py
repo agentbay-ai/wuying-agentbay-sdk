@@ -5,7 +5,7 @@ This example validates:
 - A custom image that contains official skills under /home/wuying/skills
 - Reading one skill's SKILL.md from inside the sandbox
 - Writing and reading a report file under /tmp
-- (Optional) Calling POP Action ListSkillMetaData via AsyncAgentBay.beta.skills.list_metadata()
+- (Optional) Calling POP Action GetSkillMetaData via AsyncAgentBay.beta.skills.get_metadata()
 """
 
 import asyncio
@@ -13,6 +13,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from agentbay import AsyncAgentBay
+from agentbay._common.models.skill_info import SkillsMetadataResult
 from agentbay._common.params.session_params import CreateSessionParams
 
 
@@ -27,11 +28,11 @@ def _preview(text: str, limit: int = 800) -> str:
     return t[: limit - 3] + "..."
 
 
-async def _safe_list_metadata(agent_bay: AsyncAgentBay) -> Optional[List[Dict[str, str]]]:
+async def _safe_get_metadata(agent_bay: AsyncAgentBay) -> Optional[SkillsMetadataResult]:
     try:
-        return await agent_bay.beta.skills.list_metadata()
+        return await agent_bay.beta.skills.get_metadata()
     except Exception as e:
-        print("[warn] ListSkillMetaData failed, will continue without backend metadata.")
+        print("[warn] GetSkillMetaData failed, will continue without backend metadata.")
         print(f"[warn] error={e}")
         return None
 
@@ -54,9 +55,9 @@ async def main() -> None:
     image_id = os.environ.get("AGENTBAY_SKILLS_IMAGE_ID", "").strip() or DEFAULT_IMAGE_ID
 
     agent_bay = AsyncAgentBay(api_key=api_key)
-    backend_items = await _safe_list_metadata(agent_bay)
-    if backend_items is not None:
-        print(f"[backend] skills_count={len(backend_items)}")
+    metadata_result = await _safe_get_metadata(agent_bay)
+    if metadata_result is not None:
+        print(f"[backend] skills_count={len(metadata_result.skills)}")
 
     create_res = await agent_bay.create(params=CreateSessionParams(image_id=image_id))
     if not create_res.success or not create_res.session:
@@ -85,8 +86,8 @@ async def main() -> None:
         print(_preview(skill_md))
         print("=======================================")
 
-        if backend_items is not None:
-            backend_names = {i.get("name") for i in backend_items if isinstance(i.get("name"), str)}
+        if metadata_result is not None:
+            backend_names = {s.name for s in metadata_result.skills}
             if skill_name not in backend_names:
                 print("[warn] Selected skill is not present in backend metadata list.")
 
@@ -118,4 +119,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

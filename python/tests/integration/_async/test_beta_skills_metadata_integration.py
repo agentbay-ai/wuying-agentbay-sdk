@@ -1,4 +1,4 @@
-"""Integration tests for ListSkillMetaData POP action.
+"""Integration tests for GetSkillMetaData POP action.
 
 Tests call the real backend without mocks, covering:
   - Basic metadata structure validation (async)
@@ -11,6 +11,7 @@ import os
 import pytest
 
 from agentbay import AgentBay, AsyncAgentBay
+from agentbay._common.models.skill_info import SkillsMetadataResult
 
 # agent_bay_client fixture (AsyncAgentBay, scope="module") is provided by conftest.py
 
@@ -24,17 +25,15 @@ def agent_bay_sync():
     return AgentBay(api_key=api_key)
 
 
-def _to_name_desc_map(items):
-    """Validate item list structure and return a name→description mapping."""
-    assert isinstance(items, list)
-    assert len(items) > 0
+def _to_name_desc_map(result: SkillsMetadataResult):
+    """Validate result structure and return a name->description mapping."""
+    assert isinstance(result, SkillsMetadataResult)
+    assert len(result.skills) > 0
     seen = set()
     m = {}
-    for it in items:
-        assert isinstance(it, dict)
-        assert set(it.keys()) == {"name", "description"}
-        name = it["name"]
-        desc = it["description"]
+    for skill in result.skills:
+        name = skill.name
+        desc = skill.description
         assert isinstance(name, str) and name.strip()
         assert isinstance(desc, str)
         assert name not in seen, f"Duplicate skill name: {name}"
@@ -44,26 +43,25 @@ def _to_name_desc_map(items):
 
 
 @pytest.mark.asyncio
-async def test_beta_skills_list_metadata(agent_bay_client: AsyncAgentBay):
-    """Verify async list_metadata returns a valid, non-empty list with expected fields."""
-    items = await agent_bay_client.beta.skills.list_metadata()
-    assert isinstance(items, list)
-    assert len(items) > 0
-    first = items[0]
-    assert isinstance(first.get("name"), str) and first["name"].strip()
-    assert isinstance(first.get("description"), str)
-    assert "dir" not in first
+async def test_beta_skills_get_metadata(agent_bay_client: AsyncAgentBay):
+    """Verify async get_metadata returns a valid SkillsMetadataResult with expected fields."""
+    result = await agent_bay_client.beta.skills.get_metadata()
+    assert isinstance(result, SkillsMetadataResult)
+    assert len(result.skills) > 0
+    first = result.skills[0]
+    assert isinstance(first.name, str) and first.name.strip()
+    assert isinstance(first.description, str)
 
 
 @pytest.mark.asyncio
-async def test_beta_skills_list_metadata_sync_async_parity(
+async def test_beta_skills_get_metadata_sync_async_parity(
     agent_bay_client: AsyncAgentBay, agent_bay_sync: AgentBay
 ):
     """Verify that async and sync SDKs return identical skill metadata."""
-    async_items = await agent_bay_client.beta.skills.list_metadata()
-    sync_items = agent_bay_sync.beta.skills.list_metadata()
+    async_result = await agent_bay_client.beta.skills.get_metadata()
+    sync_result = agent_bay_sync.beta.skills.get_metadata()
 
-    async_map = _to_name_desc_map(async_items)
-    sync_map = _to_name_desc_map(sync_items)
+    async_map = _to_name_desc_map(async_result)
+    sync_map = _to_name_desc_map(sync_result)
 
     assert async_map == sync_map
