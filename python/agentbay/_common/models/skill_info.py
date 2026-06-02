@@ -11,9 +11,11 @@ class SkillInfo:
     Attributes:
         name: The unique name of the skill (kebab-case).
         description: A human-readable description of the skill.
+        skill_id: The unique identifier of the skill.
     """
     name: str
     description: str
+    skill_id: str = ""
 
 
 @dataclass

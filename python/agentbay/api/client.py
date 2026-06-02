@@ -1932,13 +1932,21 @@ class Client(OpenApiClient):
 
     def list_skill_meta_data_with_options(
         self,
-        request: main_models.ListSkillMetaDataRequest,
+        tmp_req: main_models.ListSkillMetaDataRequest,
         runtime: RuntimeOptions,
     ) -> main_models.ListSkillMetaDataResponse:
-        request.validate()
+        tmp_req.validate()
+        request = main_models.ListSkillMetaDataShrinkRequest()
+        Utils.convert(tmp_req, request)
+        if not DaraCore.is_null(tmp_req.skill_id_list):
+            request.skill_id_list_shrink = Utils.array_to_string_with_specified_style(
+                tmp_req.skill_id_list, "SkillIdList", "json"
+            )
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.skill_id_list_shrink):
+            body["SkillIdList"] = request.skill_id_list_shrink
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
         params = open_api_util_models.Params(
             action="ListSkillMetaData",
@@ -1967,13 +1975,21 @@ class Client(OpenApiClient):
 
     async def list_skill_meta_data_with_options_async(
         self,
-        request: main_models.ListSkillMetaDataRequest,
+        tmp_req: main_models.ListSkillMetaDataRequest,
         runtime: RuntimeOptions,
     ) -> main_models.ListSkillMetaDataResponse:
-        request.validate()
+        tmp_req.validate()
+        request = main_models.ListSkillMetaDataShrinkRequest()
+        Utils.convert(tmp_req, request)
+        if not DaraCore.is_null(tmp_req.skill_id_list):
+            request.skill_id_list_shrink = Utils.array_to_string_with_specified_style(
+                tmp_req.skill_id_list, "SkillIdList", "json"
+            )
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.skill_id_list_shrink):
+            body["SkillIdList"] = request.skill_id_list_shrink
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
         params = open_api_util_models.Params(
             action="ListSkillMetaData",
@@ -3061,3 +3077,175 @@ class Client(OpenApiClient):
     ) -> main_models.DescribeSessionContextsResponse:
         runtime = RuntimeOptions()
         return await self.describe_session_contexts_with_options_async(request, runtime)
+
+    def bind_context_skill_async_with_options(
+        self,
+        tmp_req: main_models.BindContextSkillAsyncRequest,
+        runtime: RuntimeOptions,
+    ) -> main_models.BindContextSkillAsyncResponse:
+        tmp_req.validate()
+        request = main_models.BindContextSkillAsyncShrinkRequest()
+        Utils.convert(tmp_req, request)
+        if not DaraCore.is_null(tmp_req.context_skill_bind_items):
+            request.context_skill_bind_items_shrink = (
+                Utils.array_to_string_with_specified_style(
+                    tmp_req.context_skill_bind_items, "ContextSkillBindItems", "json"
+                )
+            )
+        body = {}
+        if not DaraCore.is_null(request.authorization):
+            body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.context_skill_bind_items_shrink):
+            body["ContextSkillBindItems"] = request.context_skill_bind_items_shrink
+        req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
+        params = open_api_util_models.Params(
+            action="BindContextSkillAsync",
+            version="2025-05-06",
+            protocol="HTTPS",
+            pathname="/",
+            method="POST",
+            auth_type="Anonymous",
+            style="RPC",
+            req_body_type="formData",
+            body_type="json",
+        )
+        return DaraCore.from_map(
+            main_models.BindContextSkillAsyncResponse(),
+            self.call_api(params, req, runtime),
+        )
+
+    async def bind_context_skill_async_with_options_async(
+        self,
+        tmp_req: main_models.BindContextSkillAsyncRequest,
+        runtime: RuntimeOptions,
+    ) -> main_models.BindContextSkillAsyncResponse:
+        tmp_req.validate()
+        request = main_models.BindContextSkillAsyncShrinkRequest()
+        Utils.convert(tmp_req, request)
+        if not DaraCore.is_null(tmp_req.context_skill_bind_items):
+            request.context_skill_bind_items_shrink = (
+                Utils.array_to_string_with_specified_style(
+                    tmp_req.context_skill_bind_items, "ContextSkillBindItems", "json"
+                )
+            )
+        body = {}
+        if not DaraCore.is_null(request.authorization):
+            body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.context_skill_bind_items_shrink):
+            body["ContextSkillBindItems"] = request.context_skill_bind_items_shrink
+        req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
+        params = open_api_util_models.Params(
+            action="BindContextSkillAsync",
+            version="2025-05-06",
+            protocol="HTTPS",
+            pathname="/",
+            method="POST",
+            auth_type="Anonymous",
+            style="RPC",
+            req_body_type="formData",
+            body_type="json",
+        )
+        return DaraCore.from_map(
+            main_models.BindContextSkillAsyncResponse(),
+            await self.call_api_async(params, req, runtime),
+        )
+
+    def bind_context_skill_async_(
+        self,
+        request: main_models.BindContextSkillAsyncRequest,
+    ) -> main_models.BindContextSkillAsyncResponse:
+        runtime = RuntimeOptions()
+        return self.bind_context_skill_async_with_options(request, runtime)
+
+    async def bind_context_skill_async_async(
+        self,
+        request: main_models.BindContextSkillAsyncRequest,
+    ) -> main_models.BindContextSkillAsyncResponse:
+        runtime = RuntimeOptions()
+        return await self.bind_context_skill_async_with_options_async(request, runtime)
+
+    def unbind_context_skill_with_options(
+        self,
+        tmp_req: main_models.UnbindContextSkillRequest,
+        runtime: RuntimeOptions,
+    ) -> main_models.UnbindContextSkillResponse:
+        tmp_req.validate()
+        request = main_models.UnbindContextSkillShrinkRequest()
+        Utils.convert(tmp_req, request)
+        if not DaraCore.is_null(tmp_req.context_skill_unbind_items):
+            request.context_skill_unbind_items_shrink = (
+                Utils.array_to_string_with_specified_style(
+                    tmp_req.context_skill_unbind_items, "ContextSkillUnbindItems", "json"
+                )
+            )
+        body = {}
+        if not DaraCore.is_null(request.authorization):
+            body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.context_skill_unbind_items_shrink):
+            body["ContextSkillUnbindItems"] = request.context_skill_unbind_items_shrink
+        req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
+        params = open_api_util_models.Params(
+            action="UnbindContextSkill",
+            version="2025-05-06",
+            protocol="HTTPS",
+            pathname="/",
+            method="POST",
+            auth_type="Anonymous",
+            style="RPC",
+            req_body_type="formData",
+            body_type="json",
+        )
+        return DaraCore.from_map(
+            main_models.UnbindContextSkillResponse(),
+            self.call_api(params, req, runtime),
+        )
+
+    async def unbind_context_skill_with_options_async(
+        self,
+        tmp_req: main_models.UnbindContextSkillRequest,
+        runtime: RuntimeOptions,
+    ) -> main_models.UnbindContextSkillResponse:
+        tmp_req.validate()
+        request = main_models.UnbindContextSkillShrinkRequest()
+        Utils.convert(tmp_req, request)
+        if not DaraCore.is_null(tmp_req.context_skill_unbind_items):
+            request.context_skill_unbind_items_shrink = (
+                Utils.array_to_string_with_specified_style(
+                    tmp_req.context_skill_unbind_items, "ContextSkillUnbindItems", "json"
+                )
+            )
+        body = {}
+        if not DaraCore.is_null(request.authorization):
+            body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.context_skill_unbind_items_shrink):
+            body["ContextSkillUnbindItems"] = request.context_skill_unbind_items_shrink
+        req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
+        params = open_api_util_models.Params(
+            action="UnbindContextSkill",
+            version="2025-05-06",
+            protocol="HTTPS",
+            pathname="/",
+            method="POST",
+            auth_type="Anonymous",
+            style="RPC",
+            req_body_type="formData",
+            body_type="json",
+        )
+        return DaraCore.from_map(
+            main_models.UnbindContextSkillResponse(),
+            await self.call_api_async(params, req, runtime),
+        )
+
+    def unbind_context_skill(
+        self,
+        request: main_models.UnbindContextSkillRequest,
+    ) -> main_models.UnbindContextSkillResponse:
+        runtime = RuntimeOptions()
+        return self.unbind_context_skill_with_options(request, runtime)
+
+    async def unbind_context_skill_async(
+        self,
+        request: main_models.UnbindContextSkillRequest,
+    ) -> main_models.UnbindContextSkillResponse:
+        runtime = RuntimeOptions()
+        return await self.unbind_context_skill_with_options_async(request, runtime)

@@ -5,7 +5,14 @@ import time
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from ..api.models import ListSkillMetaDataRequest, GetSkillMetaDataRequest
+from ..api.models import (
+    GetSkillMetaDataRequest,
+    ListSkillMetaDataRequest,
+    BindContextSkillAsyncRequest,
+    BindContextSkillAsyncRequestContextSkillBindItems,
+    UnbindContextSkillRequest,
+    UnbindContextSkillRequestContextSkillUnbindItems,
+)
 from .._common.models.skill_info import SkillInfo, SkillsMetadataResult
 
 if TYPE_CHECKING:
@@ -41,12 +48,19 @@ class SyncBetaSkillsService:
         self,
         image_id: Optional[str] = None,
         skill_names: Optional[List[str]] = None,
+        skill_ids: Optional[List[str]] = None,
     ) -> SkillsMetadataResult:
         """Get skills metadata without starting a sandbox.
 
+        When ``skill_ids`` is provided the request is routed through the
+        ``ListSkillMetaData`` action which supports filtering by skill ID.
+        Otherwise the legacy ``GetSkillMetaData`` action is used.
+
         Args:
-            image_id: Image ID to determine the skills root path. Uses default image if not specified.
-            skill_names: Filter by skill names. Returns all visible skills if not specified.
+            image_id: Image ID to determine the skills root path (GetSkillMetaData only).
+            skill_names: Filter by skill group names (GetSkillMetaData only).
+            skill_ids: Filter by skill IDs (e.g. ``["builtin:web_search", "sk_xxx"]``).
+                When provided, ``image_id`` and ``skill_names`` are ignored.
 
         Returns:
             SkillsMetadataResult with skills list and skills_root_path.
@@ -54,6 +68,78 @@ class SyncBetaSkillsService:
         Raises:
             RuntimeError: If the API call fails.
         """
+        if skill_ids is not None:
+            return self._get_metadata_by_skill_ids(skill_ids)
+        return self._get_metadata_legacy(image_id=image_id, skill_names=skill_names)
+
+    def _get_metadata_by_skill_ids(
+        self,
+        skill_ids: List[str],
+    ) -> SkillsMetadataResult:
+        request = ListSkillMetaDataRequest(
+            authorization=f"Bearer {self._agent_bay.api_key}",
+            skill_id_list=skill_ids,
+        )
+
+        max_attempts = 3
+        delay_s = 0.2
+        last_err: Optional[BaseException] = None
+        resp = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                resp = self._agent_bay.client.list_skill_meta_data(request)
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                if attempt < max_attempts and (
+                    "ServiceUnavailable" in msg
+                    or "statusCode': 503" in msg
+                    or "code: 503" in msg
+                ):
+                    time.sleep(delay_s)
+                    delay_s *= 2
+                    continue
+                raise
+
+        if last_err is not None:
+            raise RuntimeError(f"ListSkillMetaData failed: {last_err}") from last_err
+
+        body = getattr(resp, "body", None)
+        if body is None:
+            raise RuntimeError("ListSkillMetaData failed: missing response body")
+
+        if getattr(body, "success", None) is None or not body.success:
+            code = str(getattr(body, "code", "") or "")
+            msg = str(getattr(body, "message", "") or "")
+            if code:
+                raise RuntimeError(f"ListSkillMetaData failed: [{code}] {msg}")
+            raise RuntimeError(f"ListSkillMetaData failed: {msg or 'Unknown error'}")
+
+        data = getattr(body, "data", None) or []
+        if not isinstance(data, list):
+            raise RuntimeError("ListSkillMetaData failed: invalid Data field")
+
+        skills: List[SkillInfo] = []
+        for raw in data:
+            name = str(getattr(raw, "name", "") or "").strip()
+            if not name:
+                continue
+            description = str(getattr(raw, "description", "") or "")
+            skill_id = str(getattr(raw, "skill_id", "") or "")
+            skills.append(SkillInfo(name=name, description=description, skill_id=skill_id))
+
+        return SkillsMetadataResult(
+            skills=skills,
+            skills_root_path=self._skills_root,
+        )
+
+    def _get_metadata_legacy(
+        self,
+        image_id: Optional[str] = None,
+        skill_names: Optional[List[str]] = None,
+    ) -> SkillsMetadataResult:
         request = GetSkillMetaDataRequest(
             authorization=f"Bearer {self._agent_bay.api_key}",
             image_id=image_id,
@@ -109,40 +195,59 @@ class SyncBetaSkillsService:
             if not name:
                 continue
             description = str(getattr(raw, "description", "") or "")
-            skills.append(SkillInfo(name=name, description=description))
+            skill_id = str(getattr(raw, "skill_id", "") or "")
+            skills.append(SkillInfo(name=name, description=description, skill_id=skill_id))
 
         return SkillsMetadataResult(
             skills=skills,
             skills_root_path=skill_path,
         )
 
-    def list_metadata(self) -> List[Dict[str, str]]:
-        """List official skills metadata.
+    def bind_context(
+        self,
+        items: List[Dict[str, Any]],
+    ) -> None:
+        """Bind skills to contexts.
 
-        .. deprecated::
-            Use :meth:`get_metadata` instead.
+        Args:
+            items: List of dicts, each with keys:
+                - context_id (str): Target context ID.
+                - skill_ids (List[str]): Skill IDs to bind.
+                - path (str): Target path in context.
 
-        Returns:
-            List[Dict[str, str]]: Each item contains name and description.
+        Raises:
+            RuntimeError: If the API call fails.
         """
-        request = ListSkillMetaDataRequest(
+        bind_items = []
+        for item in items:
+            bind_items.append(
+                BindContextSkillAsyncRequestContextSkillBindItems(
+                    context_id=item.get("context_id"),
+                    skill_ids=item.get("skill_ids"),
+                    path=item.get("path"),
+                )
+            )
+        request = BindContextSkillAsyncRequest(
             authorization=f"Bearer {self._agent_bay.api_key}",
+            context_skill_bind_items=bind_items,
         )
 
         max_attempts = 3
         delay_s = 0.2
         last_err: Optional[BaseException] = None
-        resp: Any = None
+        resp = None
         for attempt in range(1, max_attempts + 1):
             try:
-                resp = self._agent_bay.client.list_skill_meta_data(request)
+                resp = self._agent_bay.client.bind_context_skill_async_async(request)
                 last_err = None
                 break
             except Exception as e:
                 last_err = e
                 msg = str(e)
                 if attempt < max_attempts and (
-                    "ServiceUnavailable" in msg or "statusCode': 503" in msg or "code: 503" in msg
+                    "ServiceUnavailable" in msg
+                    or "statusCode': 503" in msg
+                    or "code: 503" in msg
                 ):
                     time.sleep(delay_s)
                     delay_s *= 2
@@ -150,36 +255,81 @@ class SyncBetaSkillsService:
                 raise
 
         if last_err is not None:
-            raise RuntimeError(f"ListSkillMetaData failed: {last_err}") from last_err
+            raise RuntimeError(f"BindContextSkillAsync failed: {last_err}") from last_err
 
         body = getattr(resp, "body", None)
         if body is None:
-            raise RuntimeError("ListSkillMetaData failed: missing response body")
+            raise RuntimeError("BindContextSkillAsync failed: missing response body")
 
         if getattr(body, "success", None) is None or not body.success:
             code = str(getattr(body, "code", "") or "")
             msg = str(getattr(body, "message", "") or "")
             if code:
-                raise RuntimeError(f"ListSkillMetaData failed: [{code}] {msg}")
-            raise RuntimeError(f"ListSkillMetaData failed: {msg or 'Unknown error'}")
+                raise RuntimeError(f"BindContextSkillAsync failed: [{code}] {msg}")
+            raise RuntimeError(f"BindContextSkillAsync failed: {msg or 'Unknown error'}")
 
-        data = getattr(body, "data", None) or []
-        if not isinstance(data, list):
-            raise RuntimeError("ListSkillMetaData failed: invalid Data field")
+    def unbind_context(
+        self,
+        items: List[Dict[str, Any]],
+    ) -> None:
+        """Unbind skills from contexts.
 
-        items: List[Dict[str, str]] = []
-        for raw in data:
-            name = str(getattr(raw, "name", "") or "").strip()
-            if not name:
-                continue
-            description = str(getattr(raw, "description", "") or "")
-            items.append(
-                {
-                    "name": name,
-                    "description": description,
-                }
+        Args:
+            items: List of dicts, each with keys:
+                - context_id (str): Target context ID.
+                - skill_ids (List[str]): Skill IDs to unbind.
+
+        Raises:
+            RuntimeError: If the API call fails.
+        """
+        unbind_items = []
+        for item in items:
+            unbind_items.append(
+                UnbindContextSkillRequestContextSkillUnbindItems(
+                    context_id=item.get("context_id"),
+                    skill_ids=item.get("skill_ids"),
+                )
             )
-        return items
+        request = UnbindContextSkillRequest(
+            authorization=f"Bearer {self._agent_bay.api_key}",
+            context_skill_unbind_items=unbind_items,
+        )
+
+        max_attempts = 3
+        delay_s = 0.2
+        last_err: Optional[BaseException] = None
+        resp = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                resp = self._agent_bay.client.unbind_context_skill(request)
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                if attempt < max_attempts and (
+                    "ServiceUnavailable" in msg
+                    or "statusCode': 503" in msg
+                    or "code: 503" in msg
+                ):
+                    time.sleep(delay_s)
+                    delay_s *= 2
+                    continue
+                raise
+
+        if last_err is not None:
+            raise RuntimeError(f"UnbindContextSkill failed: {last_err}") from last_err
+
+        body = getattr(resp, "body", None)
+        if body is None:
+            raise RuntimeError("UnbindContextSkill failed: missing response body")
+
+        if getattr(body, "success", None) is None or not body.success:
+            code = str(getattr(body, "code", "") or "")
+            msg = str(getattr(body, "message", "") or "")
+            if code:
+                raise RuntimeError(f"UnbindContextSkill failed: [{code}] {msg}")
+            raise RuntimeError(f"UnbindContextSkill failed: {msg or 'Unknown error'}")
 
 
 class SyncBetaNamespace:
