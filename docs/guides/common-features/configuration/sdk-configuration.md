@@ -15,7 +15,7 @@ This guide explains how to configure the AgentBay SDK for different environments
 | Endpoint *(deprecated)* | `AGENTBAY_ENDPOINT` | Deprecated fallback — used as-is only when `AGENTBAY_REGION_ID` is not set | — |
 | Log Format | `AGENTBAY_LOG_FORMAT` | Log output format (`pretty`, `sls`) | `pretty` |
 
-> **Note:** `AGENTBAY_ENDPOINT` is deprecated since v0.21.0. Prefer `AGENTBAY_REGION_ID`. When `AGENTBAY_REGION_ID` is set, `AGENTBAY_ENDPOINT` is ignored. When only `AGENTBAY_ENDPOINT` is set, its value is used as-is (no pattern substitution) as a fallback for backward compatibility. It will be removed in a future major version.
+> **Note:** `AGENTBAY_ENDPOINT` is deprecated since v0.22.0. Prefer `AGENTBAY_REGION_ID`. When `AGENTBAY_REGION_ID` is set, `AGENTBAY_ENDPOINT` is ignored. When only `AGENTBAY_ENDPOINT` is set, its value is used as-is (no pattern substitution) as a fallback for backward compatibility. It will be removed in a future major version.
 
 ## Supported Regions
 
