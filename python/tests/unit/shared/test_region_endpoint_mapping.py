@@ -121,9 +121,24 @@ class LoadConfigDerivesEndpointTest(unittest.TestCase):
         finally:
             os.environ.pop("AGENTBAY_REGION_ID", None)
 
-    def test_legacy_endpoint_env_var_is_ignored(self):
-        """Regression: AGENTBAY_ENDPOINT used to override endpoint; now it must be ignored."""
+    def test_legacy_endpoint_env_var_used_as_fallback_when_no_region(self):
+        """AGENTBAY_ENDPOINT is a deprecated fallback: used as-is when
+        AGENTBAY_REGION_ID is not set."""
+        os.environ["AGENTBAY_ENDPOINT"] = "custom-endpoint.example.com"
+        try:
+            with patch(
+                "agentbay._common.config._load_dotenv_with_fallback",
+                lambda *a, **kw: None,
+            ):
+                result = _load_config(None)
+            self.assertEqual(result["endpoint"], "custom-endpoint.example.com")
+        finally:
+            os.environ.pop("AGENTBAY_ENDPOINT", None)
+
+    def test_legacy_endpoint_env_var_ignored_when_region_set(self):
+        """AGENTBAY_ENDPOINT is ignored when AGENTBAY_REGION_ID is also set."""
         os.environ["AGENTBAY_ENDPOINT"] = "should-be-ignored.example.com"
+        os.environ["AGENTBAY_REGION_ID"] = "ap-southeast-1"
         try:
             with patch(
                 "agentbay._common.config._load_dotenv_with_fallback",
@@ -131,9 +146,10 @@ class LoadConfigDerivesEndpointTest(unittest.TestCase):
             ):
                 result = _load_config(None)
             self.assertNotEqual(result["endpoint"], "should-be-ignored.example.com")
-            self.assertEqual(result["endpoint"], "agentbay.cn-hangzhou.aliyuncs.com")
+            self.assertEqual(result["endpoint"], "agentbay.ap-southeast-1.aliyuncs.com")
         finally:
             os.environ.pop("AGENTBAY_ENDPOINT", None)
+            os.environ.pop("AGENTBAY_REGION_ID", None)
 
     def test_unknown_region_id_is_accepted_with_warning(self):
         """Soft whitelist: unknown regions emit a warning but still compose the
@@ -157,8 +173,9 @@ class LoadConfigDerivesEndpointTest(unittest.TestCase):
         finally:
             os.environ.pop("AGENTBAY_REGION_ID", None)
 
-    def test_config_endpoint_kwarg_emits_deprecation_and_is_ignored(self):
-        """Backwards compat: Config(endpoint=...) is accepted but warns and is ignored."""
+    def test_config_endpoint_kwarg_emits_deprecation_and_region_wins(self):
+        """Config(endpoint=...) emits DeprecationWarning. When both region_id
+        and endpoint are set, region_id wins and endpoint is ignored."""
         import warnings
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
@@ -170,11 +187,23 @@ class LoadConfigDerivesEndpointTest(unittest.TestCase):
             any(issubclass(w.category, DeprecationWarning) for w in caught),
             f"Expected DeprecationWarning, got: {[w.category.__name__ for w in caught]}",
         )
-        # Endpoint was not stored on the config object
-        self.assertIsNone(cfg.endpoint)
-        # And when loaded, endpoint comes from region_id
+        # Endpoint is stored on cfg (deprecated but not dropped)
+        self.assertEqual(cfg.endpoint, "should-be-ignored.example.com")
+        # When loaded, region_id takes precedence
         result = _load_config(cfg)
         self.assertEqual(result["endpoint"], "agentbay.ap-southeast-1.aliyuncs.com")
+
+    def test_config_endpoint_kwarg_used_as_fallback_without_region(self):
+        """Config(endpoint=...) without region_id uses endpoint as-is."""
+        import warnings
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            cfg = Config(endpoint="custom-endpoint.example.com")
+        self.assertTrue(
+            any(issubclass(w.category, DeprecationWarning) for w in caught),
+        )
+        result = _load_config(cfg)
+        self.assertEqual(result["endpoint"], "custom-endpoint.example.com")
 
     def test_config_without_endpoint_kwarg_emits_no_warning(self):
         """Sanity: not passing endpoint must not emit any deprecation warning."""
