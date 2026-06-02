@@ -1,3 +1,4 @@
+import json
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
@@ -11,10 +12,13 @@ from ..api.models import (
     UnbindContextSkillRequestContextSkillUnbindItems,
 )
 from .._common.models.skill_info import SkillInfo, SkillsMetadataResult
+from .._common.models.response import OperationResult, extract_request_id
+from .._common.logger import get_logger, _log_api_call, _log_api_response
 
 if TYPE_CHECKING:
     from .agentbay import AsyncAgentBay
 
+_logger = get_logger("beta")
 
 DEFAULT_OFFICIAL_SKILLS_ROOT = "/home/wuying/skills"
 
@@ -203,7 +207,7 @@ class AsyncBetaSkillsService:
     async def bind_context(
         self,
         items: List[Dict[str, Any]],
-    ) -> None:
+    ) -> OperationResult:
         """Bind skills to contexts.
 
         Args:
@@ -212,63 +216,105 @@ class AsyncBetaSkillsService:
                 - skill_ids (List[str]): Skill IDs to bind.
                 - path (str): Target path in context.
 
-        Raises:
-            RuntimeError: If the API call fails.
+        Returns:
+            OperationResult: Result object containing success status and request ID.
         """
-        bind_items = []
-        for item in items:
-            bind_items.append(
-                BindContextSkillAsyncRequestContextSkillBindItems(
-                    context_id=item.get("context_id"),
-                    skill_ids=item.get("skill_ids"),
-                    path=item.get("path"),
+        try:
+            bind_items = []
+            for item in items:
+                bind_items.append(
+                    BindContextSkillAsyncRequestContextSkillBindItems(
+                        context_id=item.get("context_id"),
+                        skill_ids=item.get("skill_ids"),
+                        path=item.get("path"),
+                    )
                 )
+            request = BindContextSkillAsyncRequest(
+                authorization=f"Bearer {self._agent_bay.api_key}",
+                context_skill_bind_items=bind_items,
             )
-        request = BindContextSkillAsyncRequest(
-            authorization=f"Bearer {self._agent_bay.api_key}",
-            context_skill_bind_items=bind_items,
-        )
 
-        max_attempts = 3
-        delay_s = 0.2
-        last_err: Optional[BaseException] = None
-        resp = None
-        for attempt in range(1, max_attempts + 1):
+            _log_api_call("BindContextSkillAsync", f"items_count={len(bind_items)}")
+
+            max_attempts = 3
+            delay_s = 0.2
+            last_err: Optional[BaseException] = None
+            resp = None
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    resp = await self._agent_bay.client.bind_context_skill_async_async(request)
+                    last_err = None
+                    break
+                except Exception as e:
+                    last_err = e
+                    msg = str(e)
+                    if attempt < max_attempts and (
+                        "ServiceUnavailable" in msg
+                        or "statusCode': 503" in msg
+                        or "code: 503" in msg
+                    ):
+                        await asyncio.sleep(delay_s)
+                        delay_s *= 2
+                        continue
+                    raise
+
+            if last_err is not None:
+                return OperationResult(
+                    success=False,
+                    error_message=f"BindContextSkillAsync failed: {last_err}",
+                )
+
             try:
-                resp = await self._agent_bay.client.bind_context_skill_async_async(request)
-                last_err = None
-                break
-            except Exception as e:
-                last_err = e
-                msg = str(e)
-                if attempt < max_attempts and (
-                    "ServiceUnavailable" in msg
-                    or "statusCode': 503" in msg
-                    or "code: 503" in msg
+                response_body = json.dumps(
+                    resp.to_map().get("body", {}), ensure_ascii=False, indent=2
+                )
+                _log_api_response(response_body)
+            except Exception:
+                _logger.debug(f"Response: {resp}")
+
+            request_id = extract_request_id(resp)
+
+            try:
+                response_map = resp.to_map() if hasattr(resp, "to_map") else {}
+                if not isinstance(response_map, dict) or not isinstance(
+                    response_map.get("body", {}), dict
                 ):
-                    await asyncio.sleep(delay_s)
-                    delay_s *= 2
-                    continue
-                raise
-
-        if last_err is not None:
-            raise RuntimeError(f"BindContextSkillAsync failed: {last_err}") from last_err
-
-        body = getattr(resp, "body", None)
-        if body is None:
-            raise RuntimeError("BindContextSkillAsync failed: missing response body")
-
-        if getattr(body, "success", None) is None or not body.success:
-            code = str(getattr(body, "code", "") or "")
-            msg = str(getattr(body, "message", "") or "")
-            if code:
-                raise RuntimeError(f"BindContextSkillAsync failed: [{code}] {msg}")
-            raise RuntimeError(f"BindContextSkillAsync failed: {msg or 'Unknown error'}")
+                    return OperationResult(
+                        request_id=request_id,
+                        success=False,
+                        error_message="Invalid response format",
+                    )
+                body = response_map.get("body", {})
+                success = body.get("Success", False)
+                error_message = (
+                    ""
+                    if success
+                    else f"[{body.get('Code', 'Unknown')}] {body.get('Message', 'Unknown error')}"
+                )
+                return OperationResult(
+                    request_id=request_id,
+                    success=success,
+                    data=True if success else False,
+                    error_message=error_message,
+                )
+            except Exception as e:
+                _logger.exception(f"Error parsing BindContextSkillAsync response: {e}")
+                return OperationResult(
+                    request_id=request_id,
+                    success=False,
+                    error_message=f"Failed to parse response: {str(e)}",
+                )
+        except Exception as e:
+            _logger.exception(f"Error calling BindContextSkillAsync: {e}")
+            return OperationResult(
+                success=False,
+                error_message=f"BindContextSkillAsync failed: {e}",
+            )
 
     async def unbind_context(
         self,
         items: List[Dict[str, Any]],
-    ) -> None:
+    ) -> OperationResult:
         """Unbind skills from contexts.
 
         Args:
@@ -276,57 +322,99 @@ class AsyncBetaSkillsService:
                 - context_id (str): Target context ID.
                 - skill_ids (List[str]): Skill IDs to unbind.
 
-        Raises:
-            RuntimeError: If the API call fails.
+        Returns:
+            OperationResult: Result object containing success status and request ID.
         """
-        unbind_items = []
-        for item in items:
-            unbind_items.append(
-                UnbindContextSkillRequestContextSkillUnbindItems(
-                    context_id=item.get("context_id"),
-                    skill_ids=item.get("skill_ids"),
+        try:
+            unbind_items = []
+            for item in items:
+                unbind_items.append(
+                    UnbindContextSkillRequestContextSkillUnbindItems(
+                        context_id=item.get("context_id"),
+                        skill_ids=item.get("skill_ids"),
+                    )
                 )
+            request = UnbindContextSkillRequest(
+                authorization=f"Bearer {self._agent_bay.api_key}",
+                context_skill_unbind_items=unbind_items,
             )
-        request = UnbindContextSkillRequest(
-            authorization=f"Bearer {self._agent_bay.api_key}",
-            context_skill_unbind_items=unbind_items,
-        )
 
-        max_attempts = 3
-        delay_s = 0.2
-        last_err: Optional[BaseException] = None
-        resp = None
-        for attempt in range(1, max_attempts + 1):
+            _log_api_call("UnbindContextSkill", f"items_count={len(unbind_items)}")
+
+            max_attempts = 3
+            delay_s = 0.2
+            last_err: Optional[BaseException] = None
+            resp = None
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    resp = await self._agent_bay.client.unbind_context_skill_async(request)
+                    last_err = None
+                    break
+                except Exception as e:
+                    last_err = e
+                    msg = str(e)
+                    if attempt < max_attempts and (
+                        "ServiceUnavailable" in msg
+                        or "statusCode': 503" in msg
+                        or "code: 503" in msg
+                    ):
+                        await asyncio.sleep(delay_s)
+                        delay_s *= 2
+                        continue
+                    raise
+
+            if last_err is not None:
+                return OperationResult(
+                    success=False,
+                    error_message=f"UnbindContextSkill failed: {last_err}",
+                )
+
             try:
-                resp = await self._agent_bay.client.unbind_context_skill_async(request)
-                last_err = None
-                break
-            except Exception as e:
-                last_err = e
-                msg = str(e)
-                if attempt < max_attempts and (
-                    "ServiceUnavailable" in msg
-                    or "statusCode': 503" in msg
-                    or "code: 503" in msg
+                response_body = json.dumps(
+                    resp.to_map().get("body", {}), ensure_ascii=False, indent=2
+                )
+                _log_api_response(response_body)
+            except Exception:
+                _logger.debug(f"Response: {resp}")
+
+            request_id = extract_request_id(resp)
+
+            try:
+                response_map = resp.to_map() if hasattr(resp, "to_map") else {}
+                if not isinstance(response_map, dict) or not isinstance(
+                    response_map.get("body", {}), dict
                 ):
-                    await asyncio.sleep(delay_s)
-                    delay_s *= 2
-                    continue
-                raise
-
-        if last_err is not None:
-            raise RuntimeError(f"UnbindContextSkill failed: {last_err}") from last_err
-
-        body = getattr(resp, "body", None)
-        if body is None:
-            raise RuntimeError("UnbindContextSkill failed: missing response body")
-
-        if getattr(body, "success", None) is None or not body.success:
-            code = str(getattr(body, "code", "") or "")
-            msg = str(getattr(body, "message", "") or "")
-            if code:
-                raise RuntimeError(f"UnbindContextSkill failed: [{code}] {msg}")
-            raise RuntimeError(f"UnbindContextSkill failed: {msg or 'Unknown error'}")
+                    return OperationResult(
+                        request_id=request_id,
+                        success=False,
+                        error_message="Invalid response format",
+                    )
+                body = response_map.get("body", {})
+                success = body.get("Success", False)
+                error_message = (
+                    ""
+                    if success
+                    else f"[{body.get('Code', 'Unknown')}] {body.get('Message', 'Unknown error')}"
+                )
+                return OperationResult(
+                    request_id=request_id,
+                    success=success,
+                    data=True if success else False,
+                    error_message=error_message,
+                )
+            except Exception as e:
+                _logger.exception(f"Error parsing UnbindContextSkill response: {e}")
+                return OperationResult(
+                    request_id=request_id,
+                    success=False,
+                    error_message=f"Failed to parse response: {str(e)}",
+                )
+        except Exception as e:
+            _logger.exception(f"Error calling UnbindContextSkill: {e}")
+            return OperationResult(
+                success=False,
+                error_message=f"UnbindContextSkill failed: {e}",
+            )
 
 
 class AsyncBetaNamespace:
@@ -334,4 +422,3 @@ class AsyncBetaNamespace:
 
     def __init__(self, agent_bay: "AsyncAgentBay"):
         self.skills = AsyncBetaSkillsService(agent_bay)
-
