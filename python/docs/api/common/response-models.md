@@ -131,7 +131,8 @@ Result of operations returning a single Session.
 def __init__(self, request_id: str = "",
              success: bool = False,
              error_message: str = "",
-             session: Optional["Session"] = None)
+             session: Optional["Session"] = None,
+             code: str = "")
 ```
 
 Initialize a SessionResult.
@@ -145,6 +146,7 @@ Initialize a SessionResult.
   Defaults to False.
 - `error_message` _str, optional_ - Error message if the operation failed.
   Defaults to "".
+- `code` _str, optional_ - API error code. Defaults to "".
 
 ## SessionListResult
 
@@ -232,6 +234,8 @@ def __init__(self, app_instance_id: str = "",
              link_url: str = "",
              ws_url: str = "",
              vpc_resource: bool = False,
+             vpc_ip: str = "",
+             vpc_id: str = "",
              resource_url: str = "",
              status: str = "",
              tool_list: str = "",

@@ -166,7 +166,7 @@ Get context service for this AgentBay instance (alias for getContextService)
 ### list
 
 ```java
-public SessionListResult list(java.util.Map<String, String> labels, Integer page, Integer limit, String status)
+public SessionListResult list(java.util.Map<String, String> labels, Integer page, Integer limit, String status, String imageId)
 ```
 
 ```java
@@ -184,6 +184,7 @@ Returns paginated list of sessions filtered by labels.
 - `page` (Integer): Page number for pagination starting from 1 (optional)
 - `limit` (Integer): Maximum number of items per page (default: 10)
 - `status` (String): Status to filter sessions: RUNNING, PAUSING, PAUSED, RESUMING, DELETING, DELETED (optional)
+- `imageId` (String): Image ID to filter sessions (optional)
 
 **Returns:**
 - `SessionListResult`: SessionListResult containing paginated list of session information
@@ -261,21 +262,49 @@ This is a convenience method that delegates to the session's betaResume method.
 
 ## Config
 
-Configuration class for AgentBay SDK
+Configuration class for AgentBay SDK.
+
+<p>The preferred input is {@code regionId}; the SDK derives the endpoint from
+it via direct pattern substitution ({@code agentbay.{regionId}.aliyuncs.com},
+or {@code agentbay-pre.{regionId}.aliyuncs.com} when the regionId has a
+{@code pre-} prefix). {@code endpoint} is retained as a deprecated fallback:
+when {@code regionId} is not set the user-supplied {@code endpoint} is used
+as-is. When both are set, {@code regionId} wins and {@code endpoint} is
+ignored. Either form emits a deprecation warning.
 
 ### Constructor
 
 ```java
-public Config(String regionId, String endpoint, int timeoutMs)
+public Config(String regionId, int timeoutMs)
 ```
+
+Construct from regionId and timeoutMs. Endpoint is derived from regionId.
+Throws {@link IllegalArgumentException} if regionId is not in the supported map.
 
 ```java
 public Config(String regionId)
 ```
 
+Construct from regionId with the default timeout.
+
 ```java
 public Config()
 ```
+
+No-arg constructor: load configuration from environment variables (with .env fallback).
+
+<p>Reads {@code AGENTBAY_REGION_ID} (preferred). If unset, falls back to
+the deprecated {@code AGENTBAY_ENDPOINT} env var (a warning is logged).
+If neither is set, the default region applies.
+
+```java
+public Config(String regionId, String endpoint, int timeoutMs)
+```
+
+Backwards-compatibility constructor. The {@code endpoint} argument is
+honored only when {@code regionId} is null/empty (a deprecation warning
+is logged either way). When both are set, {@code regionId} wins and
+{@code endpoint} is ignored. Use {@link #Config(String, int)} instead.
 
 ### Methods
 
@@ -291,6 +320,8 @@ public String getRegionId()
 public void setRegionId(String regionId)
 ```
 
+Set a new regionId. Endpoint is re-derived from it. Throws if invalid.
+
 ### getEndpoint
 
 ```java
@@ -302,6 +333,10 @@ public String getEndpoint()
 ```java
 public void setEndpoint(String endpoint)
 ```
+
+Backwards-compatibility setter. Sets the endpoint directly, overriding
+any value previously derived from {@code regionId}. A deprecation
+warning is always logged.
 
 ### getTimeoutMs
 

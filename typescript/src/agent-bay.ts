@@ -985,15 +985,24 @@ export class AgentBay {
         };
       }
 
-      const sessionIds: Array<{ sessionId: string; sessionStatus: string; appInstanceId?: string; imageId?: string }> =
-        [];
+      const sessionIds: Array<{
+        sessionId: string;
+        sessionStatus: string;
+        appInstanceId?: string;
+        imageId?: string;
+      }> = [];
 
       // Extract session data
       if (response.body.data) {
         for (const sessionData of response.body.data) {
           if (sessionData.sessionId) {
             // Create a structured session object with both ID and status
-            const sessionInfo: { sessionId: string; sessionStatus: string; appInstanceId?: string; imageId?: string } = {
+            const sessionInfo: {
+              sessionId: string;
+              sessionStatus: string;
+              appInstanceId?: string;
+              imageId?: string;
+            } = {
               sessionId: sessionData.sessionId,
               sessionStatus: sessionData.sessionStatus || "UNKNOWN",
             };

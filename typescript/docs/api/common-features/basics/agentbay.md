@@ -248,7 +248,7 @@ if (createResult.success) {
 
 ### list
 
-▸ **list**(`labels?`, `page?`, `limit?`, `status?`): `Promise`\<``SessionListResult``\>
+▸ **list**(`labels?`, `page?`, `limit?`, `status?`, `imageId?`): `Promise`\<``SessionListResult``\>
 
 Returns paginated list of session IDs filtered by labels and status.
 
@@ -260,6 +260,7 @@ Returns paginated list of session IDs filtered by labels and status.
 | `page?` | `number` | `undefined` | Optional page number for pagination (starting from 1, defaults to 1) |
 | `limit` | `number` | `10` | Optional maximum number of items per page (defaults to 10) |
 | `status?` | `string` | `undefined` | Optional status to filter sessions. Must be one of: RUNNING, PAUSING, PAUSED, RESUMING, DELETING, DELETED (defaults to undefined) |
+| `imageId?` | `string` | `undefined` | - |
 
 #### Returns
 

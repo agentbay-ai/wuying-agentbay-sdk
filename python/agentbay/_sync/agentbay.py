@@ -1307,10 +1307,12 @@ class AgentBay:
         # Check if the API call was successful
         if not get_result.success:
             error_msg = get_result.error_message or "Unknown error"
+            code = getattr(get_result, 'code', '') or ''
             return SessionResult(
                 request_id=get_result.request_id,
                 success=False,
                 error_message=f"Failed to get session {session_id}: {error_msg}",
+                code=code,
             )
 
         # Create the Session object

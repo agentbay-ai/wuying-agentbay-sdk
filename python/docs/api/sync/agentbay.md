@@ -78,7 +78,8 @@ session.delete()
 def list(labels: Optional[Dict[str, str]] = None,
          page: Optional[int] = None,
          limit: Optional[int] = None,
-         status: Optional[str] = None) -> SessionListResult
+         status: Optional[str] = None,
+         image_id: Optional[str] = None) -> SessionListResult
 ```
 
 Returns paginated list of session IDs filtered by labels synchronously.
@@ -94,6 +95,8 @@ Returns paginated list of session IDs filtered by labels synchronously.
 - `status` _Optional[str], optional_ - Status to filter sessions. Must be one of:
   RUNNING, PAUSING, PAUSED, RESUMING, DELETING, DELETED.
   Defaults to None (returns sessions with any status).
+- `image_id` _Optional[str], optional_ - Image ID to filter sessions.
+  Defaults to None (returns sessions with any image).
   
 
 **Returns**:

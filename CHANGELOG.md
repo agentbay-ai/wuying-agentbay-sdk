@@ -2,6 +2,22 @@
 
 All notable changes to the Wuying AgentBay SDK will be documented in this file.
 
+## [0.22.0] - 2026-06-03
+
+### Added
+- **Multi-region endpoint support** (All SDKs): Auto-generate endpoint from `region_id` using pattern-based matching; hardcoded pre-release regions; soft-whitelist for production.
+- **Session VPC information** (All SDKs): Exposed `VPC_IP` and `VPC_ID` fields on Session.
+- **ListSession enhancements** (All SDKs): Added `ImageId` request parameter and `ImageId` / `AppInstanceId` response fields.
+- **ossfs-csi integration enhancements**.
+
+### Fixed
+- **keepalive error handling**: Fixed keepalive connection errors.
+- **Context bind download wait** (All SDKs): `bind()` now waits for data download completion before returning.
+- **Config constructor** (All SDKs): Accept unknown `region_id` values with a warning instead of throwing an exception.
+
+### Deprecated
+- **`AGENTBAY_ENDPOINT`**: Soft-deprecated since v0.22.0. Prefer `AGENTBAY_REGION_ID`. When `AGENTBAY_REGION_ID` is set, `AGENTBAY_ENDPOINT` is ignored. When only `AGENTBAY_ENDPOINT` is set, its value is used as-is as a fallback for backward compatibility.
+
 ## [0.21.0] - 2026-05-19
 
 - **BetaContextMount (Beta)** (All SDKs): New direct-mount persistence model that exposes a context as a filesystem mount point inside the session, complementing the existing Context Sync workflow.

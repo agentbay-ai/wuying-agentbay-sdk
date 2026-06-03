@@ -3982,6 +3982,12 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 	if response.Body.Data.ResourceUrl != nil {
 		session.ResourceUrl = *response.Body.Data.ResourceUrl
 	}
+	if response.Body.Data.GetVpcIp() != nil {
+		session.VpcIp = *response.Body.Data.GetVpcIp()
+	}
+	if response.Body.Data.GetVpcId() != nil {
+		session.VpcId = *response.Body.Data.GetVpcId()
+	}
 
 	// LinkUrl/token may be returned by the server for direct tool calls.
 	if response.Body.Data.Token != nil {
@@ -4078,20 +4084,13 @@ func (a *AgentBay) Create(params *CreateSessionParams) (*SessionResult, error) {
 
 			if allCompleted {
 				if hasFailure {
-					LogWarn("Context synchronization completed with failures")
-				} else {
-					LogInfo("Context synchronization completed successfully")
-				}
-				break
-			}
 
-
-... [truncated, 30,006 chars remaining] ...
+... [truncated, 30,925 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func (a *AgentBay) waitForMobileSimulate(session *Session, mobileSimPath string, mobileSimMode models.MobileSimulateM...
 func NewListSessionParams() *ListSessionParams {
-func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32) (*SessionListResult, error) {
+func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32, imageId string) (*SessionLi...
 func (a *AgentBay) ListByStatus(status SessionStatus, labels map[string]string, page *int, limit *int32) (*SessionLis...
 func (a *AgentBay) Delete(session *Session, syncContext ...bool) (*DeleteResult, error) {
 func parseToolListToMcpTools(toolList interface{}) []McpTool {
@@ -8144,6 +8143,11 @@ type Session struct {
 	// Resource URL for accessing the session
 	ResourceUrl string
 
+	// VpcIp / VpcId are returned only for sessions created on a custom VPC network.
+	// For default-network sessions both fields are empty.
+	VpcIp string
+	VpcId string
+
 	// LinkUrl-based direct tool call (non-VPC)
 	Token   string
 	LinkUrl string
@@ -8662,10 +8666,8 @@ func (s *Session) Delete(syncContext ...bool) (*DeleteResult, error) {
 			} else if response.Body.Code != nil {
 				errorMsg = fmt.Sprintf("[%s] Failed to delete session", *response.Body.Code)
 			}
-			responseJSON, _ := json.MarshalIndent(response.Body, "", "  ")
-			logAPIResponseWithDetails("DeleteSessionAsync", requestID, false, nil, string(responseJSON))
 
-... [truncated, 45,635 chars remaining] ...
+... [truncated, 45,797 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
 func (s *Session) ValidateLabels(labels map[string]string) string {
@@ -8753,8 +8755,8 @@ The SDK automatically reads configuration from environment variables:
 
 ```bash
 export AGENTBAY_API_KEY=your_api_key
-export AGENTBAY_REGION_ID=cn-hangzhou                       # Optional (default)
-export AGENTBAY_TIMEOUT_MS=60000                            # Optional
+export AGENTBAY_REGION_ID=cn-hangzhou   # Optional, default: cn-hangzhou. Endpoint is derived from region.
+export AGENTBAY_TIMEOUT_MS=60000        # Optional, default: 60000
 ```
 
 ```java
@@ -8767,8 +8769,8 @@ You can also provide configuration explicitly:
 
 ```java
 String apiKey = "your_api_key";
-Config config = new Config();
-config.setRegionId("ap-southeast-1");
+// Endpoint is derived from regionId via the multi-region mapping.
+Config config = new Config("cn-hangzhou", 60000);
 AgentBay agentBay = new AgentBay(apiKey, config);
 ```
 
@@ -8781,11 +8783,9 @@ AgentBay agentBay = new AgentBay("your_api_key");
 ### Configuration Priority
 
 The SDK uses the following precedence order (highest to lowest):
-1. Explicit `region_id` in code
-2. Explicit `endpoint` in code (deprecated fallback, only when `region_id` is not set)
-3. `AGENTBAY_REGION_ID` environment variable
-4. `AGENTBAY_ENDPOINT` environment variable (deprecated fallback, only when `AGENTBAY_REGION_ID` is not set)
-5. Default region (`cn-hangzhou`)
+1. Explicitly passed configuration in code
+2. Environment variables
+3. Default configuration
 
 ## 📖 Complete Documentation
 
@@ -10261,6 +10261,10 @@ class AsyncAgentBay:
         session.app_instance_id = app_instance_id
         session.resource_url = resource_url
 
+        # VPC info, populated when upstream returns them
+        session.vpc_ip = response_data.get("VpcIp", "") or ""
+        session.vpc_id = response_data.get("VpcId", "") or ""
+
         # LinkUrl/token may be returned by the server for direct tool calls.
         if "Token" in response_data and response_data.get("Token") is not None:
             session.token = str(response_data.get("Token") or "")
@@ -10462,12 +10466,8 @@ class AsyncAgentBay:
             )
 
             cmd_result = await session.command.execute_command(command)
-            if cmd_result.success:
-                end_time = time.time()
-                consume_time = end_time - start_time
-                _logger.info(
 
-... [truncated, 35,778 chars remaining] ...
+... [truncated, 36,854 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _log_request_debug_info(self, request: CreateMcpSessionRequest) -> None:
@@ -14971,6 +14971,11 @@ class AsyncSession:
         # Resource URL for accessing the session
         self.resource_url = ""
 
+        # vpc_ip / vpc_id are returned only for sessions created on a custom
+        # VPC network. For default-network sessions both fields are empty.
+        self.vpc_ip = ""
+        self.vpc_id = ""
+
         # LinkUrl-based direct tool call (non-VPC)
         self.token = ""
         self.link_url = ""
@@ -15418,12 +15423,8 @@ class AsyncSession:
                     is_not_found = (
                         error_code == "InvalidMcpSession.NotFound" or
                         (http_status_code == 400 and (
-                            "not found" in error_message.lower() or
-                            "NotFound" in error_message or
-                            "not found" in error_code.lower()
-                        )) or
 
-... [truncated, 41,070 chars remaining] ...
+... [truncated, 41,289 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
     def _validate_labels(self, labels: Dict[str, str]) -> Optional[OperationResult]:
@@ -16686,7 +16687,7 @@ FILE: python/pyproject.toml
 ================================================
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.21.0"
+version = "0.22.0"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
@@ -18874,7 +18875,7 @@ FILE: typescript/package.json
 ================================================
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.21.0",
+    "version": "0.22.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",
@@ -19545,7 +19546,7 @@ export class AgentBay {
           success: false,
           errorMessage: "Invalid response format: expected a dictionary",
 
-... [truncated, 31,449 chars remaining] ...
+... [truncated, 32,296 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
       if (sessionData.success === false && sessionData.code) {
@@ -19595,10 +19596,12 @@ export class AgentBay {
         while (currentPage < page) {
           if (nextToken) {
           if (status) {
+          if (imageId) {
           if (!response.body?.success) {
           if (!nextToken) {
       if (nextToken) {
       if (status) {
+      if (imageId) {
       logAPICall("ListSession", {
       setRequestId(requestId);
       if (!response.body?.success) {
@@ -19607,6 +19610,8 @@ export class AgentBay {
       if (response.body.data) {
         for (const sessionData of response.body.data) {
           if (sessionData.sessionId) {
+            if (sessionData.appInstanceId) {
+            if (sessionData.imageId) {
       logAPIResponseWithDetails("ListSession", requestId, true, {
       logError("Error calling list_session:", error);
   async delete(session: Session, syncContext = false): Promise<DeleteResult> {
@@ -25432,6 +25437,11 @@ export class Session {
   /** Application instance ID */
   public appInstanceId = "";
 
+  /** VPC IP. Returned only for sessions created on a custom VPC network; empty otherwise. */
+  public vpcIp = "";
+  /** VPC ID. Returned only for sessions created on a custom VPC network; empty otherwise. */
+  public vpcId = "";
+
   /** Token for VPC sessions */
   public token = "";
   public linkUrl = "";
@@ -25922,16 +25932,11 @@ export class Session {
               `✅ Session ${this.sessionId} successfully deleted (NotFound)`
             );
             break;
-          } else {
-            // Other error, continue polling
-            logDebug(`⚠️  Get session error (will retry): ${errorMessage}`);
-            // Continue to next poll iteration
-          }
-        }
 
-... [truncated, 46,763 chars remaining] ...
+... [truncated, 46,973 chars remaining] ...
 
 # Remaining method/function signatures (truncated bodies):
+            logDebug(`⚠️  Get session error (will retry): ${errorMessage}`);
           logDebug(`📊 Session status: ${status}`);
           if (status === "FINISH") {
             logInfo(`✅ Session ${this.sessionId} successfully deleted`);

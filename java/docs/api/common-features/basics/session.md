@@ -65,6 +65,36 @@ Set the application instance ID.
 **Parameters:**
 - `appInstanceId` (String): The application instance ID
 
+### getVpcIp
+
+```java
+public String getVpcIp()
+```
+
+Get the VPC IP. Returned only for sessions created on a custom VPC network;
+empty for default-network sessions.
+
+### setVpcIp
+
+```java
+public void setVpcIp(String vpcIp)
+```
+
+### getVpcId
+
+```java
+public String getVpcId()
+```
+
+Get the VPC ID. Returned only for sessions created on a custom VPC network;
+empty for default-network sessions.
+
+### setVpcId
+
+```java
+public void setVpcId(String vpcId)
+```
+
 ### getWsUrl
 
 ```java

@@ -884,8 +884,8 @@ The SDK automatically reads configuration from environment variables:
 
 ```bash
 export AGENTBAY_API_KEY=your_api_key
-export AGENTBAY_REGION_ID=cn-hangzhou                       # Optional (default)
-export AGENTBAY_TIMEOUT_MS=60000                            # Optional
+export AGENTBAY_REGION_ID=cn-hangzhou   # Optional, default: cn-hangzhou. Endpoint is derived from region.
+export AGENTBAY_TIMEOUT_MS=60000        # Optional, default: 60000
 ```
 
 ```java
@@ -898,8 +898,8 @@ You can also provide configuration explicitly:
 
 ```java
 String apiKey = "your_api_key";
-Config config = new Config();
-config.setRegionId("ap-southeast-1");
+// Endpoint is derived from regionId via the multi-region mapping.
+Config config = new Config("cn-hangzhou", 60000);
 AgentBay agentBay = new AgentBay(apiKey, config);
 ```
 
@@ -912,11 +912,9 @@ AgentBay agentBay = new AgentBay("your_api_key");
 ### Configuration Priority
 
 The SDK uses the following precedence order (highest to lowest):
-1. Explicit `region_id` in code
-2. Explicit `endpoint` in code (deprecated fallback, only when `region_id` is not set)
-3. `AGENTBAY_REGION_ID` environment variable
-4. `AGENTBAY_ENDPOINT` environment variable (deprecated fallback, only when `AGENTBAY_REGION_ID` is not set)
-5. Default region (`cn-hangzhou`)
+1. Explicitly passed configuration in code
+2. Environment variables
+3. Default configuration
 
 ## 📖 Complete Documentation
 
@@ -1146,7 +1144,7 @@ FILE: python/pyproject.toml
 ================================================
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.21.0"
+version = "0.22.0"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
@@ -1341,7 +1339,7 @@ FILE: typescript/package.json
 ================================================
 {
     "name": "wuying-agentbay-sdk",
-    "version": "0.21.0",
+    "version": "0.22.0",
     "description": "TypeScript SDK for interacting with the Wuying AgentBay cloud runtime environment",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",

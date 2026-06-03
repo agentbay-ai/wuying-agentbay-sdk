@@ -25,7 +25,9 @@ describe("Region ID Unit Tests", () => {
       });
 
       expect(client.getRegionId()).toBe("cn-hangzhou");
-      expect((client as any).endpoint).toBe("agentbay.cn-hangzhou.aliyuncs.com");
+      expect((client as any).endpoint).toBe(
+        "agentbay.cn-hangzhou.aliyuncs.com"
+      );
       expect((client as any).config.timeout_ms).toBe(60000);
     });
 

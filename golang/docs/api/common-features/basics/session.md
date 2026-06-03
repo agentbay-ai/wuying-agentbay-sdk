@@ -23,6 +23,11 @@ type Session struct {
 	// Resource URL for accessing the session
 	ResourceUrl	string
 
+	// VpcIp / VpcId are returned only for sessions created on a custom VPC network.
+	// For default-network sessions both fields are empty.
+	VpcIp	string
+	VpcId	string
+
 	// LinkUrl-based direct tool call (non-VPC)
 	Token	string
 	LinkUrl	string

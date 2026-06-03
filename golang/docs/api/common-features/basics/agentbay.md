@@ -217,7 +217,7 @@ GetRegionID returns the region ID from config
 ### List
 
 ```go
-func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32) (*SessionListResult, error)
+func (a *AgentBay) List(status string, labels map[string]string, page *int, limit *int32, imageId string) (*SessionListResult, error)
 ```
 
 List returns paginated list of session IDs filtered by labels and status.
@@ -237,11 +237,11 @@ Returns:
 
 ```go
 client, _ := agentbay.NewAgentBay(os.Getenv("AGENTBAY_API_KEY"), nil)
-result, _ := client.List("", nil, nil, nil)
+result, _ := client.List("", nil, nil, nil, "")
 
 // Or using enum:
 
-result, _ := client.List(SessionStatusRunning.String(), nil, nil, nil)
+result, _ := client.List(SessionStatusRunning.String(), nil, nil, nil, "")
 ```
 
 ### ListByStatus

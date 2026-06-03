@@ -66,6 +66,8 @@ pty: [`Pty`](pty.md)
 resourceUrl: `string` = `""`
 sessionId: `string`
 token: `string` = `""`
+vpcId: `string` = `""`
+vpcIp: `string` = `""`
 wsUrl: `string` = `""`
 ```
 
