@@ -3095,6 +3095,8 @@ class Client(OpenApiClient):
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.login_region_id):
+            body["LoginRegionId"] = request.login_region_id
         if not DaraCore.is_null(request.context_skill_bind_items_shrink):
             body["ContextSkillBindItems"] = request.context_skill_bind_items_shrink
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
@@ -3131,6 +3133,8 @@ class Client(OpenApiClient):
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.login_region_id):
+            body["LoginRegionId"] = request.login_region_id
         if not DaraCore.is_null(request.context_skill_bind_items_shrink):
             body["ContextSkillBindItems"] = request.context_skill_bind_items_shrink
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
@@ -3181,6 +3185,8 @@ class Client(OpenApiClient):
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.login_region_id):
+            body["LoginRegionId"] = request.login_region_id
         if not DaraCore.is_null(request.context_skill_unbind_items_shrink):
             body["ContextSkillUnbindItems"] = request.context_skill_unbind_items_shrink
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))
@@ -3217,6 +3223,8 @@ class Client(OpenApiClient):
         body = {}
         if not DaraCore.is_null(request.authorization):
             body["Authorization"] = request.authorization
+        if not DaraCore.is_null(request.login_region_id):
+            body["LoginRegionId"] = request.login_region_id
         if not DaraCore.is_null(request.context_skill_unbind_items_shrink):
             body["ContextSkillUnbindItems"] = request.context_skill_unbind_items_shrink
         req = open_api_util_models.OpenApiRequest(body=Utils.parse_to_map(body))

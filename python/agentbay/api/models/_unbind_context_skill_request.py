@@ -13,9 +13,11 @@ class UnbindContextSkillRequest(DaraModel):
         self,
         authorization: Optional[str] = None,
         context_skill_unbind_items: Optional[List["UnbindContextSkillRequestContextSkillUnbindItems"]] = None,
+        login_region_id: Optional[str] = None,
     ):
         self.authorization = authorization
         self.context_skill_unbind_items = context_skill_unbind_items
+        self.login_region_id = login_region_id
 
     def validate(self):
         if self.context_skill_unbind_items:
@@ -30,6 +32,8 @@ class UnbindContextSkillRequest(DaraModel):
             result = _map
         if self.authorization is not None:
             result['Authorization'] = self.authorization
+        if self.login_region_id is not None:
+            result['LoginRegionId'] = self.login_region_id
         result['ContextSkillUnbindItems'] = []
         if self.context_skill_unbind_items is not None:
             for k1 in self.context_skill_unbind_items:
@@ -40,6 +44,8 @@ class UnbindContextSkillRequest(DaraModel):
         m = m or dict()
         if m.get('Authorization') is not None:
             self.authorization = m.get('Authorization')
+        if m.get('LoginRegionId') is not None:
+            self.login_region_id = m.get('LoginRegionId')
         self.context_skill_unbind_items = []
         if m.get('ContextSkillUnbindItems') is not None:
             for k1 in m.get('ContextSkillUnbindItems'):

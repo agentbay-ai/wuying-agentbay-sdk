@@ -13,9 +13,11 @@ class BindContextSkillAsyncRequest(DaraModel):
         self,
         authorization: Optional[str] = None,
         context_skill_bind_items: Optional[List["BindContextSkillAsyncRequestContextSkillBindItems"]] = None,
+        login_region_id: Optional[str] = None,
     ):
         self.authorization = authorization
         self.context_skill_bind_items = context_skill_bind_items
+        self.login_region_id = login_region_id
 
     def validate(self):
         if self.context_skill_bind_items:
@@ -30,6 +32,8 @@ class BindContextSkillAsyncRequest(DaraModel):
             result = _map
         if self.authorization is not None:
             result['Authorization'] = self.authorization
+        if self.login_region_id is not None:
+            result['LoginRegionId'] = self.login_region_id
         result['ContextSkillBindItems'] = []
         if self.context_skill_bind_items is not None:
             for k1 in self.context_skill_bind_items:
@@ -40,6 +44,8 @@ class BindContextSkillAsyncRequest(DaraModel):
         m = m or dict()
         if m.get('Authorization') is not None:
             self.authorization = m.get('Authorization')
+        if m.get('LoginRegionId') is not None:
+            self.login_region_id = m.get('LoginRegionId')
         self.context_skill_bind_items = []
         if m.get('ContextSkillBindItems') is not None:
             for k1 in m.get('ContextSkillBindItems'):

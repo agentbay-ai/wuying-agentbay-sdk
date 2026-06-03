@@ -235,6 +235,7 @@ class SyncBetaSkillsService:
             request = BindContextSkillAsyncRequest(
                 authorization=f"Bearer {self._agent_bay.api_key}",
                 context_skill_bind_items=bind_items,
+                login_region_id=self._agent_bay.region_id or None,
             )
 
             _log_api_call("BindContextSkillAsync", f"items_count={len(bind_items)}")
@@ -340,6 +341,7 @@ class SyncBetaSkillsService:
             request = UnbindContextSkillRequest(
                 authorization=f"Bearer {self._agent_bay.api_key}",
                 context_skill_unbind_items=unbind_items,
+                login_region_id=self._agent_bay.region_id or None,
             )
 
             _log_api_call("UnbindContextSkill", f"items_count={len(unbind_items)}")
