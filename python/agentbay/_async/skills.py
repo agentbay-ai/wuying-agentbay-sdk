@@ -98,7 +98,8 @@ class AsyncSkillsService:
             if not name:
                 continue
             description = str(getattr(raw, "description", "") or "")
-            skills.append(SkillInfo(name=name, description=description))
+            skill_id = str(getattr(raw, "skill_id", "") or "")
+            skills.append(SkillInfo(name=name, description=description, skill_id=skill_id))
 
         return SkillsMetadataResult(
             skills=skills,

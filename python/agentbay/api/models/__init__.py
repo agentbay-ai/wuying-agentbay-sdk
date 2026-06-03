@@ -10,6 +10,13 @@ from ._bind_contexts_request import (
 from ._bind_contexts_response import BindContextsResponse
 from ._bind_contexts_response_body import BindContextsResponseBody
 from ._bind_contexts_shrink_request import BindContextsShrinkRequest
+from ._bind_context_skill_async_request import (
+    BindContextSkillAsyncRequest,
+    BindContextSkillAsyncRequestContextSkillBindItems,
+)
+from ._bind_context_skill_async_response import BindContextSkillAsyncResponse
+from ._bind_context_skill_async_response_body import BindContextSkillAsyncResponseBody
+from ._bind_context_skill_async_shrink_request import BindContextSkillAsyncShrinkRequest
 from ._call_mcp_tool_request import CallMcpToolRequest
 from ._call_mcp_tool_response import CallMcpToolResponse
 from ._call_mcp_tool_response_body import CallMcpToolResponseBody
@@ -162,6 +169,7 @@ from ._list_skill_meta_data_response_body import (
     ListSkillMetaDataResponseBody,
     ListSkillMetaDataResponseBodyData,
 )
+from ._list_skill_meta_data_shrink_request import ListSkillMetaDataShrinkRequest
 from ._list_session_request import ListSessionRequest
 
 # Add these lines at the appropriate place
@@ -191,6 +199,13 @@ from ._set_label_response_body import SetLabelResponseBody
 from ._sync_context_request import SyncContextRequest
 from ._sync_context_response import SyncContextResponse
 from ._sync_context_response_body import SyncContextResponseBody
+from ._unbind_context_skill_request import (
+    UnbindContextSkillRequest,
+    UnbindContextSkillRequestContextSkillUnbindItems,
+)
+from ._unbind_context_skill_response import UnbindContextSkillResponse
+from ._unbind_context_skill_response_body import UnbindContextSkillResponseBody
+from ._unbind_context_skill_shrink_request import UnbindContextSkillShrinkRequest
 
 __all__ = [
     BindContextsRequest,
@@ -349,4 +364,15 @@ __all__ = [
     GetSkillMetaDataResponseBodyData,
     GetSkillMetaDataResponseBodyDataMetaDataList,
     GetSkillMetaDataShrinkRequest,
+    ListSkillMetaDataShrinkRequest,
+    BindContextSkillAsyncRequest,
+    BindContextSkillAsyncRequestContextSkillBindItems,
+    BindContextSkillAsyncShrinkRequest,
+    BindContextSkillAsyncResponse,
+    BindContextSkillAsyncResponseBody,
+    UnbindContextSkillRequest,
+    UnbindContextSkillRequestContextSkillUnbindItems,
+    UnbindContextSkillShrinkRequest,
+    UnbindContextSkillResponse,
+    UnbindContextSkillResponseBody,
 ]
