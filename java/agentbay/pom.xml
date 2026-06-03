@@ -65,7 +65,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.21.12</version>
+            <version>3.25.5</version>
         </dependency>
 
         <!-- WuyingAIq需要的tea框架 -->
