@@ -59,9 +59,11 @@ class UnbindContextSkillRequestContextSkillUnbindItems(DaraModel):
         self,
         context_id: Optional[str] = None,
         skill_ids: Optional[List[str]] = None,
+        path: Optional[str] = None,
     ):
         self.context_id = context_id
         self.skill_ids = skill_ids
+        self.path = path
 
     def validate(self):
         pass
@@ -75,6 +77,8 @@ class UnbindContextSkillRequestContextSkillUnbindItems(DaraModel):
             result['ContextId'] = self.context_id
         if self.skill_ids is not None:
             result['SkillIds'] = self.skill_ids
+        if self.path is not None:
+            result['Path'] = self.path
         return result
 
     def from_map(self, m: Optional[dict] = None):
@@ -83,4 +87,6 @@ class UnbindContextSkillRequestContextSkillUnbindItems(DaraModel):
             self.context_id = m.get('ContextId')
         if m.get('SkillIds') is not None:
             self.skill_ids = m.get('SkillIds')
+        if m.get('Path') is not None:
+            self.path = m.get('Path')
         return self

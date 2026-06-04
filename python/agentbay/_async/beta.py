@@ -71,7 +71,9 @@ class AsyncBetaSkillsService:
         """
         if skill_ids is not None:
             return await self._get_metadata_by_skill_ids(skill_ids)
-        return await self._get_metadata_legacy(image_id=image_id, skill_names=skill_names)
+        return await self._get_metadata_legacy(
+            image_id=image_id, skill_names=skill_names
+        )
 
     async def _get_metadata_by_skill_ids(
         self,
@@ -129,7 +131,9 @@ class AsyncBetaSkillsService:
                 continue
             description = str(getattr(raw, "description", "") or "")
             skill_id = str(getattr(raw, "skill_id", "") or "")
-            skills.append(SkillInfo(name=name, description=description, skill_id=skill_id))
+            skills.append(
+                SkillInfo(name=name, description=description, skill_id=skill_id)
+            )
 
         return SkillsMetadataResult(
             skills=skills,
@@ -197,7 +201,9 @@ class AsyncBetaSkillsService:
                 continue
             description = str(getattr(raw, "description", "") or "")
             skill_id = str(getattr(raw, "skill_id", "") or "")
-            skills.append(SkillInfo(name=name, description=description, skill_id=skill_id))
+            skills.append(
+                SkillInfo(name=name, description=description, skill_id=skill_id)
+            )
 
         return SkillsMetadataResult(
             skills=skills,
@@ -243,7 +249,9 @@ class AsyncBetaSkillsService:
             resp = None
             for attempt in range(1, max_attempts + 1):
                 try:
-                    resp = await self._agent_bay.client.bind_context_skill_async_async(request)
+                    resp = await self._agent_bay.client.bind_context_skill_async_async(
+                        request
+                    )
                     last_err = None
                     break
                 except Exception as e:
@@ -322,6 +330,7 @@ class AsyncBetaSkillsService:
             items: List of dicts, each with keys:
                 - context_id (str): Target context ID.
                 - skill_ids (List[str]): Skill IDs to unbind.
+                - path (str): Target path in context.
 
         Returns:
             OperationResult: Result object containing success status and request ID.
@@ -333,6 +342,7 @@ class AsyncBetaSkillsService:
                     UnbindContextSkillRequestContextSkillUnbindItems(
                         context_id=item.get("context_id"),
                         skill_ids=item.get("skill_ids"),
+                        path=item.get("path"),
                     )
                 )
             request = UnbindContextSkillRequest(
@@ -349,7 +359,9 @@ class AsyncBetaSkillsService:
             resp = None
             for attempt in range(1, max_attempts + 1):
                 try:
-                    resp = await self._agent_bay.client.unbind_context_skill_async(request)
+                    resp = await self._agent_bay.client.unbind_context_skill_async(
+                        request
+                    )
                     last_err = None
                     break
                 except Exception as e:
