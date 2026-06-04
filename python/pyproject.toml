@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wuying-agentbay-sdk"
-version = "0.22.2"
+version = "0.22.3"
 description = "Python SDK for interacting with the Wuying AgentBay cloud runtime environment"
 readme = ["README.md", "CHANGELOG.md"]
 packages = [{include = "agentbay"}]
