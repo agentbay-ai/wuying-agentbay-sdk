@@ -76,34 +76,40 @@ jobs:
           BASE_VERSION=$(grep "version = " pyproject.toml | head -n 1 | cut -d '"' -f 2)
           echo "BASE_VERSION=${BASE_VERSION}" > $AONE_CI_WORKSPACE/BASE_VERSION
           TIMESTAMP=$(TZ='Asia/Shanghai' date "+%Y%m%d%H%M%S")
-          FINAL_VERSION="${BASE_VERSION}.${TIMESTAMP}"
+          FINAL_VERSION="${BASE_VERSION}rc${TIMESTAMP}"
           echo "FINAL_VERSION=${FINAL_VERSION}" > $AONE_CI_WORKSPACE/FINAL_VERSION
           echo "${FINAL_VERSION}" > ${{outputs.env.path}}
           cat $AONE_CI_WORKSPACE/BASE_VERSION
           cat $AONE_CI_WORKSPACE/FINAL_VERSION
           sed -i "0,/^version = /s/^version = .*/version = \"${FINAL_VERSION}\"/" pyproject.toml
-          sed -i 's/wuying-agentbay-sdk/wuying-agentbay-sdk-test/g' pyproject.toml
           cat pyproject.toml | grep name
           grep "version" pyproject.toml
-      
+
       - id: pypi-install--build-publish
-        run: | 
+        run: |
           set -e
           cd python
           echo "Installing dependencies..."
           python -m pip install --upgrade pip
           pip install twine build poetry
-          echo "Building PyPI package..."
-          cat $AONE_CI_WORKSPACE/FINAL_VERSION
-          # Check if build module can be imported
-          echo $FINAL_VERSION_ENV
-          python -c "import build; print('✅ Build module available, version:', build.__version__)" || (echo "❌ Build module import failed" && exit 1)
-          # Build using poetry
+
+          # 1) Build and publish as wuying-agentbay-sdk (正式名，覆盖旧版)
+          echo "Building wuying-agentbay-sdk..."
           poetry build
-          echo "Files to upload:"
+          echo "Files to upload (wuying-agentbay-sdk):"
           ls -la dist/
-          echo "Uploading PyPI package..."
-          twine --version
+          echo "Uploading wuying-agentbay-sdk..."
+          twine upload --repository-url ${{params.repository-url}} --username ${{secrets.username}} --password ${{secrets.password}} dist/*
+
+          # 2) Rename to wuying-agentbay-sdk-test and rebuild
+          echo "Rebuilding as wuying-agentbay-sdk-test..."
+          rm -rf dist/
+          sed -i 's/wuying-agentbay-sdk/wuying-agentbay-sdk-test/g' pyproject.toml
+          cat pyproject.toml | grep name
+          poetry build
+          echo "Files to upload (wuying-agentbay-sdk-test):"
+          ls -la dist/
+          echo "Uploading wuying-agentbay-sdk-test..."
           twine upload --repository-url ${{params.repository-url}} --username ${{secrets.username}} --password ${{secrets.password}} dist/*
           echo "✅ Upload completed"
   
