@@ -62,7 +62,7 @@
         "jest": "^26.6.3",
         "js-yaml": "^4.1.0",
         "prettier": "^2.8.4",
-        "puppeteer-core": "^19.11.1",
+        "puppeteer-core": "^25.0.4",
         "sinon": "^15.2.0",
         "ts-jest": "^26.5.6",
         "tsup": "^8.5.0",
