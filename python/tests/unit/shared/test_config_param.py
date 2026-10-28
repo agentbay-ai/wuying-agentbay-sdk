@@ -17,6 +17,7 @@ def _writable_temp_root() -> Path:
 
 class LoadConfigTestCase(unittest.TestCase):
     def setUp(self):
+        self.original_cwd = os.getcwd()
         # Create temporary .env file directory
         self.test_dir = tempfile.TemporaryDirectory(dir=str(_writable_temp_root()))
         self.env_file = Path(self.test_dir.name) / ".env"
@@ -27,6 +28,7 @@ class LoadConfigTestCase(unittest.TestCase):
     def tearDown(self):
         for var in ("AGENTBAY_REGION_ID", "AGENTBAY_TIMEOUT_MS"):
             os.environ.pop(var, None)
+        os.chdir(self.original_cwd)
         self.test_dir.cleanup()
 
     def test_load_from_passed_config(self):
